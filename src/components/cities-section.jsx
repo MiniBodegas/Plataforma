@@ -1,4 +1,4 @@
-export default function CitiesSection() {
+export function CitiesSection() {
   const cities = [
     {
       name: "Bogotá",
@@ -39,3 +39,4 @@ export default function CitiesSection() {
     </section>
   )
 }
+export default CitiesSection;

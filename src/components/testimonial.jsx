@@ -1,6 +1,6 @@
 import { Star } from "lucide-react"
 
-export default function TestimonialsSection() {
+export function TestimonialsSection() {
   const testimonials = [
     {
       name: "Juan Esteban Ramirez",

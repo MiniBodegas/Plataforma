@@ -1,4 +1,4 @@
-export default function SizeGuideSection() {
+export function SizeGuideSection() {
   const sizeGuides = [
     {
       title: "Desde 1 m² hasta 15 m²",

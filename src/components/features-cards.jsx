@@ -1,6 +1,6 @@
 import { Search, BarChart3, FileText, CreditCard } from "lucide-react"
 
-export default function FeaturesSection() {
+export function FeaturesCards() {
   const features = [
     {
       icon: Search,
@@ -52,3 +52,4 @@ export default function FeaturesSection() {
     </section>
   )
 }
+export default FeaturesCards;

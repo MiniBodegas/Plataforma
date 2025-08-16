@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { ChevronDown, ChevronUp } from "lucide-react"
 
-export default function FAQSection() {
+export function FAQCards() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
   const faqs = [
@@ -67,3 +67,4 @@ export default function FAQSection() {
     </section>
   )
 }
+export default FAQCards;

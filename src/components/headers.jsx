@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button"
 
-export default function Header() {
+
+export function Header() {
   return (
     <header className="bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -16,7 +16,7 @@ export default function Header() {
             <a href="#" className="text-gray-600 hover:text-gray-900">
               Calcula tu espacio
             </a>
-            <Button variant="outline">Regístrate</Button>
+            <button className="border px-4 py-2 rounded hover:bg-gray-100">Regístrate</button>
           </nav>
         </div>
       </div>

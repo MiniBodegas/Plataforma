@@ -1,4 +1,4 @@
-export default function StatsSection() {
+export function StatsSection() {
   const stats = [
     { number: "10k", label: "Mini bodegas\nActivas" },
     { number: "+1200", label: "Usuarios\nregistrados" },

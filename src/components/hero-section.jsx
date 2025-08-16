@@ -1,8 +1,6 @@
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { MapPin } from "lucide-react"
 
-export default function HeroSection() {
+export function HeroSection() {
   return (
     <section className="bg-gray-50 py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -19,9 +17,9 @@ export default function HeroSection() {
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <Input placeholder="Ingresa tu ciudad" className="pl-10" />
+                <input type="text" placeholder="Ingresa tu ciudad" className="pl-10 py-2 border rounded w-full" />
               </div>
-              <Button className="bg-blue-600 hover:bg-blue-700">Buscar</Button>
+              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Buscar</button>
             </div>
           </div>
           <div className="relative">
