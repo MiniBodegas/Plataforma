@@ -1,6 +1,7 @@
 
 import { Routes, Route } from 'react-router-dom';
 import {Header,HeroSection,CitiesSection,StatsSection,FeaturesCards,SizeGuideSection,TestimonialsSection,FAQCards,Footer} from '../components/index'
+import {HomeScreen} from '../screens/index'
 
 export const AppRouter = () => {
   return (
@@ -8,7 +9,7 @@ export const AppRouter = () => {
       <Header />
       <main>
         <Routes>
-          <Route path="/" element={<HeroSection />} />
+          <Route path="/" element={<HomeScreen />} />
           <Route path="/cities" element={<CitiesSection />} />
           <Route path="/stats" element={<StatsSection />} />
           <Route path="/features" element={<FeaturesCards />} />

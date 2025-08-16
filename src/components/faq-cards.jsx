@@ -4,7 +4,7 @@ import { useState } from "react"
 import { ChevronDown, ChevronUp } from "lucide-react"
 
 export function FAQCards() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const [openIndex, setOpenIndex] = useState(null)
 
   const faqs = [
     {
@@ -67,4 +67,3 @@ export function FAQCards() {
     </section>
   )
 }
-export default FAQCards;
