@@ -1,26 +1,31 @@
-
-
 export function Header() {
   return (
-    <header className="bg-white shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <h1 className="text-lg font-semibold text-gray-900">
-              Plataforma de
-              <br />
-              mini bodegas
-            </h1>
-          </div>
-          <nav className="flex items-center space-x-8">
-            <a href="#" className="text-gray-600 hover:text-gray-900">
-              Calcula tu espacio
-            </a>
-            <button className="border px-4 py-2 rounded hover:bg-gray-100">Regístrate</button>
-          </nav>
-        </div>
+    <header
+      className="w-full flex items-center justify-between px-8 py-4 bg-white text-[#2C3A61] shadow-sm"
+    >
+      <div className="flex items-center space-x-4">
+        <h1 className="text-2xl font-bold text-[#2C3A61] hover:scale-105 transition-transform duration-300">
+          MiniBodegas
+        </h1>
       </div>
+
+      <nav className="flex items-center space-x-6">
+        <a
+          href="/"
+          className="text-base font-medium relative group"
+        >
+          Calcula tu espacio
+          {/* Línea animada abajo del texto */}
+          <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-[#2C3A61] transition-all duration-300 group-hover:w-full"></span>
+        </a>
+
+        <button
+          className="px-4 py-2 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
+          hover:bg-[#2C3A61] hover:text-white transition-colors duration-300"
+        >
+          Regístrate
+        </button>
+      </nav>
     </header>
-  )
+  );
 }
-export default Header;
