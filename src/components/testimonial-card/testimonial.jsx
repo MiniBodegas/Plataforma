@@ -45,7 +45,7 @@ export function TestimonialsSection() {
     slidesToShow: 2,
     slidesToScroll: 1,
     autoplay: true,
-    autoplaySpeed: 2500,
+    autoplaySpeed: 3500,
     pauseOnHover: true,
     responsive: [
       {
@@ -62,7 +62,7 @@ export function TestimonialsSection() {
   return (
     <section className="py-20 bg-white">
       <div className="max-w-6xl mx-auto px-8">
-        <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+        <h2 className="text-3xl font-bold text-center text-gray-900 mb-12" style={{ color: "#2C3A61" }}>
           Testimonios
         </h2>
 
@@ -91,7 +91,7 @@ export function TestimonialsSection() {
                     className="w-10 h-10 rounded-full"
                   />
                   <div>
-                    <h4 className="font-semibold text-gray-900">
+                    <h4 className="font-semibold text-gray-900" style={{ color: "#2C3A61" }}>
                       {testimonial.name}
                     </h4>
                     <div className="flex">
@@ -106,7 +106,7 @@ export function TestimonialsSection() {
                 </div>
 
                 {/* Texto del testimonio */}
-                <p className="text-gray-600 italic text-sm leading-relaxed px-4 pb-4">
+                <p className="text-gray-600 italic text-sm leading-relaxed px-4 pb-4" style={{ color: "#2C3A61" }}>
                   "{testimonial.text}"
                 </p>
               </div>

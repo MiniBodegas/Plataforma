@@ -11,14 +11,14 @@ export function HeroSection() {
             
             {/* Columna de textos */}
             <div className="text-left">
-              <h2 className="text-4xl font-bold text-gray-900 mb-6">
+              <h2 className="text-4xl font-bold text-gray-900 mb-6" style={{ color: "#2C3A61" }}>
                 La solución a tu medida,
                 <br />
                 para lo que necesites
                 <br />
                 guardar
               </h2>
-              <p className="text-gray-600 mb-8">
+              <p className="text-gray-600 mb-8" style={{ color: "#2C3A61" }}>
                 Busca y alquila tu mini bodega
               </p>
 
@@ -31,7 +31,7 @@ export function HeroSection() {
                     className="pl-10 py-2 border rounded-[10px] w-full bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                <button className="bg-[#4B799B] hover:bg-[#3b5f7a] text-white px-4 py-2 rounded transition-colors">
+                <button className="bg-[#4B799B] hover:bg-[#3b5f7a] text-white px-4 py-2 rounded-[10px] transition-colors">
                   Buscar
                 </button>
               </div>
