@@ -1,7 +1,7 @@
 
 import { Routes, Route } from 'react-router-dom';
-import {Header,HeroSection,CitiesSection,StatsSection,FeaturesCards,SizeGuideSection,TestimonialsSection,FAQCards,Footer} from '../components/index'
-import {HomeScreen} from '../screens/index'
+import {Header,Footer} from '../components/index'
+import {HomeScreen,BodegaScreen} from '../screens/index'
 
 export const AppRouter = () => {
   return (
@@ -10,12 +10,7 @@ export const AppRouter = () => {
       <main>
         <Routes>
           <Route path="/" element={<HomeScreen />} />
-          <Route path="/cities" element={<CitiesSection />} />
-          <Route path="/stats" element={<StatsSection />} />
-          <Route path="/features" element={<FeaturesCards />} />
-          <Route path="/sizes" element={<SizeGuideSection />} />
-          <Route path="/testimonials" element={<TestimonialsSection />} />
-          <Route path="/faq" element={<FAQCards />} />
+          <Route path="/bodegas" element={<BodegaScreen />} />
         </Routes>
       </main>
       <Footer />
