@@ -1,18 +1,21 @@
-import WarehouseCard from "./WarehouseCard"
+import { WarehouseCard } from './warehouse-card'
 
 export function WarehouseGrid({ warehouses = [] }) {
-  if (warehouses.length === 0) {
+  if (!warehouses || warehouses.length === 0) {
     return (
-      <p className="text-center text-gray-500 py-10">
-        No se encontraron bodegas disponibles
-      </p>
+      <div className="text-center py-12">
+        <p className="text-gray-500 text-lg">No hay bodegas disponibles</p>
+      </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {warehouses.map((warehouse) => (
-        <WarehouseCard key={warehouse.id} warehouse={warehouse} />
+        <WarehouseCard 
+          key={warehouse.id} 
+          warehouse={warehouse} 
+        />
       ))}
     </div>
   )

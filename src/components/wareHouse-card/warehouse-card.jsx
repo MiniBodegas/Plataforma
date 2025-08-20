@@ -3,65 +3,84 @@ import { Star, MapPin, Ruler, Shield } from 'lucide-react'
 export function WarehouseCard({ warehouse = {} }) {
   const {
     id,
-    name = "Bodega sin nombre",
+    name = "Ciudad sin nombre",
     location = "Ubicación no disponible",
-    size = "N/A",
-    price = 0,
+    sizes = [],
+    priceRange = { min: 0, max: 0 },
     image,
     features = [],
     rating = 0,
-    description
+    description,
+    warehouseCount = 0
   } = warehouse
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow max-w-sm mx-auto flex flex-col h-full">
       {/* Imagen */}
-      <div className="relative h-48">
+      <div className="relative h-56">
         <img
-          src={image || "https://via.placeholder.com/300x200"}
+          src={image || "https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
           alt={name}
           className="w-full h-full object-cover"
         />
-        <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-md shadow">
-          <span className="text-sm font-semibold text-[#2C3A61]">
-            ${price}/mes
-          </span>
-        </div>
       </div>
 
       {/* Contenido */}
-      <div className="p-4">
+      <div className="p-5 flex flex-col flex-grow">
         {/* Header */}
-        <div className="flex items-start justify-between mb-2">
-          <h3 className="font-semibold text-lg text-[#2C3A61]">{name}</h3>
+        <div className="mb-3">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-lg text-[#2C3A61]">{name}</h3>
+            <span className="text-sm font-semibold text-[#4B799B]">
+              {warehouseCount} bodegas
+            </span>
+          </div>
           {rating > 0 && (
-            <div className="flex items-center gap-1">
-              <Star className="h-4 w-4 text-yellow-400 fill-current" />
-              <span className="text-sm text-[#2C3A61]">{rating}</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                <span className="text-sm text-[#2C3A61] font-medium">{rating}</span>
+                <span className="text-xs text-gray-500">({Math.floor(Math.random() * 50) + 10} reseñas)</span>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-gray-500">Calificación promedio</div>
+              </div>
             </div>
           )}
         </div>
 
         {/* Ubicación */}
-        <div className="flex items-center gap-1 mb-2">
+        <div className="flex items-center gap-1 mb-3">
           <MapPin className="h-4 w-4 text-gray-400" />
           <span className="text-sm text-[#2C3A61]">{location}</span>
         </div>
 
-        {/* Tamaño */}
-        <div className="flex items-center gap-1 mb-3">
-          <Ruler className="h-4 w-4 text-gray-400" />
-          <span className="text-sm text-[#2C3A61]">{size}</span>
+        {/* Tamaños disponibles */}
+        <div className="mb-4">
+          <div className="flex items-center gap-1 mb-2">
+            <Ruler className="h-4 w-4 text-gray-400" />
+            <span className="text-sm font-medium text-[#2C3A61]">Tamaños disponibles:</span>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {sizes.map((size, index) => (
+              <span
+                key={index}
+                className="px-2 py-1 bg-blue-50 border border-blue-200 rounded-md text-xs text-[#2C3A61]"
+              >
+                {size}
+              </span>
+            ))}
+          </div>
         </div>
 
         {/* Descripción */}
         {description && (
-          <p className="text-sm mb-3 text-[#2C3A61]">{description}</p>
+          <p className="text-sm mb-4 text-[#2C3A61] line-clamp-3">{description}</p>
         )}
 
         {/* Características */}
         {features.length > 0 && (
-          <div className="mb-4">
+          <div className="mb-5">
             <div className="flex flex-wrap gap-1">
               {features.slice(0, 2).map((feature, index) => (
                 <span
@@ -81,19 +100,13 @@ export function WarehouseCard({ warehouse = {} }) {
           </div>
         )}
 
-        {/* Botones */}
-        <div className="flex gap-2">
+        {/* Botón */}
+        <div className="mt-auto">
           <button
-            className="flex-1 bg-[#4B799B] hover:bg-[#3b5f7a] text-white py-2 px-4 rounded-md text-sm transition-colors"
-            onClick={() => console.log(`Ver detalles de ${name}`)}
+            className="w-full bg-[#4B799B] hover:bg-[#3b5f7a] text-white py-2.5 px-4 rounded-md text-sm transition-colors font-medium"
+            onClick={() => console.log(`Ver bodegas en ${name}`)}
           >
-            Ver detalles
-          </button>
-          <button
-            className="flex-1 border border-[#4B799B] text-[#4B799B] hover:bg-[#4B799B] hover:text-white py-2 px-4 rounded-md text-sm transition-colors"
-            onClick={() => console.log(`Reservar ${name}`)}
-          >
-            Reservar
+            Ver bodegas disponibles
           </button>
         </div>
       </div>

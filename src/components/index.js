@@ -10,4 +10,5 @@ export * from './footer'
 
 export * from './Filter-sidebar'
 export { WarehouseCard } from './wareHouse-card/warehouse-card'
+export { WarehouseGrid } from './wareHouse-card/warehouse-grid'
 

@@ -67,24 +67,9 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange }
 
         {/* Filtros */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Ubicación */}
-          <div className="bg-white border rounded-lg p-4">
-            <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Ubicación</h3>
-            <select
-              value={localFilters.location || ''}
-              onChange={(e) => handleFilterChange('location', e.target.value)}
-              className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              style={{ color: "#2C3A61" }}
-            >
-              <option value="">Todas las ciudades</option>
-              <option value="bogota">Bogotá</option>
-              <option value="medellin">Medellín</option>
-              <option value="cali">Cali</option>
-              <option value="cartagena">Cartagena</option>
-            </select>
-          </div>
+          
 
-          {/* Rango de precio */}
+        {/* Rango de precio */}
           <div className="bg-white border rounded-lg p-4">
             <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Precio por mes</h3>
             <div className="space-y-2">
@@ -101,6 +86,23 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange }
                 className="w-full"
               />
             </div>
+          </div>
+
+          {/* Ubicación */}
+          <div className="bg-white border rounded-lg p-4">
+            <h3 className="font-medium mb-3" style={{ color: "#ffffffff" }}>Ubicación</h3>
+            <select
+              value={localFilters.location || ''}
+              onChange={(e) => handleFilterChange('location', e.target.value)}
+              className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{ color: "#2C3A61" }}
+            >
+              <option value="">Ubicaciones</option>
+              <option value="bogota">Norte</option>
+              <option value="medellin">Sur</option>
+              <option value="cali">Este</option>
+              <option value="cartagena">Oeste</option>
+            </select>
           </div>
 
           {/* Tamaño */}
@@ -125,9 +127,9 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange }
 
           {/* Características */}
           <div className="bg-white border rounded-lg p-4">
-            <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Características</h3>
+            <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Tipos de ingreso</h3>
             <div className="space-y-2">
-              {['Acceso 24/7', 'Seguridad', 'Climate Control', 'Parking'].map((feature) => (
+              {['Directo en vehiculo', 'Acceso en primer piso', 'Sin escaleras', 'Acceso con montacarga','Ascensor'].map((feature) => (
                 <label key={feature} className="flex items-center space-x-2">
                   <input
                     type="checkbox"
