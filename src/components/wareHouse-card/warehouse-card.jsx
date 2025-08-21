@@ -108,5 +108,5 @@ export function WarehouseCard({ warehouse = {} }) {
     </div>
   )
 }
-
+//prueba
 export default WarehouseCard
