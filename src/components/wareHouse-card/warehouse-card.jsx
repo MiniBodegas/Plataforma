@@ -15,7 +15,7 @@ export function WarehouseCard({ warehouse = {} }) {
   } = warehouse
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow max-w-sm mx-auto flex flex-col h-full">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow max-w-md mx-auto flex flex-col h-full">
       {/* Imagen */}
       <div className="relative h-56">
         <img
@@ -24,16 +24,13 @@ export function WarehouseCard({ warehouse = {} }) {
           className="w-full h-full object-cover"
         />
       </div>
-
+    
       {/* Contenido */}
       <div className="p-5 flex flex-col flex-grow">
         {/* Header */}
         <div className="mb-3">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-semibold text-lg text-[#2C3A61]">{name}</h3>
-            <span className="text-sm font-semibold text-[#4B799B]">
-              {warehouseCount} bodegas
-            </span>
           </div>
           {rating > 0 && (
             <div className="flex items-center justify-between">
@@ -106,7 +103,7 @@ export function WarehouseCard({ warehouse = {} }) {
             className="w-full bg-[#4B799B] hover:bg-[#3b5f7a] text-white py-2.5 px-4 rounded-md text-sm transition-colors font-medium"
             onClick={() => console.log(`Ver bodegas en ${name}`)}
           >
-            Ver bodegas disponibles
+            Reservar
           </button>
         </div>
       </div>

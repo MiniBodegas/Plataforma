@@ -1,5 +1,15 @@
 import { useState } from 'react'
 import { Filter, X } from 'lucide-react'
+import { MapaBodegas } from './index'
+
+const bodegas = [
+  { id: 1, name: "Bodega Norte", city: "Cali", coords: [3.4706, -76.5290] },
+  { id: 2, name: "Bodega Sur", city: "Cali", coords: [3.3895, -76.5310] },
+  { id: 3, name: "Bodega Centro", city: "Cali", coords: [3.4516, -76.5320] },
+  { id: 4, name: "Bodega Bogotá", city: "Bogotá", coords: [4.7110, -74.0721] },
+  { id: 5, name: "Bodega Medellín", city: "Medellín", coords: [6.2442, -75.5812] },
+]     
+
 
 export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange }) {
   // Valores por defecto para evitar errores
@@ -67,6 +77,12 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange }
 
         {/* Filtros */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
+
+          <div className="p-6">
+          <h1 className="text-xl font-bold mb-4">Mapa de Bodegas</h1>
+          <MapaBodegas city="Cali" bodegas={bodegas} />
+        </div>
           
 
         {/* Rango de precio */}

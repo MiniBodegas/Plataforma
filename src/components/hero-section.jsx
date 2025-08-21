@@ -1,9 +1,11 @@
 import { MapPin } from "lucide-react"
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 
 export function HeroSection() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const navigate = useNavigate()
   
   // Lista de ciudades disponibles
   const availableCities = [
@@ -25,14 +27,29 @@ export function HeroSection() {
   const handleCitySelect = (city) => {
     setSearchQuery(city)
     setShowSuggestions(false)
-    // Aquí puedes agregar lógica para buscar bodegas en esa ciudad
-    console.log(`Buscando en ${city}`)
+    // Navegar a la pantalla de bodegas con la ciudad seleccionada
+    navigate(`/bodegas?ciudad=${encodeURIComponent(city)}`)
   }
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      console.log(`Buscar bodegas en: ${searchQuery}`)
-      // Aquí implementarías la lógica de búsqueda
+      // Verificar si la ciudad existe en la lista
+      const cityExists = availableCities.some(city => 
+        city.toLowerCase() === searchQuery.toLowerCase()
+      )
+      
+      if (cityExists) {
+        navigate(`/bodegas?ciudad=${encodeURIComponent(searchQuery)}`)
+      } else {
+        alert("Ciudad no disponible. Por favor selecciona una ciudad de la lista.")
+      }
+    }
+  }
+
+  // Manejar Enter en el input
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch()
     }
   }
 
@@ -68,6 +85,7 @@ export function HeroSection() {
                       setShowSuggestions(true)
                     }}
                     onFocus={() => setShowSuggestions(true)}
+                    onKeyPress={handleKeyPress}
                     className="pl-10 py-2 border rounded-[10px] w-full bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   
@@ -103,7 +121,7 @@ export function HeroSection() {
             {/* Columna de imagen */}
             <div className="relative">
               <img
-                src="https://hips.hearstapps.com/hmg-prod/images/ways-to-relax-1590605206.jpg?crop=0.669xw:1.00xh;0.138xw,0&resize=1200:*"
+                src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80"
                 alt="Persona relajándose"
                 className="rounded-lg shadow-lg w-full"
               />
