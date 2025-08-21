@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Filter, X } from 'lucide-react'
 import { MapaBodegas } from './index'
 
@@ -8,20 +8,24 @@ const bodegas = [
   { id: 3, name: "Bodega Centro", city: "Cali", coords: [3.4516, -76.5320] },
   { id: 4, name: "Bodega Bogotá", city: "Bogotá", coords: [4.7110, -74.0721] },
   { id: 5, name: "Bodega Medellín", city: "Medellín", coords: [6.2442, -75.5812] },
-]     
+]
 
-
-export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange }) {
+export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, ciudadSeleccionada }) {
   // Valores por defecto para evitar errores
   const defaultFilters = {
     location: '',
-    priceRange: [0, 1000],
+    priceRange: [0, 3500000],
     size: '',
     features: [],
     ...filters // Combina con los filtros recibidos
   }
 
   const [localFilters, setLocalFilters] = useState(defaultFilters)
+
+  // Sincronizar con props cuando cambien
+  useEffect(() => {
+    setLocalFilters({ ...defaultFilters, ...filters })
+  }, [filters])
 
   const handleFilterChange = (key, value) => {
     const newFilters = { ...localFilters, [key]: value }
@@ -34,7 +38,7 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange }
   const clearFilters = () => {
     const clearedFilters = {
       location: '',
-      priceRange: [0, 1000],
+      priceRange: [0, 3500000],
       size: '',
       features: []
     }
@@ -77,27 +81,26 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange }
 
         {/* Filtros */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Mapa */}
+          <div className="bg-white border rounded-lg p-4">
+            <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Ubicación en mapa</h3>
+            <MapaBodegas city={ciudadSeleccionada || "Cali"} bodegas={bodegas} />
+          </div>
 
-
-          <div className="p-6">
-          <h1 className="text-xl font-bold mb-4">Mapa de Bodegas</h1>
-          <MapaBodegas city="Cali" bodegas={bodegas} />
-        </div>
-          
-
-        {/* Rango de precio */}
+          {/* Rango de precio */}
           <div className="bg-white border rounded-lg p-4">
             <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Precio por mes</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>${localFilters.priceRange?.[0] || 0}</span>
-                <span>${localFilters.priceRange?.[1] || 1000}</span>
+                <span>${(localFilters.priceRange?.[0] || 0).toLocaleString()}</span>
+                <span>${(localFilters.priceRange?.[1] || 3500000).toLocaleString()}</span>
               </div>
               <input
                 type="range"
                 min="0"
-                max="1000"
-                value={localFilters.priceRange?.[1] || 1000}
+                max="3500000"
+                step="100000"
+                value={localFilters.priceRange?.[1] || 3500000}
                 onChange={(e) => handleFilterChange('priceRange', [0, parseInt(e.target.value)])}
                 className="w-full"
               />
@@ -106,18 +109,18 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange }
 
           {/* Ubicación */}
           <div className="bg-white border rounded-lg p-4">
-            <h3 className="font-medium mb-3" style={{ color: "#ffffffff" }}>Ubicación</h3>
+            <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Zona de la ciudad</h3>
             <select
               value={localFilters.location || ''}
               onChange={(e) => handleFilterChange('location', e.target.value)}
               className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               style={{ color: "#2C3A61" }}
             >
-              <option value="">Ubicaciones</option>
-              <option value="bogota">Norte</option>
-              <option value="medellin">Sur</option>
-              <option value="cali">Este</option>
-              <option value="cartagena">Oeste</option>
+              <option value="">Todas las zonas</option>
+              <option value="Norte">Norte</option>
+              <option value="Sur">Sur</option>
+              <option value="Este">Este</option>
+              <option value="Oeste">Oeste</option>
             </select>
           </div>
 
@@ -143,9 +146,9 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange }
 
           {/* Características */}
           <div className="bg-white border rounded-lg p-4">
-            <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Tipos de ingreso</h3>
+            <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Tipos de acceso</h3>
             <div className="space-y-2">
-              {['Directo en vehiculo', 'Acceso en primer piso', 'Sin escaleras', 'Acceso con montacarga','Ascensor'].map((feature) => (
+              {['Directo en vehiculo', 'Acceso en primer piso', 'Sin escaleras', 'Acceso con montacarga', 'Ascensor'].map((feature) => (
                 <label key={feature} className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -182,4 +185,3 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange }
   )
 }
 
-export default FilterSidebar

@@ -21,4 +21,4 @@ export function WarehouseGrid({ warehouses = [] }) {
   )
 }
 
-export default WarehouseGrid
+export default WarehouseGrid  
