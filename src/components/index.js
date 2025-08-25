@@ -14,3 +14,7 @@ export { WarehouseGrid } from './wareHouse-card/warehouse-grid'
 
 export * from './MapaBodegas'
 
+export * from './Carrousel'
+export * from './CompanyDescription'
+
+

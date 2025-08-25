@@ -1,7 +1,7 @@
 
 import { Routes, Route } from 'react-router-dom';
 import {Header,Footer} from '../components/index'
-import {HomeScreen,BodegaScreen} from '../screens/index'
+import {HomeScreen,BodegaScreen,BodegasDisponibles} from '../screens/index'
 
 export const AppRouter = () => {
   return (
@@ -11,6 +11,8 @@ export const AppRouter = () => {
         <Routes>
           <Route path="/" element={<HomeScreen />} />
           <Route path="/bodegas" element={<BodegaScreen />} />
+          <Route path="/bodegasDisponibles" element={<BodegasDisponibles />} />
+
         </Routes>
       </main>
       <Footer />
