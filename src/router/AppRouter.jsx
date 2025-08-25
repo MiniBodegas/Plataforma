@@ -11,7 +11,7 @@ export const AppRouter = () => {
         <Routes>
           <Route path="/" element={<HomeScreen />} />
           <Route path="/bodegas" element={<BodegaScreen />} />
-          <Route path="/bodegasDisponibles" element={<BodegasDisponibles />} />
+          <Route path="/bodegas/:id" element={<BodegasDisponibles />} />
 
         </Routes>
       </main>

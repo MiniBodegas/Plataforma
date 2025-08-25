@@ -1,6 +1,9 @@
-import { Star, MapPin, Ruler, Shield } from 'lucide-react'
+import { Link, useNavigate } from "react-router-dom"
+import { Star, MapPin, Ruler, Shield } from "lucide-react"
 
 export function WarehouseCard({ warehouse = {} }) {
+  const navigate = useNavigate()
+
   const {
     id,
     name = "Ciudad sin nombre",
@@ -12,28 +15,37 @@ export function WarehouseCard({ warehouse = {} }) {
     rating = 0,
     description,
     warehouseCount = 0,
-    reviewCount = 0 // Agregar reviewCount a los datos
+    reviewCount = 0
   } = warehouse
 
+  const canNavigate = typeof id === "number" || typeof id === "string"
+
+  const handleReserve = () => {
+    if (!canNavigate) return
+    // puedes pasar la data de la bodega al detalle para no re-consultar
+    navigate(`/bodegas/${id}`, { state: { warehouse } })
+  }
+
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow w-[500px] h-[550px]">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow w-full max-w-[500px] h-[550px]">
 
       {/* Imagen */}
       <div className="relative h-56">
         <img
-          src={image || "https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
+          src={image || "https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop"}
           alt={name}
+          loading="lazy"
           className="w-full h-full object-cover"
-        />  
+        />
       </div>
-    
-      {/* Contenido */} 
+
+      {/* Contenido */}
       <div className="p-5 flex flex-col flex-grow">
-        {/* Header */}
         <div className="mb-3">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-lg text-[#2C3A61]">{name}</h3>
+            <h3 className="font-semibold text-lg text-[#2C3A61] line-clamp-1">{name}</h3>
           </div>
+
           {rating > 0 && (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1">
@@ -48,7 +60,6 @@ export function WarehouseCard({ warehouse = {} }) {
           )}
         </div>
 
-        {/* Resto del componente igual... */}
         <div className="flex items-center gap-1 mb-3">
           <MapPin className="h-4 w-4 text-gray-400" />
           <span className="text-sm text-[#2C3A61]">{location}</span>
@@ -97,12 +108,31 @@ export function WarehouseCard({ warehouse = {} }) {
         )}
 
         <div className="mt-auto">
+          {/* Opción 1: botón con navigate + state */}
           <button
-            className="w-full bg-[#4B799B] hover:bg-[#3b5f7a] text-white py-2.5 px-4 rounded-md text-sm transition-colors font-medium"
-            onClick={() => console.log(`Ver bodegas en ${name}`)}
+            type="button"
+            aria-label={`Reservar ${name}`}
+            disabled={!canNavigate}
+            onClick={handleReserve}
+            className={`w-full py-2.5 px-4 rounded-md text-sm font-medium transition-colors
+              ${canNavigate ? "bg-[#4B799B] hover:bg-[#3b5f7a] text-white" : "bg-gray-200 text-gray-400 cursor-not-allowed"}
+            `}
           >
             Reservar
           </button>
+
+          {/* Opción 2: Link puro (si prefieres ancla navegable) 
+          <Link
+            to={canNavigate ? `/bodegas/${id}` : "#"}
+            state={canNavigate ? { warehouse } : undefined}
+            className={`w-full mt-2 block text-center py-2.5 px-4 rounded-md text-sm font-medium transition-colors
+              ${canNavigate ? "bg-[#4B799B] hover:bg-[#3b5f7a] text-white" : "bg-gray-200 text-gray-400 pointer-events-none"}
+            `}
+            aria-disabled={!canNavigate}
+          >
+            Reservar
+          </Link>
+          */}
         </div>
       </div>
     </div>
