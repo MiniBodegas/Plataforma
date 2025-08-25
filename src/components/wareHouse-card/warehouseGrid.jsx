@@ -1,4 +1,4 @@
-import { WarehouseCard } from './warehouse-card'
+import { WarehouseCard } from './warehouseCard'
 
 export function WarehouseGrid({ warehouses = [] }) {
   if (!warehouses || warehouses.length === 0) {

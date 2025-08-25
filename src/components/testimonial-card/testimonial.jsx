@@ -41,11 +41,11 @@ export function TestimonialsSection() {
   const settings = {
     dots: false,
     infinite: true,
-    speed: 800,
-    slidesToShow: 2,
+    speed: 900,
+    slidesToShow: 4,
     slidesToScroll: 1,
     autoplay: true,
-    autoplaySpeed: 3500,
+    autoplaySpeed: 2500,
     pauseOnHover: true,
     responsive: [
       {
@@ -61,7 +61,7 @@ export function TestimonialsSection() {
 
   return (
     <section className="py-20 bg-white">
-      <div className="max-w-6xl mx-auto px-8">
+      <div className="max-w-8xl mx-auto px-8">
         <h2 className="text-3xl font-bold text-center text-gray-900 mb-12" style={{ color: "#2C3A61" }}>
           Testimonios
         </h2>
@@ -76,7 +76,7 @@ export function TestimonialsSection() {
                 className="
                   bg-white rounded-2xl shadow-md 
                   flex flex-col justify-between 
-                  h-[120px]
+                  h-[160px]
                   mx-auto  
                   transition-transform hover:scale-[1.03] 
                   hover:shadow-lg duration-300 ease-in-out

@@ -8,11 +8,9 @@ const bodegaIcon = new L.Icon({
   iconSize: [32, 32],
 })
 
-export function MapaBodegas({ city, bodegas }) {
-  // Filtramos las bodegas según la ciudad recibida como prop
+export function MapaBodegas({ city, bodegas, height = "500px", width = "100%", className = "", style = {} }) {
   const bodegasFiltradas = bodegas.filter(b => b.city === city)
 
-  // Coordenadas de las ciudades (para centrar el mapa)
   const ciudadesCoords = {
     Cali: [3.4516, -76.5320],
     Bogotá: [4.7110, -74.0721],
@@ -21,17 +19,16 @@ export function MapaBodegas({ city, bodegas }) {
 
   return (
     <MapContainer
-      center={ciudadesCoords[city] || [4.7110, -74.0721]} // Si no existe ciudad, Bogotá por defecto
+      center={ciudadesCoords[city] || [4.7110, -74.0721]}
       zoom={12}
-      style={{ height: "500px", width: "100%" }}
+      className={className}
+      style={{ height, width, ...style }}
     >
-      {/* Capa base */}
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; OpenStreetMap contributors'
+        attribution="&copy; OpenStreetMap contributors"
       />
 
-      {/* Marcadores de bodegas */}
       {bodegasFiltradas.map((bodega) => (
         <Marker key={bodega.id} position={bodega.coords} icon={bodegaIcon}>
           <Popup>

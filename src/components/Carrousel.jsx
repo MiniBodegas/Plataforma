@@ -3,23 +3,23 @@ import { useState } from "react";
 const slides = [
   {
     id: 1,
-    image: "https://picsum.photos/id/1015/900/500",
+    image: "https://rentabox.com.co/wp-content/uploads/2025/07/image-01-1140x894.jpg",
     title: "Rentabox",
   },
   {
     id: 2,
-    image: "https://picsum.photos/id/1016/900/500",
-    title: "StoreIt",
+    image: "https://rentabox.com.co/wp-content/uploads/2025/07/image-02-888x1140.jpg",
+    title: "Rentabox",
   },
   {
     id: 3,
-    image: "https://picsum.photos/id/1018/900/500",
-    title: "BoxSpace",
+    image: "https://findhome.cl/wp-content/uploads/2024/09/Mini-Bodegas-en-Chile-1280x640.webp",
+    title: "Rentabox",
   },
   {
     id: 4,
-    image: "https://picsum.photos/id/1020/900/500",
-    title: "Move&Keep",
+    image: "https://coatiminibodegas.mx/img/coati/0mini-bodegas-coati.jpg",
+    title: "Rentabox",
   },
 ];
 
@@ -35,7 +35,7 @@ export function Carrousel() {
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
+    <div className="w-full max-w-7xl mx-auto mt-20 bg-white">
       {/* Imagen */}
       <div className="relative w-full h-[300px] md:h-[400px] rounded-2xl overflow-hidden shadow-lg">
         <img

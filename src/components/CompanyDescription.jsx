@@ -24,14 +24,14 @@ export function CompanyDescription() {
         {/* Imagen */}
         <div>
           <img
-            src="https://images.unsplash.com/photo-1583337130417-3346a1b5fcbe?q=80&w=800"
+            src="https://rentabox.com.co/wp-content/uploads/2025/07/image-01-1140x894.jpg"
             alt="Caja Rentabox"
             className="rounded-2xl shadow-md w-full object-cover"
           />
         </div>
 
         {/* Características */}
-        <div className="bg-white rounded-2xl shadow p-6">
+        <div className="bg-white rounded-2xl shadow p-6 h-full">
           <h3 className="font-semibold text-lg mb-4">Características</h3>
           <ul className="list-disc pl-5 space-y-2 text-gray-700">
             <li>Vigilancia 24/7 con cámaras de seguridad.</li>
