@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Stepper,FormStep } from "./index";
+import { Stepper, FormStep } from "./index";
 
 export function FormStepper() {
   const [step, setStep] = useState(1);
@@ -10,7 +10,7 @@ export function FormStepper() {
   };
 
   const nextStep = () => {
-    if (step < 3) setStep(step + 1);
+    if (step < 4) setStep(step + 1);
   };
 
   const prevStep = () => {
@@ -22,25 +22,42 @@ export function FormStepper() {
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white shadow-md rounded p-4">
-      <Stepper step={step} />
-      <FormStep step={step} onChange={handleChange} data={formData} />
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="w-full max-w-md bg-white shadow-md rounded-lg p-6 flex flex-col items-center">
+        {/* Stepper */}
+        <Stepper step={step} />
 
-      <div className="flex justify-between mt-4">
-        {step > 1 && (
-          <button onClick={prevStep} className="bg-gray-300 px-4 py-2 rounded">
-            Atrás
-          </button>
-        )}
-        {step < 3 ? (
-          <button onClick={nextStep} className="bg-blue-500 text-white px-4 py-2 rounded">
-            Siguiente
-          </button>
-        ) : (
-          <button onClick={handleSubmit} className="bg-green-500 text-white px-4 py-2 rounded">
-            Enviar
-          </button>
-        )}
+        {/* Formulario */}
+        <div className="w-full mt-6">
+          <FormStep step={step} onChange={handleChange} data={formData} />
+        </div>
+
+        {/* Botones */}
+        <div className="flex justify-between w-full mt-6">
+          {step > 1 && (
+            <button
+              onClick={prevStep}
+              className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400 transition"
+            >
+              Atrás
+            </button>
+          )}
+          {step < 4 ? (
+            <button
+              onClick={nextStep}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition ml-auto"
+            >
+              Siguiente
+            </button>
+          ) : (
+            <button
+              onClick={handleSubmit}
+              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition ml-auto"
+            >
+              Enviar
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
