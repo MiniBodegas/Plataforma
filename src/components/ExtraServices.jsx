@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 export function ExtraServices({ data, onChange }) {
-  const serviciosDisponibles = ["Limpieza extra", "Desayuno", "Transporte", "Wifi premium"];
+  const serviciosDisponibles = ["Seguro", "Embalaje", "Transporte", "Limpieza", "Acceso 24/7"];
   const [seleccionados, setSeleccionados] = useState(data.servicios || []);
 
   useEffect(() => {
