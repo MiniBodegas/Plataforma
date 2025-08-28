@@ -24,3 +24,5 @@ export * from './FormStep'
 export * from './Stepper'
 
 export * from './ExtraServices'
+
+export * from './ReservationCard'
