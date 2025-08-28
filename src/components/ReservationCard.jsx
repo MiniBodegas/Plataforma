@@ -154,7 +154,7 @@ export function ReservationCard({ reservationData = {} }) {
 
         {/* Botón de confirmación */}
         <div className="mt-6">
-          <button className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-md font-medium transition-colors">
+          <button className="w-full bg-[#4B799B] hover:bg-[#2C3A61] text-white py-3 px-4 rounded-md font-medium transition-colors">
             Confirmar Reserva
           </button>
         </div>

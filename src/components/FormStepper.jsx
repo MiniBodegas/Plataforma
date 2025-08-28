@@ -206,13 +206,26 @@ export function FormStepper({ onDataChange, reservationData }) {
           disabled={currentStep === 3}
           className={`px-4 py-2 rounded-md ${
             currentStep === 3
-              ? "bg-green-600 text-white"
+              ? "text-white hover:opacity-90 transition-opacity"
               : "bg-[#4B799B] text-white hover:bg-[#3b5f7a]"
           }`}
+          style={{
+            backgroundColor: currentStep === 3 ? "#4B799B" : undefined
+          }}
+          onMouseEnter={(e) => {
+            if (currentStep === 3) {
+              e.target.style.backgroundColor = "#1e2a4a";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (currentStep === 3) {
+              e.target.style.backgroundColor = "#4B799B";
+            }
+          }}
         >
           {currentStep === 3 ? "Completar Formulario" : "Siguiente"}
         </button>
       </div>
     </div>
-  );
+  );  
 }
