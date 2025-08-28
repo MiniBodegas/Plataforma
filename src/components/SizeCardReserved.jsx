@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-
+// Componente para mostrar las tarjetas de tamaño reservado
 export function SizeCardReserved({ bodega }) {
   const navigate = useNavigate();
 
