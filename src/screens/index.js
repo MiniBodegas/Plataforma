@@ -5,3 +5,5 @@ export * from './Reservation/Reservation'
 export * from './PerfilBodegas/PerfilBodegas'
 export * from './Register/Register'
 export * from './Login/Login'
+
+export * from './LandingPageProveedores/LandingPageProveedores'

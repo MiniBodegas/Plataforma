@@ -3,6 +3,7 @@
 body {
   color: #2C3A61;
   font-family: 'Poppins', sans-serif;
+  
 }
 .logo {
   height: 6em;
@@ -34,8 +35,4 @@ body {
 
 .card {
   padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
 }

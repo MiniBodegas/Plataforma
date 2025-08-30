@@ -1,4 +1,6 @@
+
 import { Instagram, Facebook, MessageCircle } from "lucide-react"
+import {Link} from "react-router-dom"
 
 export function Footer() {
   return (
@@ -22,9 +24,9 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-gray-900">
+                <Link to="/home-proveedor" className="hover:text-gray-900">
                   Regístrate como proveedor
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

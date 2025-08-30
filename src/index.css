@@ -8,6 +8,7 @@
   
 body {
   color: #2C3A61;
+  @apply bg-white;
 }
 :root {
   font-family: 'Poppins', sans-serif;

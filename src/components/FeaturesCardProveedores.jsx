@@ -13,37 +13,42 @@ export function FeaturesCardsProveedores() {
       order: 1,
       icon: BarChart3,
       title: "Pagos seguros",
-      description: "Comisión única del 15-20% sobre la primera mensualidad; el resto va directo a tu cuenta.",
-    },
-    {
-      order: 3,
-      icon: FileText,
-      title: "Visibilidad",
-      description: "Ante cientos de usuarios que buscan espacios por zona y características.",
+      description:
+        "Comisión única del 15-20% sobre la primera mensualidad; el resto va directo a tu cuenta.",
     },
     {
       order: 2,
+      icon: FileText,
+      title: "Visibilidad",
+      description:
+        "Ante cientos de usuarios que buscan espacios por zona y características.",
+    },
+    {
+      order: 3,
       icon: CreditCard,
       title: "Reserva y Métricas y reportes",
       description: "Descargables para controlar ocupación, ingresos y reservas.",
     },
     {
-      order: 2,
+      order: 4,
       icon: CreditCard,
       title: "Costo variable",
-      description: "Solo pagas si concretas una reserva; si no alquilas, no incurres en ningún gasto.",
+      description:
+        "Solo pagas si concretas una reserva; si no alquilas, no incurres en ningún gasto.",
     },
     {
-      order: 2,
+      order: 5,
       icon: CreditCard,
       title: "Calculadora de espacios ",
-      description: "Estimamos rápidamente los metros cúbicos que cada cliente necesita.",
+      description:
+        "Estimamos rápidamente los metros cúbicos que cada cliente necesita.",
     },
     {
-      order: 2,
+      order: 6,
       icon: CreditCard,
       title: "Marketing incluido",
-      description: "Nosotros promocionamos tus bodegas con campañas digitales, SEO y redes sociales.",
+      description:
+        "Nosotros promocionamos tus bodegas con campañas digitales, SEO y redes sociales.",
     },
   ]
 
@@ -58,32 +63,58 @@ export function FeaturesCardsProveedores() {
 
   return (
     <section className="py-16 flex justify-center bg-white">
-      <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 rounded-[20px] shadow-lg bg-gray-50">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Texto principal */}
-          <div>
-            <h2 className="text-3xl font-bold mb-6" style={{ color: "#2C3A61" }}>
-              La forma más simple
-              <br />
-              de liberar espacio
-            </h2>
-            <p style={{ color: "#2C3A61" }}>Reserva tu mini bodega en 4 pasos</p>
-          </div>
+      <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 rounded-[20px] shadow-lg bg-gray-50 text-center">
+        
+        {/* Título con padding superior */}
+        <h2 className="text-3xl font-extrabold text-gray-800 pt-10 pb-6">
+          Beneficios del Proveedor
+        </h2>
 
-          {/* Cards */}
-          <div className="grid grid-cols-2 gap-6 p-8">
-            {features.map((feature) => {
-              const isActive = feature.order === activeOrder
+        <div className="p-8">
+          {/* Grid con 2 filas: primera fila 4, segunda fila 3 centradas */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 justify-items-center">
+            {features.slice(0, 4).map((feature, idx) => {
+              const isActive = idx === activeOrder
               return (
                 <div
-                  key={feature.order}
-                  className={`p-6 rounded-lg transition-all duration-700 shadow-md ${
+                  key={idx}
+                  className={`p-6 rounded-lg transition-all duration-700 shadow-md w-full max-w-sm ${
                     isActive ? "bg-blue-50 scale-105" : "bg-white"
                   }`}
                   style={{ color: "#2C3A61" }}
                 >
                   <div
-                    className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-colors duration-700 ${
+                    className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-colors duration-700 mx-auto ${
+                      isActive ? "bg-blue-100" : "bg-gray-100"
+                    }`}
+                  >
+                    <feature.icon
+                      className={`h-6 w-6 transition-colors duration-700 ${
+                        isActive ? "text-blue-600" : "text-gray-500"
+                      }`}
+                    />
+                  </div>
+                  <h3 className="font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-sm">{feature.description}</p>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Segunda fila con 3 cards centradas */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center mt-8">
+            {features.slice(4).map((feature, idx) => {
+              const isActive = idx + 4 === activeOrder
+              return (
+                <div
+                  key={idx + 4}
+                  className={`p-6 rounded-lg transition-all duration-700 shadow-md w-full max-w-sm ${
+                    isActive ? "bg-blue-50 scale-105" : "bg-white"
+                  }`}
+                  style={{ color: "#2C3A61" }}
+                >
+                  <div
+                    className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-colors duration-700 mx-auto ${
                       isActive ? "bg-blue-100" : "bg-gray-100"
                     }`}
                   >

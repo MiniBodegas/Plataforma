@@ -25,7 +25,6 @@ export function HeroSectionProveedor() {
 
               <div className="flex gap-2 relative">
                 <button 
-                  onClick={handleSearch}
                   className="bg-[#4B799B] hover:bg-[#3b5f7a] text-white px-4 py-2 rounded-[10px] transition-colors"
                 >
                   Buscar

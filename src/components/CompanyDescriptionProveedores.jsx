@@ -1,56 +1,94 @@
-import { Link } from 'react-router-dom';
+import { motion } from "framer-motion"
 
 export function CompanyDescriptionProveedores() {
+  const items = [
+    {
+      title: "Requisitos de registro",
+      description: [
+        "Certificado de Cámara de comercio",
+        "RUT actualizado",
+        "Cédula del representante legal",
+        "Visita de verificación (Según el caso).",
+      ],
+      image:
+        "https://rentabox.com.co/wp-content/uploads/2025/07/image-01-1140x894.jpg",
+    },
+    {
+      title: "Procesos de reserva y confirmación",
+      description: [
+        "Tiempo máximo de confirmación: 24H",
+        "Falta de confirmación puede afectar tu reputación y disponibilidad.",
+      ],
+      image:
+        "https://rentabox.com.co/wp-content/uploads/2025/07/image-01-1140x894.jpg",
+    },
+    {
+      title: "Comisión y pagos",
+      description: [
+        "Comisión única sobre la primera renta",
+        "Pago transferido dentro de 15 días tras la confirmación",
+        "Pagos recurrentes mensuales sin comisión adicional.",
+      ],
+      image:
+        "https://rentabox.com.co/wp-content/uploads/2025/07/image-01-1140x894.jpg",
+    },
+  ]
+
   return (
-    <section className="max-w-6xl mx-auto px-4 py-10 bg-gray-50 rounded-2xl shadow-lg mt-10 mb-10 p-8 ">
+    <section className="max-w-6xl mx-auto px-6 py-10 bg-white rounded-2xl shadow-lg overflow-hidden mb-10">
       {/* Encabezado */}
       <div className="text-center mb-8">
-        <Link 
-          to="/perfil-bodegas" 
-          className="text-3xl font-bold text-gray-800 hover:text-[#2C3A61] transition-colors duration-200 cursor-pointer inline-block underline decoration-2 underline-offset-4 hover:decoration-[#2C3A61]"
-        >
-          RentaBox
-        </Link>
-        <p className="text-lg text-gray-600">Acopi - Yumbo</p>
+        <h2 className="text-3xl font-extrabold text-gray-800 tracking-wide">
+          Detalles esenciales
+        </h2>
       </div>
 
-      {/* Descripción */}
-      <div className="bg-[#4B799B] text-white rounded-2xl p-6 mb-8">
-        <h3 className="font-semibold text-lg mb-2">Descripción</h3>
-        <p className="leading-relaxed">
-          En RentaBox ofrecemos espacios seguros, limpios y fácilmente accesibles,
-          ideales para almacenar objetos personales, muebles, inventario empresarial
-          o cualquier artículo que necesite resguardo temporal o prolongado. Nuestra
-          ubicación es estratégica y cuenta con acceso controlado para brindarte 
-          tranquilidad en todo momento.
-        </p>
-      </div>
+      {/* Cards */}
+      <div className="space-y-6">
+        {items.map((item, idx) => (
+          <motion.div
+            key={idx}
+            className={`flex flex-col md:flex-row gap-4 ${
+              idx === 1 ? "md:flex-row-reverse" : ""
+            }`}
+            initial={{ opacity: 0, x: idx % 2 === 0 ? -80 : 80 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: idx * 0.2 }}
+            viewport={{ once: true }}
+          >
+            {/* Imagen */}
+            <div className="w-full md:w-1/2 bg-white rounded-xl shadow-md overflow-hidden">
+              <img
+                src={item.image}
+                alt={item.title}
+                className="object-cover w-full h-48 md:h-60"
+              />
+            </div>
 
-      {/* Imagen + Características */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-        {/* Imagen */}
-        <div>
-          <img
-            src="https://rentabox.com.co/wp-content/uploads/2025/07/image-01-1140x894.jpg"
-            alt="Caja Rentabox"
-            className="rounded-2xl shadow-md w-full object-cover"
-          />
-        </div>
-
-        {/* Características */}
-        <div className="bg-white rounded-2xl shadow p-6 h-full">
-          <h3 className="font-semibold text-lg mb-4">Características</h3>
-          <ul className="list-disc pl-5 space-y-2 text-gray-700">
-            <li>Vigilancia 24/7 con cámaras de seguridad.</li>
-            <li>Control de clima para proteger artículos sensibles.</li>
-            <li>Acceso mediante código personalizado.</li>
-            <li>Seguro incluido contra imprevistos.</li>
-            <li>Estanterías disponibles.</li>
-            <li>Iluminación LED eficiente y segura.</li>
-            <li>Fácil acceso en vehículo o a pie.</li>
-          </ul>
-        </div>
+            {/* Texto con hover */}
+            <motion.div
+              whileHover={{ scale: 1.03 }}
+              transition={{ duration: 0.3 }}
+              className="w-full md:w-1/2 bg-white rounded-xl shadow-md p-6 flex flex-col justify-center cursor-pointer"
+            >
+              <h3 className="font-semibold text-xl text-gray-800 mb-3">
+                {item.title}
+              </h3>
+              <ul className="list-disc pl-5 space-y-1 text-gray-600">
+                {item.description.map((desc, i) => (
+                  <motion.li
+                    key={i}
+                    whileHover={{ color: "#2563eb" }} // azul al pasar el mouse
+                    transition={{ duration: 0.2 }}
+                  >
+                    {desc}
+                  </motion.li>
+                ))}
+              </ul>
+            </motion.div>
+          </motion.div>
+        ))}
       </div>
     </section>
-  );
+  )
 }
