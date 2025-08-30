@@ -1,4 +1,4 @@
-import { Carrousel, CompanyDescription, SizeGuideSection, MapaBodegas, TestimonialsSection } from "../../components";
+import { Carrousel, CompanyDescription, PerfilCard, MapaBodegas, TestimonialsSection } from "../../components";
 import { WAREHOUSES_DATA } from "../../data/warehouse";
 
 export function PerfilBodegas() {
@@ -6,7 +6,7 @@ export function PerfilBodegas() {
     <div>
       <Carrousel />
       <CompanyDescription />
-      <SizeGuideSection />
+      <PerfilCard />
       
       {/* Mapa simple */}
       <section className="py-16 bg-gray-50">

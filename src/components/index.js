@@ -26,3 +26,6 @@ export * from './Stepper'
 export * from './ExtraServices'
 
 export * from './ReservationCard'
+export * from './PerfilCard'
+
+export * from './RegisterForm'
