@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-export function CompanyDescription() {
+export function CompanyDescriptionProveedores() {
   return (
     <section className="max-w-6xl mx-auto px-4 py-10 bg-gray-50 rounded-2xl shadow-lg mt-10 mb-10 p-8 ">
       {/* Encabezado */}

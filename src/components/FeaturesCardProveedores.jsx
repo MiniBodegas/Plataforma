@@ -104,5 +104,3 @@ export function FeaturesCardsProveedores() {
     </section>
   )
 }
-
-export default FeaturesCards
