@@ -1,13 +1,10 @@
-"use client"
-
 import { useState } from "react"
 import { Eye, EyeOff } from "lucide-react"
 import { Link } from "react-router-dom"
 
-export function RegistrationForm() {
+export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
-    name: "",
     email: "",
     password: "",
   })
@@ -41,23 +38,6 @@ export function RegistrationForm() {
             Crear cuenta
           </h2>
           <form onSubmit={handleSubmit} className="space-y-6">
-            
-            {/* Nombre */}
-            <div className="space-y-2">
-                <label htmlFor="name" className="text-gray-700 font-medium">
-                    Nombre
-                </label>
-                <input
-                    id="name"
-                    type="text"
-                    placeholder="Escribe tu nombre"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
-                    className="w-full h-12 rounded-2xl border border-gray-300 px-4 
-                            bg-white text-gray-900 
-                            focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
-                />
-                </div>
 
             {/* Correo */}
             <div className="space-y-2">
@@ -112,8 +92,8 @@ export function RegistrationForm() {
 
             {/* Enlace */}
             <div className="text-center">
-              <Link to="/login" className="text-[#4B799B] hover:underline font-medium">
-                Ya tengo cuenta
+              <Link to="/register" className="text-[#4B799B] hover:underline font-medium">
+                Todavia no tienes cuenta? Registrate
               </Link>
             </div>
           </form>

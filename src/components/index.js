@@ -29,3 +29,4 @@ export * from './ReservationCard'
 export * from './PerfilCard'
 
 export * from './RegisterForm'
+export * from './LoginForm'
