@@ -1,5 +1,5 @@
 export * from './headers'
-export * from './hero-section'
+export * from './heroSection'
 export * from './cities-section'
 export * from './stats'
 export * from './features-cards'
@@ -30,3 +30,7 @@ export * from './PerfilCard'
 
 export * from './RegisterForm'
 export * from './LoginForm'
+
+export * from './HeroSectionProveedor'
+export * from './FeaturesCardProveedores'
+export * from './CompanyDescriptionProveedores'
