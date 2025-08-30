@@ -6,7 +6,7 @@ export * from './features-cards'
 export * from './SizeCard'
 export * from './testimonial-card/testimonial'
 export * from './faqCards'
-export * from './Footer'
+export * from './footer'
 
 export * from './Filter-sidebar'
 export { WarehouseCard } from './wareHouse-card/warehouseCard'
