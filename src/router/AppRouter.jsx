@@ -12,7 +12,8 @@ import {
   RegisterProveedoresScreen,
   LoginProveedoresScreen,
   PlanesScreen,
-  Reservas
+  Reservas,
+  MisBodegasScreen
 } from '../screens/index';
 
 // ======================
@@ -71,6 +72,7 @@ export const AppRouter = () => {
         <Route path="/login-proveedores" element={<LoginProveedoresScreen />} />
         <Route path="/planes" element={<PlanesScreen />} />
         <Route path="/mis-bodegas" element={<Reservas />} />
+        <Route path="/mis-mini-bodegas" element={<MisBodegasScreen />} />
 
         {/* aquí puede agregar más rutas exclusivas de proveedores */}
       </Route>

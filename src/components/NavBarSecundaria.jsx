@@ -10,7 +10,7 @@ export function NavBarProveedores() {
       icon: '📋'
     },
     {
-      path: '/mis-bodegas',
+      path: '/mis-mini-bodegas',
       label: 'Mis mini bodegas',
       icon: '🏢'
     },
