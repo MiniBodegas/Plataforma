@@ -236,7 +236,7 @@ export function RegisterProveedores() {
 
             {/* Enlace */}
             <div className="text-center">
-              <Link to="/login" className="text-[#4B799B] hover:underline font-medium">
+              <Link to="/login-proveedores" className="text-[#4B799B] hover:underline font-medium">
                 Ya tengo cuenta
               </Link>
             </div>

@@ -38,3 +38,4 @@ export * from './FaqCardsProveedores'
 export * from './CallToAction'
 
 export * from './RegisterProveedores'
+export * from './LoginProveedores'
