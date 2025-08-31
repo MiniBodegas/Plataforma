@@ -10,7 +10,8 @@ import {
   Login,
   LandingPageProveedores,
   RegisterProveedoresScreen,
-  LoginProveedoresScreen
+  LoginProveedoresScreen,
+  PlanesScreen
 } from '../screens/index';
 
 // ======================
@@ -67,6 +68,8 @@ export const AppRouter = () => {
         <Route path="/home-proveedor" element={<LandingPageProveedores />} />
         <Route path="/register-proveedores" element={<RegisterProveedoresScreen />} />
         <Route path="/login-proveedores" element={<LoginProveedoresScreen />} />
+        <Route path="/planes" element={<PlanesScreen />} />
+
         {/* aquí puede agregar más rutas exclusivas de proveedores */}
       </Route>
     </Routes>

@@ -39,3 +39,5 @@ export * from './CallToAction'
 
 export * from './RegisterProveedores'
 export * from './LoginProveedores'
+
+export * from './Planes'

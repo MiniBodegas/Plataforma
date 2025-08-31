@@ -31,11 +31,13 @@ export function HeroSectionProveedor() {
               </p>
 
               <div className="flex gap-2">
-                <button 
-                  className="bg-[#4B799B] hover:bg-[#3b5f7a] text-white px-4 py-2 rounded-[10px] transition-colors"
-                >
-                  Quiero registrar mis mini bodegas
-                </button>
+                <Link to="/planes">
+                  <button 
+                    className="bg-[#4B799B] hover:bg-[#3b5f7a] text-white px-4 py-2 rounded-[10px] transition-colors"
+                  >
+                    Quiero registrar mis mini bodegas
+                  </button>
+                </Link>
               </div>
             </div>
 
