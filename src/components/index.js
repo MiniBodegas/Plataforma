@@ -42,3 +42,4 @@ export * from './LoginProveedores'
 
 export * from './Planes'
 export * from './ReservaCard'
+export * from './NavBarSecundaria'
