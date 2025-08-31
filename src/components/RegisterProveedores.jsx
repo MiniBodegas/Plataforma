@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import { Eye, EyeOff } from "lucide-react"
 import { Link } from "react-router-dom"
@@ -53,7 +51,7 @@ export function RegisterProveedores() {
             
             {/* Nombre */}
             <div className="space-y-2">
-                <label htmlFor="name" className="text-gray-700 font-medium">
+                <label htmlFor="Nombre de la empresa" className="text-gray-700 font-medium">
                     Nombre de la empresa
                 </label>
                 <input
@@ -70,7 +68,7 @@ export function RegisterProveedores() {
 
             {/* NIT*/}
             <div className="space-y-2">
-              <label htmlFor="email" className="text-gray-700 font-medium">
+              <label htmlFor="NIT" className="text-gray-700 font-medium">
                 NIT
               </label>
               <input
@@ -87,7 +85,7 @@ export function RegisterProveedores() {
 
              {/* Nombre del Representante */}
             <div className="space-y-2">
-                <label htmlFor="name" className="text-gray-700 font-medium">
+                <label htmlFor="Nombre del Representante" className="text-gray-700 font-medium">
                     Nombre del Representante
                 </label>
                 <input
@@ -123,6 +121,84 @@ export function RegisterProveedores() {
                         <option value="PAS">Pasaporte</option>
                     </select>
                     </div>
+
+                    {/* CamaraDeComercio */}
+                    <div className="space-y-2">
+                      <label htmlFor="Camara de comercio" className="text-gray-700 font-medium">
+                        Cámara de Comercio
+                      </label>
+                      <input
+                        id="CamaraDeComercio"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleInputChange("CamaraDeComercio", e.target.files[0])}
+                        className="w-full h-12 rounded-2xl border border-gray-300 px-4 py-2
+                                  bg-white text-gray-900 cursor-pointer
+                                  file:mr-4 file:py-2 file:px-4
+                                  file:rounded-2xl file:border-0
+                                  file:text-sm file:font-semibold
+                                  file:bg-[#4B799B] file:text-white
+                                  hover:file:bg-[#3b5f7d]
+                                  focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
+                      />
+                    </div>
+
+                  {/* RUT */}
+                    {/* Input para subir imagen */}
+                    <div className="space-y-2">
+                      <label htmlFor="RUT" className="text-gray-700 font-medium">
+                        RUT
+                      </label>
+                      <input
+                        id="RUT"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleInputChange("RUT", e.target.files[0])}
+                        className="w-full h-12 rounded-2xl border border-gray-300 px-4 py-2
+                                  bg-white text-gray-900 cursor-pointer
+                                  file:mr-4 file:py-2 file:px-4
+                                  file:rounded-2xl file:border-0
+                                  file:text-sm file:font-semibold
+                                  file:bg-[#4B799B] file:text-white
+                                  hover:file:bg-[#3b5f7d]
+                                  focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
+                      />
+                    </div>
+                 
+
+                  {/* Email */}
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-gray-700 font-medium">
+                      Email
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      placeholder="Escribe tu email"
+                      value={formData.Email}
+                      onChange={(e) => handleInputChange("Email", e.target.value)}
+                      className="w-full h-12 rounded-2xl border border-gray-300 px-4 
+                                bg-white text-gray-900 
+                                focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
+                    />
+                  </div>
+
+                  {/* Celular */}
+                  <div className="space-y-2">
+                    <label htmlFor="celular" className="text-gray-700 font-medium">
+                      Celular
+                    </label>
+                    <input
+                      id="celular"
+                      type="tel"
+                      placeholder="Escribe tu número de celular"
+                      value={formData.Celular}
+                      onChange={(e) => handleInputChange("Celular", e.target.value)}
+                      className="w-full h-12 rounded-2xl border border-gray-300 px-4 
+                                bg-white text-gray-900 
+                                focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
+                    />
+                  </div>
 
             {/* Contraseña */}
             <div className="space-y-2">

@@ -7,3 +7,4 @@ export * from './Register/Register'
 export * from './Login/Login'
 
 export * from './LandingPageProveedores/LandingPageProveedores'
+export * from './RegisterProveedores/RegisterProveedores'

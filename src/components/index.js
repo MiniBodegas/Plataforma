@@ -36,3 +36,5 @@ export * from './FeaturesCardProveedores'
 export * from './CompanyDescriptionProveedores'
 export * from './FaqCardsProveedores'
 export * from './CallToAction'
+
+export * from './RegisterProveedores'
