@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"
 export function HeroSectionProveedor() {
   return (
     <section className="bg-white flex justify-center items-center py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="bg-gray-50 rounded-lg shadow-md p-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center min-h-[400px]">
