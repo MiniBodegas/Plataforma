@@ -44,3 +44,5 @@ export * from './Planes'
 export * from './ReservaCard'
 export * from './NavBarSecundaria'
 export * from './MisBodegas'
+
+export * from './Balance'

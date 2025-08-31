@@ -15,7 +15,7 @@ export function NavBarProveedores() {
       icon: '🏢'
     },
     {
-      path: '/configuracion',
+      path: '/balance',
       label: 'Balance',
       icon: '⚙️'
     }

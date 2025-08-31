@@ -13,10 +13,11 @@ import {
   LoginProveedoresScreen,
   PlanesScreen,
   Reservas,
-  MisBodegasScreen
+  MisBodegasScreen,
+  BalanceScreen
 } from '../screens/index';
 
-// ======================
+// ====================== 
 // Layout para Usuarios
 // ======================
 function UserLayout() {
@@ -73,6 +74,7 @@ export const AppRouter = () => {
         <Route path="/planes" element={<PlanesScreen />} />
         <Route path="/mis-bodegas" element={<Reservas />} />
         <Route path="/mis-mini-bodegas" element={<MisBodegasScreen />} />
+        <Route path="/balance" element={<BalanceScreen />} />
 
         {/* aquí puede agregar más rutas exclusivas de proveedores */}
       </Route>

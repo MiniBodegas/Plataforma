@@ -12,4 +12,5 @@ export * from './LoginProveedores/LoginProveedoresScreen'
 export * from './Planes/Planes'
 export * from './Reservas/Reservas'
 export * from './MisBodegas/MisBodegas'
+export * from './Balance/Balance'
 
