@@ -41,3 +41,4 @@ export * from './RegisterProveedores'
 export * from './LoginProveedores'
 
 export * from './Planes'
+export * from './ReservaCard'

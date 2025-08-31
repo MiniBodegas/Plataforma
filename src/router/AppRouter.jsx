@@ -11,7 +11,8 @@ import {
   LandingPageProveedores,
   RegisterProveedoresScreen,
   LoginProveedoresScreen,
-  PlanesScreen
+  PlanesScreen,
+  Reservas
 } from '../screens/index';
 
 // ======================
@@ -19,7 +20,7 @@ import {
 // ======================
 function UserLayout() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <Header tipo="usuario" />
       <main className="p-4">
         <Outlet />
@@ -34,7 +35,7 @@ function UserLayout() {
 // ======================
 function ProveedorLayout() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <Header tipo="proveedor" />
       <main className="p-4">
         <Outlet />
@@ -69,6 +70,7 @@ export const AppRouter = () => {
         <Route path="/register-proveedores" element={<RegisterProveedoresScreen />} />
         <Route path="/login-proveedores" element={<LoginProveedoresScreen />} />
         <Route path="/planes" element={<PlanesScreen />} />
+        <Route path="/mis-bodegas" element={<Reservas />} />
 
         {/* aquí puede agregar más rutas exclusivas de proveedores */}
       </Route>

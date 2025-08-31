@@ -10,4 +10,5 @@ export * from './LandingPageProveedores/LandingPageProveedores'
 export * from './RegisterProveedores/RegisterProveedores'
 export * from './LoginProveedores/LoginProveedoresScreen'
 export * from './Planes/Planes'
+export * from './Reservas/Reservas'
 

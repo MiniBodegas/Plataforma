@@ -46,6 +46,14 @@ export function Header({ tipo }) {
               <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-[#2C3A61] transition-all duration-300 group-hover:w-full"></span>
             </Link>
 
+            <Link
+              to="/mis-bodegas"
+              className="text-base font-medium relative group"
+            >
+              Dashboard
+              <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-[#2C3A61] transition-all duration-300 group-hover:w-full"></span>
+            </Link>
+
             <Link 
               to="/register-proveedores"
               className="px-4 py-2 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
@@ -53,6 +61,7 @@ export function Header({ tipo }) {
             >
               Regístrate como Proveedor
             </Link>
+
           </>
         )}
       </nav>
