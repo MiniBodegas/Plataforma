@@ -19,11 +19,6 @@ export function Footer() {
             <h4 className="font-medium text-gray-900 mb-4">Enlaces útiles</h4>
             <ul className="space-y-2 text-gray-600">
               <li>
-                <a href="#" className="hover:text-gray-900">
-                  Calcula tu espacio
-                </a>
-              </li>
-              <li>
                 <Link to="/home-proveedor" className="hover:text-gray-900">
                   Regístrate como proveedor
                 </Link>
