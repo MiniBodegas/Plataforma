@@ -101,9 +101,7 @@ const PRICING_TABLE = [
 
 const MAX_VOLUME = 10;
 const getPricing = (v) =>
-  v === 0
-    ? { storage: 0, packing: 0, transport: 0 }
-    : PRICING_TABLE.find((r) => v <= r.maxVolume) || PRICING_TABLE.at(-1);
+  v === 0 ? { storage: 0 } : PRICING_TABLE.find((r) => v <= r.maxVolume) || PRICING_TABLE.at(-1);
 
 export function Calculadora() {
   /* ---------- estados ---------- */
@@ -112,20 +110,15 @@ export function Calculadora() {
   const [disassembled, setDisassembled] = useState({});
   const [search, setSearch] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [includePacking, setIncludePacking] = useState(false);
-  const [includeTransport, setIncludeTransport] = useState(false);
   const inputRef = useRef(null);
 
   /* ---------- búsqueda ---------- */
   const suggestions = ITEM_CATALOG.filter(
-    (it) =>
-      it.name.toLowerCase().includes(search.toLowerCase()) && search.trim()
+    (it) => it.name.toLowerCase().includes(search.toLowerCase()) && search.trim()
   );
   useEffect(() => {
     const handler = (e) =>
-      inputRef.current &&
-      !inputRef.current.contains(e.target) &&
-      setShowSuggestions(false);
+      inputRef.current && !inputRef.current.contains(e.target) && setShowSuggestions(false);
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
@@ -144,18 +137,16 @@ export function Calculadora() {
       name,
       volume: Number(volume),
     };
-    ITEM_CATALOG.push(newItem); // se agrega al catálogo
+    ITEM_CATALOG.push(newItem);
     setQuantities((q) => ({ ...q, [newId]: 1 }));
     setCustom({ name: "", h: "", w: "", d: "" });
   };
 
   /* ---------- helpers ---------- */
-  const itemVol = (item) =>
-    disassembled[item.id] && item.altVolume ? item.altVolume : item.volume;
+  const itemVol = (item) => (disassembled[item.id] && item.altVolume ? item.altVolume : item.volume);
   const calcVolume = () =>
     Object.entries(quantities).reduce(
-      (sum, [id, qty]) =>
-        sum + itemVol(ITEM_CATALOG.find((i) => i.id === Number(id))) * qty,
+      (sum, [id, qty]) => sum + itemVol(ITEM_CATALOG.find((i) => i.id === Number(id))) * qty,
       0
     );
 
@@ -165,20 +156,12 @@ export function Calculadora() {
       const cur = prev[id] || 0;
       const next = Math.max(0, cur + delta);
       if (next === cur) return prev;
-      const projected =
-        calcVolume() +
-        (next - cur) * itemVol(ITEM_CATALOG.find((i) => i.id === id));
-      if (projected > MAX_VOLUME) {
-        alert("⚠️ El volumen total no puede superar 10 m³");
-        return prev;
-      }
       const n = { ...prev };
       next ? (n[id] = next) : delete n[id];
       return n;
     });
   };
-  const toggleDisassembled = (id) =>
-    setDisassembled((d) => ({ ...d, [id]: !d[id] }));
+  const toggleDisassembled = (id) => setDisassembled((d) => ({ ...d, [id]: !d[id] }));
   const clearAll = () => {
     setQuantities({});
     setDisassembled({});
@@ -186,22 +169,19 @@ export function Calculadora() {
 
   /* ---------- cálculos ---------- */
   const totalVolume = calcVolume();
-  const { storage, packing, transport } = getPricing(totalVolume);
-  const packingCost = includePacking ? packing : 0;
-  const transportCost = includeTransport ? transport : 0;
-  const total = storage + packingCost + transportCost;
-  const itemsWithQty = ITEM_CATALOG
-    .filter((i) => quantities[i.id])
-    .map((i) => ({ ...i, qty: quantities[i.id] }));
+  const { storage } = getPricing(totalVolume);
+  const total = storage;
+  const itemsWithQty = ITEM_CATALOG.filter((i) => quantities[i.id]).map((i) => ({
+    ...i,
+    qty: quantities[i.id],
+  }));
 
   /* ------------------------------------------- UI ------------------------------------------- */
   return (
     <div className="flex flex-col md:flex-row gap-8 p-6 min-h-screen bg-white text-sm">
       {/* CATÁLOGO */}
       <div className="w-full md:w-2/3 flex flex-col bg-white rounded-2xl shadow-md p-6">
-        <h2 className="text-xl font-bold text-blue-900 mb-6 text-center">
-          Catálogo de artículos
-        </h2>
+        <h2 className="text-xl font-bold text-blue-900 mb-6 text-center">Catálogo de artículos</h2>
 
         {/* Input búsqueda */}
         <div className="relative mb-4" ref={inputRef}>
@@ -213,7 +193,7 @@ export function Calculadora() {
             }}
             onFocus={() => setShowSuggestions(true)}
             placeholder="Buscar artículo..."
-            className="w-full border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-black placeholder-gray-400"
           />
           {showSuggestions && suggestions.length > 0 && (
             <ul className="absolute z-20 left-0 right-0 bg-white border rounded-xl shadow max-h-40 overflow-y-auto text-sm">
@@ -227,8 +207,7 @@ export function Calculadora() {
                     setShowSuggestions(false);
                   }}
                 >
-                  {s.name}{" "}
-                  <span className="text-gray-400">({s.category})</span>
+                  {s.name} <span className="text-gray-400">({s.category})</span>
                 </li>
               ))}
             </ul>
@@ -263,176 +242,119 @@ export function Calculadora() {
             </tr>
           </thead>
           <tbody>
-            {ITEM_CATALOG.filter((i) => i.category === selectedCategory).map(
-              (it) => (
-                <tr
-                  key={it.id}
-                  className="border-t hover:bg-gray-50 transition"
-                >
-                  <td className="py-2 pr-2">{it.name}</td>
-                  <td>{itemVol(it).toFixed(2)}</td>
-                  <td className="text-center">
-                    {it.altVolume && (
-                      <input
-                        type="checkbox"
-                        checked={!!disassembled[it.id]}
-                        onChange={() => toggleDisassembled(it.id)}
-                      />
-                    )}
-                  </td>
-                  <td className="flex items-center justify-center gap-2 py-2">
+            {ITEM_CATALOG.filter((i) => i.category === selectedCategory).map((it) => (
+              <tr key={it.id} className="border-t hover:bg-gray-50 transition">
+                <td className="py-2">{it.name}</td>
+                <td>{itemVol(it).toFixed(2)}</td>
+                <td className="text-center">
+                  {it.altVolume && (
+                    <input
+                      type="checkbox"
+                      checked={disassembled[it.id] || false}
+                      onChange={() => toggleDisassembled(it.id)}
+                    />
+                  )}
+                </td>
+                <td className="text-center">
+                  <div className="flex items-center justify-center gap-2">
                     <button
-                      className="px-2 rounded-full bg-gray-200 hover:bg-gray-300"
                       onClick={() => updateQty(it.id, -1)}
+                      className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200"
                     >
-                      –
+                      -
                     </button>
-                    <span className="w-6 text-center">
-                      {quantities[it.id] || 0}
-                    </span>
+                    <span>{quantities[it.id] || 0}</span>
                     <button
-                      className="px-2 rounded-full bg-blue-500 text-white hover:bg-blue-600"
                       onClick={() => updateQty(it.id, 1)}
+                      className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200"
                     >
                       +
                     </button>
-                  </td>
-                </tr>
-              )
-            )}
+                  </div>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
 
-      {/* RESUMEN */}
-      <div className="w-full md:w-1/3 flex flex-col bg-white rounded-2xl shadow-md p-6 gap-6">
-        <h2 className="text-xl font-bold text-blue-900 text-center">
-          Resumen
-        </h2>
+      {/* 🟦 RESUMEN */}
+      <div className="w-full md:w-1/3 flex flex-col bg-white rounded-2xl shadow-md p-6 sticky top-6 h-fit">
+        <h2 className="text-xl font-bold text-blue-900 mb-6 text-center">Resumen de tu mudanza</h2>
 
-        {/* Artículos seleccionados */}
-        <div>
-          <h3 className="font-semibold mb-2">Artículos seleccionados</h3>
-          <ul className="flex-1 overflow-y-auto pr-2 text-sm space-y-2 max-h-40">
-            {itemsWithQty.length === 0 && <li>No hay artículos.</li>}
-            {itemsWithQty.map((it) => (
-              <li
-                key={it.id}
-                className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-lg"
-              >
-                <span className="flex items-center gap-2">
-                  <button
-                    className="px-2 rounded-full bg-gray-200 hover:bg-gray-300"
-                    onClick={() => updateQty(it.id, -1)}
-                  >
-                    –
-                  </button>
-                  <span className="w-5 text-center">{it.qty}</span>
-                  <button
-                    className="px-2 rounded-full bg-blue-500 text-white hover:bg-blue-600"
-                    onClick={() => updateQty(it.id, 1)}
-                  >
-                    +
-                  </button>
-                  <span className="pl-1">{it.name}</span>
-                </span>
-                <button
-                  className="text-red-600 text-xs hover:underline"
-                  onClick={() => updateQty(it.id, -it.qty)}
-                >
-                  Eliminar
-                </button>
-              </li>
-            ))}
-          </ul>
-          {itemsWithQty.length > 0 && (
-            <button
-              className="mt-2 w-full px-3 py-2 rounded-lg bg-red-100 text-red-600 text-sm font-medium hover:bg-red-200"
-              onClick={clearAll}
-            >
-              Eliminar todo
-            </button>
+        {/* Resumen items */}
+        <div className="mb-4 max-h-40 overflow-y-auto text-sm">
+          {itemsWithQty.length === 0 ? (
+            <p className="text-gray-400">No has agregado artículos</p>
+          ) : (
+            <ul className="space-y-1">
+              {itemsWithQty.map((it) => (
+                <li key={it.id}>
+                  {it.name} × {it.qty} = {(itemVol(it) * it.qty).toFixed(2)} m³
+                </li>
+              ))}
+            </ul>
           )}
         </div>
 
-        {/* Custom item */}
-        <div className="border p-4 rounded-xl space-y-2 bg-gray-50">
-          <h3 className="font-semibold text-sm text-blue-900">
-            Añadir objeto personalizado
-          </h3>
-          <input
-            type="text"
-            placeholder="Nombre"
-            className="w-full border px-3 py-2 rounded text-sm"
-            value={custom.name}
-            onChange={(e) => setCustom({ ...custom, name: e.target.value })}
-          />
-          <div className="grid grid-cols-3 gap-2">
-            {["h", "w", "d"].map((k) => (
-              <input
-                key={k}
-                type="number"
-                min="1"
-                placeholder={
-                  k === "h"
-                    ? "Alto (cm)"
-                    : k === "w"
-                    ? "Ancho (cm)"
-                    : "Largo (cm)"
-                }
-                className="border px-2 py-1 rounded text-sm"
-                value={custom[k]}
-                onChange={(e) => setCustom({ ...custom, [k]: e.target.value })}
-              />
-            ))}
-          </div>
+        {/* Total volumen */}
+        <p className="font-medium mb-2">Volumen total: {totalVolume.toFixed(2)} m³</p>
+
+        {/* Totales */}
+        <p className="font-bold text-lg mb-4">Total: {total.toLocaleString()} COP</p>
+
+        {/* Botones */}
+        <div className="flex gap-3">
           <button
-            className="w-full bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700"
-            onClick={addCustomItem}
+            onClick={clearAll}
+            className="flex-1 px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200"
           >
-            Agregar
+            Limpiar
+          </button>
+          <button className="flex-1 px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700">
+            Continuar
           </button>
         </div>
 
-        {/* Costos */}
-        <div className="space-y-2 text-sm border-t pt-4">
-          <div className="flex justify-between">
-            <span>Almacenamiento</span>
-            <span>$ {storage.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between items-center gap-2">
-            <label className="flex items-center gap-2 cursor-pointer">
+        {/* ➕ Personalizado */}
+        <div className="mt-6">
+          <h3 className="font-semibold mb-2 text-sm text-blue-900">Agregar artículo personalizado</h3>
+          <div className="space-y-2">
+            <input
+              value={custom.name}
+              onChange={(e) => setCustom({ ...custom, name: e.target.value })}
+              placeholder="Nombre del artículo"
+              className="w-full border rounded-xl px-3 py-1 bg-white text-black placeholder-gray-400"
+            />
+            <div className="grid grid-cols-3 gap-2">
               <input
-                type="checkbox"
-                checked={includePacking}
-                onChange={() => setIncludePacking((p) => !p)}
+                type="number"
+                value={custom.h}
+                onChange={(e) => setCustom({ ...custom, h: e.target.value })}
+                placeholder="Alto (cm)"
+                className="w-full border rounded-xl px-3 py-1 bg-white text-black placeholder-gray-400"
               />
-              Empaque
-            </label>
-            <span>$ {packingCost.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between items-center gap-2">
-            <label className="flex items-center gap-2 cursor-pointer">
               <input
-                type="checkbox"
-                checked={includeTransport}
-                onChange={() => setIncludeTransport((t) => !t)}
+                type="number"
+                value={custom.w}
+                onChange={(e) => setCustom({ ...custom, w: e.target.value })}
+                placeholder="Ancho (cm)"
+                className="w-full border rounded-xl px-3 py-1 bg-white text-black placeholder-gray-400"
               />
-              Transporte
-            </label>
-            <span>$ {transportCost.toLocaleString()}</span>
-          </div>
-        </div>
-
-        {/* Totales */}
-        <div className="border-t pt-4 flex flex-col gap-2">
-          <div className="flex justify-between font-semibold text-blue-700">
-            <span>Total m³</span>
-            <span>{totalVolume.toFixed(2)} m³</span>
-          </div>
-          <div className="flex justify-between font-bold text-lg">
-            <span>Total a pagar</span>
-            <span>$ {total.toLocaleString()}</span>
+              <input
+                type="number"
+                value={custom.d}
+                onChange={(e) => setCustom({ ...custom, d: e.target.value })}
+                placeholder="Prof (cm)"
+                className="w-full border rounded-xl px-3 py-1 bg-white text-black placeholder-gray-400"
+              />
+            </div>
+            <button
+              onClick={addCustomItem}
+              className="w-full px-3 py-1 rounded-xl bg-green-600 text-white hover:bg-green-700"
+            >
+              Agregar
+            </button>
           </div>
         </div>
       </div>
