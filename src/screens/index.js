@@ -14,3 +14,5 @@ export * from './Reservas/Reservas'
 export * from './MisBodegas/MisBodegas'
 export * from './Balance/Balance'
 
+export * from './Calculadora/Calculadora'
+

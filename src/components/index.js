@@ -46,3 +46,4 @@ export * from './NavBarSecundaria'
 export * from './MisBodegas'
 
 export * from './Balance'
+export * from './Calculadora'

@@ -19,7 +19,7 @@ export function Header({ tipo }) {
         {tipo === "usuario" && (
           <>
             <Link
-              to="/"
+              to="/calculadora"
               className="text-base font-medium relative group"
             >
               Calcula tu espacio

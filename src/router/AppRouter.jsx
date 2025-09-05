@@ -14,7 +14,8 @@ import {
   PlanesScreen,
   Reservas,
   MisBodegasScreen,
-  BalanceScreen
+  BalanceScreen,
+  CalculadoraScreen
 } from '../screens/index';
 
 // ====================== 
@@ -62,10 +63,9 @@ export const AppRouter = () => {
         <Route path="/perfil-bodegas" element={<PerfilBodegas />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/calculadora" element={<CalculadoraScreen />} />
         
-
       </Route>
-
       {/* Rutas de proveedores */}
       <Route element={<ProveedorLayout />}>
         <Route path="/home-proveedor" element={<LandingPageProveedores />} />
@@ -75,6 +75,7 @@ export const AppRouter = () => {
         <Route path="/mis-bodegas" element={<Reservas />} />
         <Route path="/mis-mini-bodegas" element={<MisBodegasScreen />} />
         <Route path="/balance" element={<BalanceScreen />} />
+
 
         {/* aquí puede agregar más rutas exclusivas de proveedores */}
       </Route>
