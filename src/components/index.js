@@ -50,3 +50,6 @@ export * from './Calculadora'
 
 export * from './Perfil'
 export * from './PerfilForm'
+export * from './PerfilProveedor'
+export * from './PerfilFormProveedor'
+

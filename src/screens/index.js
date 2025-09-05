@@ -19,4 +19,6 @@ export * from './BodegasUsuario/Bodegasusuario'
 
 export * from './PerfilUser/PerfilUser'
 export * from './PerfilForm/PerfilForm'
+export * from './PerfilProveedor/PerfilProveedor'
+export * from './PerfilFormProveedor/PerfilFormProveedor'
 
