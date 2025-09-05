@@ -81,30 +81,10 @@ const ITEM_CATALOG = [
   { id: 70, category: "Combos", name: "Habitación completa", volume: 1.74 },
   { id: 71, category: "Combos", name: "Kit oficina", volume: 2.013 },
 ];
-
-/* -------------------------------------------
- 💰 TABLA DE PRECIOS POR VOLUMEN (m³)
-------------------------------------------- */
-const PRICING_TABLE = [
-  { maxVolume: 0.5, storage: 44000, packing: 13000, transport: 19000 },
-  { maxVolume: 1, storage: 80900, packing: 23600, transport: 35400 },
-  { maxVolume: 2, storage: 147000, packing: 42900, transport: 64300 },
-  { maxVolume: 3, storage: 200400, packing: 58500, transport: 87700 },
-  { maxVolume: 4, storage: 242900, packing: 70900, transport: 106300 },
-  { maxVolume: 5, storage: 276000, packing: 80600, transport: 120800 },
-  { maxVolume: 6, storage: 301100, packing: 87900, transport: 131800 },
-  { maxVolume: 7, storage: 319400, packing: 93200, transport: 139800 },
-  { maxVolume: 8, storage: 331800, packing: 96800, transport: 145200 },
-  { maxVolume: 9, storage: 339300, packing: 99000, transport: 148500 },
-  { maxVolume: 10, storage: 342700, packing: 100000, transport: 150000 },
-];
-
-const MAX_VOLUME = 10;
 const getPricing = (v) =>
   v === 0 ? { storage: 0 } : PRICING_TABLE.find((r) => v <= r.maxVolume) || PRICING_TABLE.at(-1);
 
 export function Calculadora() {
-  /* ---------- estados ---------- */
   const [selectedCategory, setSelectedCategory] = useState("Habitación");
   const [quantities, setQuantities] = useState({});
   const [disassembled, setDisassembled] = useState({});
@@ -112,7 +92,7 @@ export function Calculadora() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef(null);
 
-  /* ---------- búsqueda ---------- */
+  // Sugerencias de búsqueda
   const suggestions = ITEM_CATALOG.filter(
     (it) => it.name.toLowerCase().includes(search.toLowerCase()) && search.trim()
   );
@@ -123,9 +103,8 @@ export function Calculadora() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  /* --- 2️⃣  OBJETO PERSONALIZADO --- */
+  // Artículo personalizado
   const [custom, setCustom] = useState({ name: "", h: "", w: "", d: "" });
-
   const addCustomItem = () => {
     const { name, h, w, d } = custom;
     if (!name || !h || !w || !d) return alert("Completa todos los campos");
@@ -142,7 +121,7 @@ export function Calculadora() {
     setCustom({ name: "", h: "", w: "", d: "" });
   };
 
-  /* ---------- helpers ---------- */
+  // Helpers
   const itemVol = (item) => (disassembled[item.id] && item.altVolume ? item.altVolume : item.volume);
   const calcVolume = () =>
     Object.entries(quantities).reduce(
@@ -150,7 +129,7 @@ export function Calculadora() {
       0
     );
 
-  /* ---------- handlers ---------- */
+  // Handlers
   const updateQty = (id, delta) => {
     setQuantities((prev) => {
       const cur = prev[id] || 0;
@@ -167,10 +146,8 @@ export function Calculadora() {
     setDisassembled({});
   };
 
-  /* ---------- cálculos ---------- */
+  // Cálculos
   const totalVolume = calcVolume();
-  const { storage } = getPricing(totalVolume);
-  const total = storage;
   const itemsWithQty = ITEM_CATALOG.filter((i) => quantities[i.id]).map((i) => ({
     ...i,
     qty: quantities[i.id],
@@ -299,9 +276,6 @@ export function Calculadora() {
 
         {/* Total volumen */}
         <p className="font-medium mb-2">Volumen total: {totalVolume.toFixed(2)} m³</p>
-
-        {/* Totales */}
-        <p className="font-bold text-lg mb-4">Total: {total.toLocaleString()} COP</p>
 
         {/* Botones */}
         <div className="flex gap-3">
