@@ -47,3 +47,6 @@ export * from './MisBodegas'
 
 export * from './Balance'
 export * from './Calculadora'
+
+export * from './Perfil'
+export * from './PerfilForm'

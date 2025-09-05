@@ -17,3 +17,6 @@ export * from './Balance/Balance'
 export * from './Calculadora/Calculadora'
 export * from './BodegasUsuario/Bodegasusuario'
 
+export * from './PerfilUser/PerfilUser'
+export * from './PerfilForm/PerfilForm'
+
