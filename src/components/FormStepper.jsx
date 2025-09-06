@@ -3,19 +3,21 @@ import { ExtraServices } from "./ExtraServices";
 
 export function FormStepper({ onDataChange, reservationData }) {
   const [currentStep, setCurrentStep] = useState(1);
+  const [showLogin, setShowLogin] = useState(false);
   const [formData, setFormData] = useState({
     tipoDocumento: '',
     numeroDocumento: '',
     numeroCelular: '',
     fechaInicio: '',
     servicios: [],
+    email: '',
+    password: '',
     ...reservationData
   });
 
   const handleFormChange = (field, value) => {
     const newData = { ...formData, [field]: value };
     setFormData(newData);
-    
     if (onDataChange) {
       onDataChange(field, value);
     }
@@ -31,18 +33,18 @@ export function FormStepper({ onDataChange, reservationData }) {
   };
 
   const nextStep = () => {
-    if (currentStep < 3) setCurrentStep(currentStep + 1);
+    if (currentStep < steps.length) setCurrentStep(currentStep + 1);
   };
 
   const prevStep = () => {
     if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
 
-  // Solo 3 pasos ahora
   const steps = [
-    { number: 1, title: "Información Personal", completed: currentStep > 1 },
-    { number: 2, title: "Fecha de Inicio", completed: currentStep > 2 },
-    { number: 3, title: "Servicios Adicionales", completed: currentStep > 3 },
+    { number: 1, title: showLogin ? "Inicio de sesión" : "Registro", completed: currentStep > 1 },
+    { number: 2, title: "Información Personal", completed: currentStep > 2 },
+    { number: 3, title: "Fecha de Inicio", completed: currentStep > 3 },
+    { number: 4, title: "Servicios Adicionales", completed: currentStep > 4 },
   ];
 
   const tiposDocumento = [
@@ -52,6 +54,17 @@ export function FormStepper({ onDataChange, reservationData }) {
     { value: 'TI', label: 'Tarjeta de Identidad' },
     { value: 'NIT', label: 'NIT (Persona Jurídica)' }
   ];
+
+  // Simulación de login/register
+  const handleLoginSubmit = (e) => {
+    e.preventDefault();
+    setCurrentStep(2);
+  };
+
+  const handleRegisterSubmit = (e) => {
+    e.preventDefault();
+    setCurrentStep(2);
+  };
 
   return (
     <div className="bg-white dark:bg-white rounded-lg shadow-lg p-6">
@@ -79,8 +92,6 @@ export function FormStepper({ onDataChange, reservationData }) {
             </div>
           ))}
         </div>
-        
-        {/* Títulos de los pasos */}
         <div className="flex justify-between text-xs">
           {steps.map((step) => (
             <div 
@@ -95,7 +106,6 @@ export function FormStepper({ onDataChange, reservationData }) {
             </div>
           ))}
         </div>
-
         <div className="mt-4">
           <h3 className="text-lg font-semibold text-[#2C3A61] dark:text-[#2C3A61]">
             {steps[currentStep - 1]?.title}
@@ -106,6 +116,98 @@ export function FormStepper({ onDataChange, reservationData }) {
       {/* Step Content */}
       <div className="mb-6">
         {currentStep === 1 && (
+          <div>
+            {!showLogin ? (
+              <form onSubmit={handleRegisterSubmit} className="bg-gray-50 p-4 rounded-lg shadow w-full">
+                <div className="mb-2">
+                  <label className="block text-sm font-medium mb-1 text-[#2C3A61]">Nombre</label>
+                  <input
+                    type="text"
+                    value={formData.nombre || ""}
+                    onChange={handleInputChange('nombre')}
+                    className="w-full p-2 border border-gray-300 rounded-md bg-white text-gray-900"
+                    required
+                  />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-sm font-medium mb-1 text-[#2C3A61]">Email</label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange('email')}
+                    className="w-full p-2 border border-gray-300 rounded-md bg-white text-gray-900"
+                    required
+                  />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-sm font-medium mb-1 text-[#2C3A61]">Contraseña</label>
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={handleInputChange('password')}
+                    className="w-full p-2 border border-gray-300 rounded-md bg-white text-gray-900"
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full bg-[#4B799B] text-white py-2 rounded-md font-semibold hover:bg-[#3b5f7a] transition"
+                >
+                  Registrarse
+                </button>
+                <div className="text-center mt-4">
+                  <button
+                    type="button"
+                    className="text-[#4B799B] hover:underline font-medium"
+                    onClick={() => setShowLogin(true)}
+                  >
+                    Ya tengo cuenta
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleLoginSubmit} className="bg-gray-50 p-4 rounded-lg shadow w-full">
+                <div className="mb-2">
+                  <label className="block text-sm font-medium mb-1 text-[#2C3A61]">Email</label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange('email')}
+                    className="w-full p-2 border border-gray-300 rounded-md bg-white text-gray-900"
+                    required
+                  />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-sm font-medium mb-1 text-[#2C3A61]">Contraseña</label>
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={handleInputChange('password')}
+                    className="w-full p-2 border border-gray-300 rounded-md bg-white text-gray-900"
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full bg-[#4B799B] text-white py-2 rounded-md font-semibold hover:bg-[#3b5f7a] transition"
+                >
+                  Iniciar sesión
+                </button>
+                <div className="text-center mt-4">
+                  <button
+                    type="button"
+                    className="text-[#4B799B] hover:underline font-medium"
+                    onClick={() => setShowLogin(false)}
+                  >
+                    Quiero registrarme
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+
+        {currentStep === 2 && (
           <div>
             <p className="text-sm text-[#2C3A61] dark:text-[#2C3A61] mb-4">
               Completa tu información personal para continuar:
@@ -128,7 +230,6 @@ export function FormStepper({ onDataChange, reservationData }) {
                   ))}
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-medium mb-2 text-[#2C3A61] dark:text-[#2C3A61]">
                   Número de documento
@@ -141,7 +242,6 @@ export function FormStepper({ onDataChange, reservationData }) {
                   className="w-full p-3 border border-gray-300 dark:border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-white text-gray-900 dark:text-gray-900"
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium mb-2 text-[#2C3A61] dark:text-[#2C3A61]">
                   Número de celular
@@ -158,7 +258,7 @@ export function FormStepper({ onDataChange, reservationData }) {
           </div>
         )}
 
-        {currentStep === 2 && (
+        {currentStep === 3 && (
           <div>
             <div className="space-y-4">
               <div>
@@ -178,7 +278,7 @@ export function FormStepper({ onDataChange, reservationData }) {
           </div>
         )}
 
-        {currentStep === 3 && (
+        {currentStep === 4 && (
           <div>
             <ExtraServices 
               data={formData} 
@@ -203,27 +303,27 @@ export function FormStepper({ onDataChange, reservationData }) {
         </button>
         <button
           onClick={nextStep}
-          disabled={currentStep === 3}
+          disabled={currentStep === steps.length}
           className={`px-4 py-2 rounded-md ${
-            currentStep === 3
+            currentStep === steps.length
               ? "text-white hover:opacity-90 transition-opacity"
               : "bg-[#4B799B] text-white hover:bg-[#3b5f7a]"
           }`}
           style={{
-            backgroundColor: currentStep === 3 ? "#4B799B" : undefined
+            backgroundColor: currentStep === steps.length ? "#4B799B" : undefined
           }}
           onMouseEnter={(e) => {
-            if (currentStep === 3) {
+            if (currentStep === steps.length) {
               e.target.style.backgroundColor = "#1e2a4a";
             }
           }}
           onMouseLeave={(e) => {
-            if (currentStep === 3) {
+            if (currentStep === steps.length) {
               e.target.style.backgroundColor = "#4B799B";
             }
           }}
         >
-          {currentStep === 3 ? "Completar Formulario" : "Siguiente"}
+          {currentStep === steps.length ? "Completar Formulario" : "Siguiente"}
         </button>
       </div>
     </div>
