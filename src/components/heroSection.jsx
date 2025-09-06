@@ -47,7 +47,6 @@ export function HeroSection() {
         setTimeout(() => {
           setShowOverlay(false)
           navigate(`/bodegas?ciudad=${encodeURIComponent(query)}`)
-          window.location.reload() // Recargar la página después de navegar
         }, 1000)
       } else {
         alert("Ciudad no disponible. Por favor selecciona una ciudad de la lista.")
