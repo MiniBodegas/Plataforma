@@ -33,13 +33,12 @@ export function RegisterProveedores() {
       <div className="max-w-6xl w-full grid lg:grid-cols-2 gap-12 items-center bg-white rounded-2xl shadow-xl overflow-hidden">
         
         {/* Imagen izquierda */}
-        <div className="relative h-full hidden lg:block">
+        <div className="relative h-full hidden lg:flex items-center justify-center">
           <img
             src="https://images.unsplash.com/photo-1600009723489-027195d6b3d3?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8Ym94ZXN8ZW58MHwxfDB8fHwy"
             alt="Cajas de cartón apiladas para almacenamiento"
-            className="w-full max-h-100 object-contain rounded-lg"
+            className="max-w-s mx-auto border rounded-xl"
           />
-          <div className="absolute inset-0 bg-black/20 rounded-lg"></div>
         </div>
 
         {/* Formulario derecha */}
