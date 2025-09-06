@@ -23,7 +23,7 @@ export function ReservationCard({ reservationData = {} }) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 h-fit">
+    <div className="bg-white rounded-xl shadow-lg p-6 h-fit">
       {/* Resumen de reserva */}
       <div className="mb-6">
         <h3 className="text-xl font-bold mb-4" style={{ color: "#2C3A61" }}>

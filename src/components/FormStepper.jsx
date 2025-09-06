@@ -54,7 +54,7 @@ export function FormStepper({ onDataChange, reservationData }) {
   ];
 
   return (
-    <div className="bg-white dark:bg-white rounded-lg shadow-lg p-6 border dark:border-gray-200">
+    <div className="bg-white dark:bg-white rounded-lg shadow-lg p-6">
       {/* Progress Steps con títulos */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
