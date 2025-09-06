@@ -280,10 +280,29 @@ export function FormStepper({ onDataChange, reservationData }) {
 
         {currentStep === 4 && (
           <div>
-            <ExtraServices 
-              data={formData} 
-              onChange={handleFormChange}
-            />
+            <label className="block text-sm font-medium mb-2 text-[#2C3A61] dark:text-[#2C3A61]">
+              Selecciona servicios adicionales:
+            </label>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {["Seguro", "Transporte", "Acceso 24/7", "Alarma", "CCTV"].map((servicio) => (
+                <button
+                  key={servicio}
+                  type="button"
+                  className={`px-4 py-2 rounded-full border font-medium transition
+                    ${formData.servicios.includes(servicio)
+                      ? "bg-[#4B799B] text-white border-[#4B799B]"
+                      : "bg-white text-[#2C3A61] border-gray-300 hover:bg-gray-100"}`}
+                  onClick={() => {
+                    const servicios = formData.servicios.includes(servicio)
+                      ? formData.servicios.filter(s => s !== servicio)
+                      : [...formData.servicios, servicio];
+                    handleFormChange("servicios", servicios);
+                  }}
+                >
+                  {servicio}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
