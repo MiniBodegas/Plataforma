@@ -1,8 +1,11 @@
-
 import { Instagram, Facebook, MessageCircle } from "lucide-react"
-import {Link} from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 
 export function Footer() {
+  const location = useLocation()
+  // Detecta modo proveedor por la ruta, puedes ajustar la lógica según tu app
+  const isProveedor = location.pathname.includes("proveedor")
+
   return (
     <footer className="bg-white border-t">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -18,11 +21,19 @@ export function Footer() {
           <div>
             <h4 className="font-medium text-gray-900 mb-4">Enlaces útiles</h4>
             <ul className="space-y-2 text-gray-600">
-              <li>
-                <Link to="/home-proveedor" className="hover:text-gray-900">
-                  Regístrate como proveedor
-                </Link>
-              </li>
+              {isProveedor ? (
+                <li>
+                  <Link to="/" className="hover:text-gray-900">
+                    Regístrate como usuario
+                  </Link>
+                </li>
+              ) : (
+                <li>
+                  <Link to="/home-proveedor" className="hover:text-gray-900">
+                    Regístrate como proveedor
+                  </Link>
+                </li>
+              )}
             </ul>
           </div>
           <div>
