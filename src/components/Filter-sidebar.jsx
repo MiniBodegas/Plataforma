@@ -113,8 +113,7 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, 
             <select
               value={localFilters.location || ''}
               onChange={(e) => handleFilterChange('location', e.target.value)}
-              className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              style={{ color: "#2C3A61" }}
+              className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-[#2C3A61]"
             >
               <option value="">Todas las zonas</option>
               <option value="Norte">Norte</option>
