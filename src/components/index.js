@@ -53,3 +53,4 @@ export * from './PerfilForm'
 export * from './PerfilProveedor'
 export * from './PerfilFormProveedor'
 
+export * from './BodegaCarruselEditor'

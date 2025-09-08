@@ -21,6 +21,7 @@ import {
   PerfilFormScreen,
   PerfilFormProveedorScreen,
   PerfilProveedorScreen,
+  BodegaEditorProveedorScreen
   
 } from '../screens/index';
 
@@ -86,6 +87,7 @@ export const AppRouter = () => {
         <Route path="/balance" element={<BalanceScreen />} />
         <Route path="/perfil-proveedor" element={<PerfilProveedorScreen />} />
         <Route path="/perfil-form-proveedor" element={<PerfilFormProveedorScreen />} />
+        <Route path="/bodega-editor-proveedor" element={<BodegaEditorProveedorScreen />} />
 
 
 
