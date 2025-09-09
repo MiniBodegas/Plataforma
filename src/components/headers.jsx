@@ -39,7 +39,7 @@ export function Header({ tipo }) {
         {tipo === "proveedor" && (
           <>
             <Link
-              to="/home-proveedor"
+              to="/bodega-editor-proveedor"
               className="text-base font-medium relative group"
             >
               Crea tu mini bodega

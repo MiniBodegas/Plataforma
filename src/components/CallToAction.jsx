@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 
 export function CallToAction() {
   return (
@@ -20,9 +21,11 @@ export function CallToAction() {
         <h2 className="text-2xl md:text-3xl font-bold text-gray-800 leading-snug">
           ¿Listo para aumentar los ingresos de tus mini bodegas?
         </h2>
+        <Link to="/planes">
         <button className="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 text-lg rounded-xl shadow-lg transition">
           Comienza tu registro hoy mismo
         </button>
+        </Link>
         <p className="mt-3 text-gray-600 text-base md:text-lg">
           No toma más de 5 min
         </p>
