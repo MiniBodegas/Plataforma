@@ -47,44 +47,50 @@ export function FeaturesCards() {
   }, [])
 
   return (
-    <section className="py-16 flex justify-center bg-white">
-      <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 rounded-[20px] shadow-lg bg-gray-50">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+    <section className="py-8 sm:py-12 lg:py-16 flex justify-center bg-white px-4">
+      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 rounded-[12px] sm:rounded-[16px] lg:rounded-[20px] shadow-lg bg-gray-50">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-center p-6 sm:p-8 lg:p-12">
           {/* Texto principal */}
-          <div>
-            <h2 className="text-3xl font-bold mb-6" style={{ color: "#2C3A61" }}>
+          <div className="text-center lg:text-left">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6 leading-tight" style={{ color: "#2C3A61" }}>
               La forma más simple
               <br />
               de liberar espacio
             </h2>
-            <p style={{ color: "#2C3A61" }}>Reserva tu mini bodega en 4 pasos</p>
+            <p className="text-sm sm:text-base lg:text-lg" style={{ color: "#2C3A61" }}>
+              Reserva tu mini bodega en 4 pasos
+            </p>
           </div>
 
           {/* Cards */}
-          <div className="grid grid-cols-2 gap-6 p-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {features.map((feature) => {
               const isActive = feature.order === activeOrder
               return (
                 <div
                   key={feature.order}
-                  className={`p-6 rounded-lg shadow-md ${
+                  className={`p-4 sm:p-5 lg:p-6 rounded-lg shadow-md ${
                     supportsTransitions ? 'transition-all duration-700' : ''
                   } ${isActive ? "bg-blue-50 scale-105" : "bg-white"}`}
                   style={{ color: "#2C3A61" }}
                 >
                   <div
-                    className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-colors duration-700 ${
+                    className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center mb-3 sm:mb-4 transition-colors duration-700 ${
                       isActive ? "bg-blue-100" : "bg-gray-100"
                     }`}
                   >
                     <feature.icon
-                      className={`h-6 w-6 transition-colors duration-700 ${
+                      className={`h-5 w-5 sm:h-6 sm:w-6 transition-colors duration-700 ${
                         isActive ? "text-blue-600" : "text-gray-500"
                       }`}
                     />
                   </div>
-                  <h3 className="font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-sm">{feature.description}</p>
+                  <h3 className="font-semibold mb-2 text-sm sm:text-base lg:text-lg">
+                    {feature.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm lg:text-base leading-relaxed">
+                    {feature.description}
+                  </p>
                 </div>
               )
             })}

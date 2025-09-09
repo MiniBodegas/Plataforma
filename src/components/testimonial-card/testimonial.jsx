@@ -42,7 +42,7 @@ export function TestimonialsSection() {
     dots: false,
     infinite: true,
     speed: 900,
-    slidesToShow: 4,
+    slidesToShow: 4, // Desktop: 4 cards
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 2500,
@@ -50,11 +50,11 @@ export function TestimonialsSection() {
     responsive: [
       {
         breakpoint: 1024,
-        settings: { slidesToShow: 2 },
+        settings: { slidesToShow: 2 }, // Tablet: 2 cards
       },
       {
         breakpoint: 768,
-        settings: { slidesToShow: 1 },
+        settings: { slidesToShow: 1 }, // Móvil: 1 card
       },
     ],
   }
@@ -67,31 +67,30 @@ export function TestimonialsSection() {
         </h2>
 
         {/* Padding horizontal del carrusel → controla el espacio entre el borde de la sección y las cards */}
-        <Slider {...settings} className="px-20">
+        <Slider {...settings} className="px-2 sm:px-10 lg:px-20">
           {testimonials.map((testimonial, index) => (
-            // px-4 controla el espacio ENTRE cada card
-            <div key={index} className="px-4 h-full"> 
+            <div key={index} className="flex justify-center h-full"> 
               {/* Card principal */}
               <div 
                 className="
                   bg-white rounded-2xl shadow-md 
                   flex flex-col justify-between 
-                  h-[160px]
+                  min-w-[250px] max-w-[320px] w-full
+                  h-auto min-h-[180px] 
                   mx-auto  
                   transition-transform hover:scale-[1.03] 
                   hover:shadow-lg duration-300 ease-in-out
                 "
               >
                 {/* Header de la card (imagen + nombre + estrellas) */}
-                <div className="flex items-center gap-3 px-8 pt-8"> 
-                  {/* px-4 y pt-4 dan padding SOLO arriba e izquierda */}
+                <div className="flex items-center gap-3 px-4 pt-6"> 
                   <img
                     src={testimonial.avatar}
                     alt={testimonial.name}
                     className="w-10 h-10 rounded-full"
                   />
                   <div>
-                    <h4 className="font-semibold text-gray-900" style={{ color: "#2C3A61" }}>
+                    <h4 className="font-semibold text-gray-900 break-words" style={{ color: "#2C3A61" }}>
                       {testimonial.name}
                     </h4>
                     <div className="flex">
@@ -106,7 +105,7 @@ export function TestimonialsSection() {
                 </div>
 
                 {/* Texto del testimonio */}
-                <p className="text-gray-600 italic text-sm leading-relaxed px-4 pb-4" style={{ color: "#2C3A61" }}>
+                <p className="text-gray-600 italic text-sm leading-relaxed px-4 pb-4 break-words" style={{ color: "#2C3A61" }}>
                   "{testimonial.text}"
                 </p>
               </div>

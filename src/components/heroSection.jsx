@@ -72,24 +72,24 @@ export function HeroSection() {
           </svg>
         </div>
       )}
-      <section className="py-16 bg-white">
+      <section className="py-10 sm:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gray-50 rounded-lg shadow-md p-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="bg-gray-50 rounded-lg shadow-md p-4 sm:p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
               {/* Columna de textos */}
               <div className="text-left">
-                <h2 className="text-4xl font-bold text-gray-900 mb-6" style={{ color: "#2C3A61" }}>
+                <h2 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight" style={{ color: "#2C3A61" }}>
                   La solución a tu medida,
                   <br />
                   para lo que necesites
                   <br />
                   guardar
                 </h2>
-                <p className="text-gray-600 mb-8" style={{ color: "#2C3A61" }}>
+                <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8" style={{ color: "#2C3A61" }}>
                   Busca y alquila tu mini bodega
                 </p>
 
-                <div className="flex gap-2 relative">
+                <div className="flex flex-col sm:flex-row gap-2 relative">
                   <div className="relative flex-1">
                     <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                     <input
@@ -128,7 +128,7 @@ export function HeroSection() {
                   
                   <button 
                     onClick={handleSearch}
-                    className="bg-[#4B799B] hover:bg-[#3b5f7a] text-white px-4 py-2 rounded-[10px] transition-colors"
+                    className="bg-[#4B799B] hover:bg-[#3b5f7a] text-white px-4 py-2 rounded-[10px] transition-colors w-full sm:w-auto"
                     disabled={loading || showOverlay}
                   >
                     Buscar
@@ -137,7 +137,7 @@ export function HeroSection() {
               </div>
 
               {/* Columna de imagen */}
-              <div className="relative">
+              <div className="relative hidden lg:block">
                 <img
                   src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80"
                   alt="Persona relajándose"
