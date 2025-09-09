@@ -117,7 +117,7 @@ export function CardBodegas({
             onClick={() => setFlipped(true)}
             title="Ver dirección"
           >
-            Ver dirección
+            Agregar dirección <span className="ml-2">📍</span>
           </button>
         </div>
         {/* Cara reversa */}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Pencil, Image } from "lucide-react";
 
 export function DescriptionEditor({
@@ -10,16 +10,32 @@ export function DescriptionEditor({
   onDescripcionChange,
   caracteristicas,
   onCaracteristicasChange,
-  imagenes,
+  imagenes: initialImagenes = [],
   onImagenesChange
 }) {
   const [editEmpresa, setEditEmpresa] = useState(false);
   const [editDireccion, setEditDireccion] = useState(false);
   const [editDescripcion, setEditDescripcion] = useState(false);
   const [editCaracteristicas, setEditCaracteristicas] = useState(false);
+  const [imagenes, setImagenes] = useState(initialImagenes);
+  const fileInputRef = useRef(null);
+
+  // Maneja la carga de imágenes y genera previews
+  const handleImagenesChange = (e) => {
+    const files = Array.from(e.target.files);
+    setImagenes(files); // Solo guarda la última imagen subida
+    if (onImagenesChange) onImagenesChange(files);
+  };
+
+  // Click en el icono de imagen para abrir el input
+  const handleIconClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-6 bg.gray-50">
       {/* Título y dirección */}
       <div className="bg-[#F7F8FA] rounded-xl p-6 mb-4">
         <div className="flex flex-col items-center">
@@ -110,15 +126,37 @@ export function DescriptionEditor({
       <div className="grid grid-cols-2 gap-4 mt-4">
         {/* Imágenes */}
         <div className="bg-white rounded-xl p-6 flex flex-col items-center justify-center">
-          <Image className="h-10 w-10 text-[#2C3A61] mb-2" />
-          <span className="text-[#2C3A61] font-semibold mb-1">Sube imágenes de tu bodega</span>
+          <div className="flex flex-col items-center">
+            <Image
+              className="h-10 w-10 text-[#2C3A61] mb-2 cursor-pointer"
+              onClick={handleIconClick}
+            />
+            <span className="text-[#2C3A61] font-semibold mb-1">Sube imágenes de tu bodega</span>
+          </div>
           <input
             type="file"
             multiple
-            onChange={e => onImagenesChange(Array.from(e.target.files))}
-            className="w-full mt-2 bg-white text-[#2C3A61]"
-            style={{ backgroundColor: "#fff", color: "#2C3A61" }}
+            ref={fileInputRef}
+            className="hidden"
+            onChange={handleImagenesChange}
           />
+          {/* Previsualización de imágenes agregadas */}
+          {imagenes && imagenes.length > 0 && (
+            <div className="flex gap-2 mt-4 flex-wrap justify-center">
+              {imagenes.map((img, i) => (
+                <div key={i} className="flex flex-col items-center">
+                  <img
+                    src={URL.createObjectURL(img)}
+                    alt={`preview-${i}`}
+                    className="object-cover w-20 h-20 rounded border mb-1"
+                  />
+                  <span className="text-xs text-[#2C3A61] max-w-[80px] truncate" title={img.name}>
+                    {img.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
           {imagenes && imagenes.length > 0 && (
             <div className="mt-2 text-sm text-[#2C3A61] font-medium">
               {imagenes.length === 1
