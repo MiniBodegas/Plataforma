@@ -54,3 +54,6 @@ export * from './PerfilProveedor'
 export * from './PerfilFormProveedor'
 
 export * from './BodegaCarruselEditor'
+export * from './DescriptionEditor'
+export * from './CardBodegas/CardBodegas'
+export * from './AgregarMiniBodegaBtn'
