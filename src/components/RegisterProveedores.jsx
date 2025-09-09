@@ -121,6 +121,23 @@ export function RegisterProveedores() {
                     </select>
                     </div>
 
+                  {/* Numero de documento*/}
+                  <div className="space-y-2">
+                    <label htmlFor="NIT" className="text-gray-700 font-medium">
+                      Numero de Documento
+                    </label>
+                    <input
+                      id="NIT"
+                      type="Text"
+                      placeholder="Escribe tu Numero de documento"
+                      value={formData.NumeroDeDocumento}
+                      onChange={(e) => handleInputChange("NumeroDeDocumento", e.target.value)}
+                      className="w-full h-12 rounded-2xl border border-gray-300 px-4 
+                                  bg-white text-gray-900 
+                                  focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
+                    />
+                  </div>
+
                     {/* CamaraDeComercio */}
                     <div className="space-y-2">
                       <label htmlFor="Camara de comercio" className="text-gray-700 font-medium">

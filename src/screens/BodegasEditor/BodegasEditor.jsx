@@ -33,7 +33,7 @@ export function BodegaEditorProveedorScreen() {
     <div>
       <BodegaCarruselEditor />
       <DescriptionEditor />
-      <h2 className="text-3xl font-bold text-center mb-8 text-[#2C3A61]">Tamaños disponibles</h2>
+      <h2 className="mt-10 text-3xl font-bold text-center mb-8 text-[#2C3A61]">Tamaños disponibles</h2>
       <div className="flex gap-8 justify-center items-start">
         {bodegas.map((bodega, idx) => (
           <div key={idx} className="flex flex-col items-center">

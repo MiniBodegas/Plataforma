@@ -35,7 +35,7 @@ export function DescriptionEditor({
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6 bg.gray-50">
+    <div className="max-w-7xl mx-auto p-6 bg-gray-50 rounded-xl ">
       {/* Título y dirección */}
       <div className="bg-[#F7F8FA] rounded-xl p-6 mb-4">
         <div className="flex flex-col items-center">

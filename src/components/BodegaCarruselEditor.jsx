@@ -47,8 +47,8 @@ export function BodegaCarruselEditor({
   console.log(imagenes);
 
   return (
-    <div className="border-2 border-blue-300 rounded-xl mb-8 mx-auto max-w-7xl">
-      <div className="bg-[#E9E9E9] rounded-xl flex flex-col justify-center items-center relative" style={{ height: 260 }}>
+    <div className="border-2 border-gray-590 rounded-xl mb-8 mx-auto max-w-7xl pb-16 min-h-[150px] flex flex-col justify-between">
+      <div className="bg-[#E9E9E9] min-h-[350px] rounded-xl flex flex-col justify-center items-center relative" style={{ height: 260 }}>
         {/* Previsualización de imagen */}
         {imagenes && imagenes.length > 0 ? (
           <>
