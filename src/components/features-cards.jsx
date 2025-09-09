@@ -30,6 +30,7 @@ export function FeaturesCards() {
   ]
 
   const [activeOrder, setActiveOrder] = useState(0)
+  const [supportsTransitions, setSupportsTransitions] = useState(true)
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -37,6 +38,13 @@ export function FeaturesCards() {
     }, 2500)
     return () => clearInterval(interval)
   }, [features.length])
+
+  useEffect(() => {
+    // Detectar soporte para transiciones
+    const testEl = document.createElement('div')
+    const supportsCSS = testEl.style.transition !== undefined
+    setSupportsTransitions(supportsCSS)
+  }, [])
 
   return (
     <section className="py-16 flex justify-center bg-white">
@@ -59,9 +67,9 @@ export function FeaturesCards() {
               return (
                 <div
                   key={feature.order}
-                  className={`p-6 rounded-lg transition-all duration-700 shadow-md ${
-                    isActive ? "bg-blue-50 scale-105" : "bg-white"
-                  }`}
+                  className={`p-6 rounded-lg shadow-md ${
+                    supportsTransitions ? 'transition-all duration-700' : ''
+                  } ${isActive ? "bg-blue-50 scale-105" : "bg-white"}`}
                   style={{ color: "#2C3A61" }}
                 >
                   <div
