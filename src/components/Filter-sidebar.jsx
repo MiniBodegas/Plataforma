@@ -10,7 +10,7 @@ const bodegas = [
   { id: 5, name: "Bodega Medellín", city: "Medellín", coords: [6.2442, -75.5812] },
 ]
 
-export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, ciudadSeleccionada }) {
+export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, ciudadSeleccionada, hideMapOnMobile }) {
   // Valores por defecto para evitar errores
   const defaultFilters = {
     location: '',
@@ -61,14 +61,14 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, 
       {/* Sidebar */}
       <div className={`
         fixed lg:relative inset-y-0 left-0 z-50 lg:z-0
-        w-80 bg-white shadow-lg lg:shadow-none
+        w-full max-w-xs sm:max-w-sm lg:w-80 bg-white shadow-lg lg:shadow-none
         transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
         transition-transform duration-300 ease-in-out
         flex flex-col
       `}>
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold" style={{ color: "#2C3A61" }}>
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b">
+          <h2 className="text-lg sm:text-xl font-semibold" style={{ color: "#2C3A61" }}>
             Filtros
           </h2>
           <button
@@ -80,12 +80,14 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, 
         </div>
 
         {/* Filtros */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Mapa */}
-          <div className="bg-white border rounded-lg p-4">
-            <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Ubicación en mapa</h3>
-            <MapaBodegas city={ciudadSeleccionada || "Cali"} bodegas={bodegas} />
-          </div>
+          {!hideMapOnMobile || (hideMapOnMobile && window.innerWidth >= 768) ? (
+            <div className="bg-white border rounded-lg p-4">
+              <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Ubicación en mapa</h3>
+              <MapaBodegas city={ciudadSeleccionada || "Cali"} bodegas={bodegas} />
+            </div>
+          ) : null}
 
           {/* Rango de precio */}
           <div className="bg-white border rounded-lg p-4">
@@ -170,7 +172,7 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, 
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t">
+        <div className="p-4 sm:p-6 border-t">
           <button
             onClick={clearFilters}
             className="w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"

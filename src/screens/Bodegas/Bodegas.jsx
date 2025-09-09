@@ -51,6 +51,17 @@ export function BodegaScreen() {
           </div>
         </div>
       )}
+
+      {/* Botón Filtros solo en mobile */}
+      <div className="md:hidden flex justify-end px-4 py-2">
+        <button
+          className="bg-[#4B799B] text-white px-4 py-2 rounded-md font-semibold shadow hover:bg-[#3b5f7a] transition-colors"
+          onClick={() => setShowFilters(true)}
+        >
+          Filtros
+        </button>
+      </div>
+
       <div className="max-w-[1700px] mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-4 gap-5">
         <div className="md:col-span-1">
           <FilterSidebar 
@@ -59,6 +70,7 @@ export function BodegaScreen() {
             filters={filters}
             onFiltersChange={setFilters}
             ciudadSeleccionada={ciudadSeleccionada}
+            hideMapOnMobile={true} // Nueva prop para ocultar el mapa en mobile
           />
         </div>
         <div className="md:col-span-3">
