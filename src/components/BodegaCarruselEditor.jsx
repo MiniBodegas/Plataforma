@@ -1,25 +1,30 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Pencil, Image, X } from "lucide-react";
 
 export function BodegaCarruselEditor({
   empresa,
   onEmpresaChange,
-  imagenes,
+  imagenes: initialImagenes = [], // <-- valor por defecto, nunca undefined
   onImagenesChange
 }) {
   const [editEmpresa, setEditEmpresa] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const fileInputRef = useRef(null);
+  const [imagenes, setImagenes] = useState(initialImagenes); // Estado para las imágenes
 
   // Maneja la carga de imágenes y genera previews
   const handleImagenesChange = (e) => {
     const files = Array.from(e.target.files);
-    onImagenesChange([...imagenes, ...files]);
-    setActiveIndex(imagenes.length); // Muestra la primera nueva imagen
+    const nuevasImagenes = [...(imagenes || []), ...files]; // <-- asegura que sea array
+    setImagenes(nuevasImagenes);
+    onImagenesChange(nuevasImagenes);
+    setActiveIndex(imagenes ? imagenes.length : 0);
   };
 
   // Eliminar imagen
   const handleRemoveImage = (idx) => {
     const nuevas = imagenes.filter((_, i) => i !== idx);
+    setImagenes(nuevas);
     onImagenesChange(nuevas);
     setActiveIndex((prev) => prev > 0 ? prev - 1 : 0);
   };
@@ -32,8 +37,17 @@ export function BodegaCarruselEditor({
     setActiveIndex((prev) => (prev === imagenes.length - 1 ? 0 : prev + 1));
   };
 
+  // Click en el icono de imagen para abrir el input
+  const handleIconClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  console.log(imagenes);
+
   return (
-    <div className="border-2 border-blue-300 rounded-xl mb-8 mx-auto" style={{ maxWidth: 520 }}>
+    <div className="border-2 border-blue-300 rounded-xl mb-8 mx-auto max-w-7xl">
       <div className="bg-[#E9E9E9] rounded-xl flex flex-col justify-center items-center relative" style={{ height: 260 }}>
         {/* Previsualización de imagen */}
         {imagenes && imagenes.length > 0 ? (
@@ -53,39 +67,40 @@ export function BodegaCarruselEditor({
             >
               <X className="h-4 w-4 text-[#2C3A61]" />
             </button>
+            {/* Botones de navegación */}
+            {imagenes.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-2 shadow"
+                  onClick={handlePrev}
+                >
+                  {"<"}
+                </button>
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-2 shadow"
+                  onClick={handleNext}
+                >
+                  {">"}
+                </button>
+              </>
+            )}
           </>
         ) : (
-          <div className="flex flex-col justify-center items-center h-full w-full">
+          <div className="flex flex-col justify-center items-center h-full w-full cursor-pointer" onClick={handleIconClick}>
             <Image className="h-12 w-12 text-[#2C3A61]" />
             <span className="text-[#2C3A61] mt-2 font-medium">Sube imágenes de tu mini bodega</span>
           </div>
         )}
+        {/* Input oculto para seleccionar archivos */}
         <input
           type="file"
           multiple
-          className="absolute bottom-4 left-1/2 -translate-x-1/2"
-          style={{ width: "80%", backgroundColor: "#fff", color: "#2C3A61" }}
+          ref={fileInputRef}
+          className="hidden"
           onChange={handleImagenesChange}
         />
-        {/* Botones de navegación */}
-        {imagenes && imagenes.length > 1 && (
-          <>
-            <button
-              type="button"
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-2 shadow"
-              onClick={handlePrev}
-            >
-              {"<"}
-            </button>
-            <button
-              type="button"
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-2 shadow"
-              onClick={handleNext}
-            >
-              {">"}
-            </button>
-          </>
-        )}
       </div>
       <div className="bg-white rounded-b-xl px-6 py-6 flex flex-col items-center">
         {/* Mensaje de cantidad de imágenes agregadas */}
@@ -94,6 +109,30 @@ export function BodegaCarruselEditor({
             {imagenes.length === 1
               ? "1 imagen agregada"
               : `${imagenes.length} imágenes agregadas`}
+          </div>
+        )}
+        {/* Miniaturas con nombre de archivo */}
+        {imagenes && imagenes.length > 0 && (
+          <div className="flex gap-2 mt-2 flex-wrap justify-center">
+            {imagenes.map((img, i) => (
+              <div key={i} className="flex flex-col items-center">
+                <button
+                  type="button"
+                  className={`border rounded w-10 h-10 overflow-hidden ${i === activeIndex ? "border-[#4B799B]" : "border-gray-300"}`}
+                  onClick={() => setActiveIndex(i)}
+                  title={`Imagen ${i + 1}`}
+                >
+                  <img
+                    src={URL.createObjectURL(img)}
+                    alt={`mini-${i}`}
+                    className="object-cover w-full h-full"
+                  />
+                </button>
+                <span className="text-xs text-[#2C3A61] mt-1 max-w-[80px] truncate" title={img.name}>
+                  {img.name}
+                </span>
+              </div>
+            ))}
           </div>
         )}
         {editEmpresa ? (
@@ -133,40 +172,6 @@ export function BodegaCarruselEditor({
                 />
               ))}
         </div>
-        {/* Previsualización miniaturas */}
-        {imagenes && imagenes.length > 1 && (
-          <div className="flex gap-2 mt-4">
-            {imagenes.map((img, i) => (
-              <button
-                key={i}
-                type="button"
-                className={`border rounded w-10 h-10 overflow-hidden ${i === activeIndex ? "border-[#4B799B]" : "border-gray-300"}`}
-                onClick={() => setActiveIndex(i)}
-                title={`Imagen ${i + 1}`}
-              >
-                <img
-                  src={URL.createObjectURL(img)}
-                  alt={`mini-${i}`}
-                  className="object-cover w-full h-full"
-                />
-              </button>
-            ))}
-          </div>
-        )}
-        {/* Previsualización de todas las imágenes (galería) */}
-        {imagenes && imagenes.length > 1 && (
-          <div className="flex gap-2 mt-6 flex-wrap justify-center">
-            {imagenes.map((img, i) => (
-              <div key={i} className="border rounded w-24 h-24 overflow-hidden">
-                <img
-                  src={URL.createObjectURL(img)}
-                  alt={`galeria-${i}`}
-                  className="object-cover w-full h-full"
-                />
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
