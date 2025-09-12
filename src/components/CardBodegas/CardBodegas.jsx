@@ -35,7 +35,7 @@ export function CardBodegas({
             ) : (
               <label className="cursor-pointer flex flex-col items-center">
                 <Image className="h-10 w-10 text-[#2C3A61]" />
-                <span className="text-[#2C3A61] mt-2 text-sm text-center">Sube imágenes comparativas de tamaño</span>
+                <span className="text-[#2C3A61] mt-2 text-sm text-center">Sube una imagen de tu mini bodega</span>
                 <input
                   type="file"
                   accept="image/*"

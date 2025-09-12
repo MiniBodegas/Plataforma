@@ -14,7 +14,6 @@ export function WarehouseCard({ warehouse = {} }) {
     features = [],
     rating = 0,
     description,
-    warehouseCount = 0,
     reviewCount = 0
   } = warehouse
 
@@ -22,13 +21,11 @@ export function WarehouseCard({ warehouse = {} }) {
 
   const handleReserve = () => {
     if (!canNavigate) return
-    // puedes pasar la data de la bodega al detalle para no re-consultar
     navigate(`/bodegas/${id}`, { state: { warehouse } })
   }
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow w-full max-w-[500px] h-[550px] flex flex-col">
-
       {/* Imagen */}
       <div className="relative h-40 sm:h-56">
         <img
@@ -43,7 +40,14 @@ export function WarehouseCard({ warehouse = {} }) {
       <div className="p-4 sm:p-5 flex flex-col flex-1">
         <div className="mb-2 sm:mb-3">
           <div className="flex items-center justify-between mb-1 sm:mb-2">
-            <h3 className="font-semibold text-base sm:text-lg text-[#2C3A61] line-clamp-1">{name}</h3>
+            {/* Nombre con link al perfil de la compañía */}
+            <Link
+              to="/perfil-bodegas"
+              className="font-semibold text-base sm:text-lg text-[#2C3A61] line-clamp-1 underline decoration-2 underline-offset-4 hover:text-[#4B799B] transition-colors"
+              title="Ir al perfil de la compañía"
+            >
+              {name}
+            </Link>
           </div>
 
           {rating > 0 && (
