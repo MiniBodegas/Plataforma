@@ -57,3 +57,5 @@ export * from './BodegaCarruselEditor'
 export * from './DescriptionEditor'
 export * from './CardBodegas/CardBodegas'
 export * from './AgregarMiniBodegaBtn'
+
+export * from './CompanyDescripcionPerfil'

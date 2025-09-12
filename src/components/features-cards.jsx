@@ -17,16 +17,17 @@ export function FeaturesCards() {
     },
     {
       order: 3,
-      icon: FileText,
-      title: "Contrata",
-      description: "Agenda tu visita y contrata el servicio que más te convenga",
-    },
-    {
-      order: 2,
       icon: CreditCard,
       title: "Reserva y paga",
       description: "Reserva tu bodega y paga de forma segura en línea",
     },
+    {
+      order: 2,
+      icon: FileText,
+      title: "Contrata",
+      description: "Agenda tu visita y contrata el servicio que más te convenga",
+    },
+    
   ]
 
   const [activeOrder, setActiveOrder] = useState(0)

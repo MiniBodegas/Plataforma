@@ -70,9 +70,9 @@ export function FormStepper({ onDataChange, reservationData }) {
     <div className="bg-white dark:bg-white rounded-lg shadow-lg p-6">
       {/* Progress Steps con títulos */}
       <div className="mb-6">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-start mb-4">
           {steps.map((step, index) => (
-            <div key={step.number} className="flex items-center">
+            <div key={step.number} className="flex flex-col items-center flex-1">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                   currentStep >= step.number
@@ -82,27 +82,22 @@ export function FormStepper({ onDataChange, reservationData }) {
               >
                 {step.completed ? "✓" : step.number}
               </div>
+              <div 
+                className={`mt-2 text-xs text-center w-full ${
+                  currentStep === step.number 
+                    ? "text-[#4B799B] font-medium" 
+                    : "text-gray-500 dark:text-gray-500"
+                }`}
+              >
+                {step.title}
+              </div>
               {index < steps.length - 1 && (
                 <div
-                  className={`h-1 w-20 mx-2 ${
+                  className={`h-1 w-20 mx-2 self-center ${
                     currentStep > step.number ? "bg-[#4B799B]" : "bg-gray-200 dark:bg-gray-200"
                   }`}
                 />
               )}
-            </div>
-          ))}
-        </div>
-        <div className="flex justify-between text-xs">
-          {steps.map((step) => (
-            <div 
-              key={step.number} 
-              className={`text-center flex-1 ${
-                currentStep === step.number 
-                  ? "text-[#4B799B] font-medium" 
-                  : "text-gray-500 dark:text-gray-500"
-              }`}
-            >
-              {step.title}
             </div>
           ))}
         </div>
@@ -342,7 +337,7 @@ export function FormStepper({ onDataChange, reservationData }) {
             }
           }}
         >
-          {currentStep === steps.length ? "Completar Formulario" : "Siguiente"}
+          {currentStep === steps.length ? "Confirmar Reserva" : "Siguiente"}
         </button>
       </div>
     </div>

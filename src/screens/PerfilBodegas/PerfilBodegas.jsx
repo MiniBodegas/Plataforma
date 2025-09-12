@@ -1,11 +1,11 @@
-import { Carrousel, CompanyDescription, PerfilCard, MapaBodegas, TestimonialsSection } from "../../components";
+import { Carrousel, PerfilCard, MapaBodegas, TestimonialsSection,CompanyDescriptionPerfil } from "../../components";
 import { WAREHOUSES_DATA } from "../../data/warehouse";
 
 export function PerfilBodegas() {
   return (
     <div>
       <Carrousel />
-      <CompanyDescription />
+      <CompanyDescriptionPerfil />
       <PerfilCard />
       
       {/* Mapa simple */}

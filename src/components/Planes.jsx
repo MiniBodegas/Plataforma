@@ -18,11 +18,8 @@ export function Planes() {
   ]
 
   return (
-    <section className="py-16 bg-white">
+    <section className="py-16e">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl font-bold text-center text-gray-900 mb-12" style={{ color: "#2C3A61" }}>
-          Planes
-        </h2>
         <div className="flex justify-center">
           <div className="grid grid-cols-1 gap-8 max-w-md">
             {sizeGuides.map((guide, index) => (
@@ -66,7 +63,7 @@ export function Planes() {
                 </div>
                 
                 {/* Botón de acción */}
-                <Link to="/planes">
+                <Link to="/bodega-editor-proveedor">
                   <button
                     className="w-full mt-6 py-3 px-6 rounded-lg text-white font-semibold transition-all duration-200 hover:transform hover:scale-105"
                     style={{ backgroundColor: "#2C3A61" }}
