@@ -1,6 +1,14 @@
 import { useState, useRef } from "react";
 import { Pencil, Image } from "lucide-react";
 
+const CARACTERISTICAS_DEFAULT = [
+  "Vigilancia 24/7",
+  "Acceso privado",
+  "Seguro incluido",
+  "Estanterías disponibles",
+  "Control de clima"
+];
+
 export function DescriptionEditor({
   empresa,
   onEmpresaChange,
@@ -18,12 +26,13 @@ export function DescriptionEditor({
   const [editDescripcion, setEditDescripcion] = useState(false);
   const [editCaracteristicas, setEditCaracteristicas] = useState(false);
   const [imagenes, setImagenes] = useState(initialImagenes);
+  const [caracteristicasSeleccionadas, setCaracteristicasSeleccionadas] = useState([]);
   const fileInputRef = useRef(null);
 
   // Maneja la carga de imágenes y genera previews
   const handleImagenesChange = (e) => {
     const files = Array.from(e.target.files);
-    setImagenes(files); // Solo guarda la última imagen subida
+    setImagenes(files);
     if (onImagenesChange) onImagenesChange(files);
   };
 
@@ -34,31 +43,42 @@ export function DescriptionEditor({
     }
   };
 
+  // Selección de características por default
+  const handleToggleCaracteristica = (car) => {
+    let nuevas;
+    if (caracteristicasSeleccionadas.includes(car)) {
+      nuevas = caracteristicasSeleccionadas.filter(c => c !== car);
+    } else {
+      nuevas = [...caracteristicasSeleccionadas, car];
+    }
+    setCaracteristicasSeleccionadas(nuevas);
+    if (onCaracteristicasChange) onCaracteristicasChange(nuevas.join(", "));
+  };
+
   return (
-    <div className="max-w-7xl mx-auto p-6 bg-gray-50 rounded-xl ">
-      {/* Título y dirección */}
-      <div className="bg-[#F7F8FA] rounded-xl p-6 mb-4">
-        <div className="flex flex-col items-center">
+    <div className="max-w-7xl mx-auto p-6 bg-gray-50 rounded-xl">
+      {/* Título y descripción en dos columnas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        {/* Título a la izquierda con fondo blanco */}
+        <div className="bg-white rounded-xl p-6 flex flex-col justify-center items-start h-full">
           <div className="flex items-center mb-2">
             {editEmpresa ? (
               <input
                 type="text"
                 value={empresa}
                 onChange={e => onEmpresaChange(e.target.value)}
-                className="text-center text-3xl font-bold w-full bg-white text-[#2C3A61]"
+                className="text-3xl font-bold w-full bg-white text-[#2C3A61] text-left"
                 onBlur={() => setEditEmpresa(false)}
                 autoFocus
                 style={{ backgroundColor: "#fff", color: "#2C3A61" }}
               />
             ) : (
-              <>
-                <span className="text-3xl font-bold text-[#2C3A61]">
-                  {empresa || "Nombre de tu empresa"}
-                </span>
-                <button type="button" onClick={() => setEditEmpresa(true)}>
-                  <Pencil className="ml-2 h-5 w-5 text-[#2C3A61]" />
-                </button>
-              </>
+              <span
+                className="text-3xl font-bold text-[#2C3A61] text-left cursor-pointer"
+                onClick={() => setEditEmpresa(true)}
+              >
+                {empresa || "Nombre de tu empresa"}
+              </span>
             )}
           </div>
           <div className="flex items-center">
@@ -67,58 +87,46 @@ export function DescriptionEditor({
                 type="text"
                 value={direccion}
                 onChange={e => onDireccionChange(e.target.value)}
-                className="text-center text-base w-full bg-white text-[#2C3A61]"
+                className="text-base w-full bg-white text-[#2C3A61] text-left"
                 onBlur={() => setEditDireccion(false)}
                 autoFocus
                 style={{ backgroundColor: "#fff", color: "#2C3A61" }}
               />
             ) : (
-              <>
-                <span className="text-base text-[#2C3A61]">
-                  {direccion || "Ingresa la dirección de tus minis bodegas"}
-                </span>
-                <button type="button" onClick={() => setEditDireccion(true)}>
-                  <Pencil className="ml-2 h-4 w-4 text-[#2C3A61]" />
-                </button>
-              </>
+              <span
+                className="text-base text-[#2C3A61] text-left cursor-pointer"
+                onClick={() => setEditDireccion(true)}
+              >
+                {direccion || "Ingresa la dirección de tus minis bodegas"}
+              </span>
             )}
           </div>
         </div>
-      </div>
-
-      {/* Descripción */}
-      <div className="bg-[#4B799B] rounded-xl p-5 mb-4 flex flex-col relative">
-        <div className="flex justify-between items-start">
-          <div>
-            <span className="font-semibold text-white text-base">Descripción</span>
-            <div className="text-white mt-1">
-              {editDescripcion ? (
-                <textarea
-                  value={descripcion}
-                  onChange={e => onDescripcionChange(e.target.value)}
-                  className="w-full p-2 rounded bg-white text-[#2C3A61] mt-2"
-                  rows={3}
-                  style={{ backgroundColor: "#fff", color: "#2C3A61" }}
-                  onBlur={() => setEditDescripcion(false)}
-                  autoFocus
-                />
-              ) : (
-                <span>
-                  {descripcion
-                    ? descripcion
-                    : "Ejemplo: Nuestra mini bodega cuenta con seguridad 24/7, acceso privado y excelente ubicación. Ideal para guardar tus pertenencias de forma segura y cómoda."}
-                </span>
-              )}
-            </div>
+        {/* Descripción a la derecha */}
+        <div className="bg-[#4B799B] rounded-xl p-6 flex flex-col justify-center h-full">
+          <span className="font-semibold text-white text-base mb-2">Descripción</span>
+          <div className="text-white">
+            {editDescripcion ? (
+              <textarea
+                value={descripcion}
+                onChange={e => onDescripcionChange(e.target.value)}
+                className="w-full p-2 rounded bg-white text-[#2C3A61] mt-2"
+                rows={4}
+                style={{ backgroundColor: "#fff", color: "#2C3A61" }}
+                onBlur={() => setEditDescripcion(false)}
+                autoFocus
+              />
+            ) : (
+              <span
+                className="cursor-pointer"
+                onClick={() => setEditDescripcion(true)}
+              >
+                {descripcion
+                  ? descripcion
+                  : "Ejemplo: Nuestra mini bodega cuenta con seguridad 24/7, acceso privado y excelente ubicación. Ideal para guardar tus pertenencias de forma segura y cómoda."}
+              </span>
+            )}
           </div>
-          <button
-            type="button"
-            className="ml-2 mt-1"
-            onClick={() => setEditDescripcion(true)}
-            title="Editar descripción"
-          >
-            <Pencil className="h-5 w-5 text-white" />
-          </button>
         </div>
       </div>
 
@@ -169,11 +177,36 @@ export function DescriptionEditor({
         <div className="bg-white rounded-xl p-6 flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[#2C3A61] font-semibold">Características</span>
-            <button type="button" onClick={() => setEditCaracteristicas(true)}>
-              <Pencil className="h-5 w-5 text-[#2C3A61]" />
-            </button>
           </div>
-          {editCaracteristicas ? (
+          {/* Selección de características por default */}
+          {!editCaracteristicas ? (
+            <div>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {CARACTERISTICAS_DEFAULT.map(car => (
+                  <button
+                    key={car}
+                    type="button"
+                    className={`px-3 py-1 rounded-full border ${
+                      caracteristicasSeleccionadas.includes(car)
+                        ? "bg-[#4B799B] text-white border-[#4B799B]"
+                        : "bg-white text-[#4B799B] border-[#4B799B]"
+                    } text-sm`}
+                    onClick={() => handleToggleCaracteristica(car)}
+                  >
+                    {car}
+                  </button>
+                ))}
+              </div>
+              <span
+                className="text-[#4B799B] block mt-2 cursor-pointer"
+                onClick={() => setEditCaracteristicas(true)}
+              >
+                {caracteristicasSeleccionadas.length > 0
+                  ? caracteristicasSeleccionadas.join(", ")
+                  : "Selecciona o escribe las características de tus minis bodegas"}
+              </span>
+            </div>
+          ) : (
             <textarea
               value={caracteristicas}
               onChange={e => onCaracteristicasChange(e.target.value)}
@@ -184,10 +217,6 @@ export function DescriptionEditor({
               onBlur={() => setEditCaracteristicas(false)}
               autoFocus
             />
-          ) : (
-            <span className="text-[#4B799B]">
-              {caracteristicas || "Ingresa las características de tus minis bodegas"}
-            </span>
           )}
         </div>
       </div>
