@@ -38,11 +38,12 @@ export function TestimonialsSection() {
     },
   ]
 
-  const settings = {
+  // Configuración solo para desktop
+  const desktopSettings = {
     dots: false,
     infinite: true,
     speed: 900,
-    slidesToShow: 4, // Desktop: 4 cards
+    slidesToShow: 4,
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 2500,
@@ -50,68 +51,82 @@ export function TestimonialsSection() {
     responsive: [
       {
         breakpoint: 1024,
-        settings: { slidesToShow: 2 }, // Tablet: 2 cards
-      },
-      {
-        breakpoint: 768,
-        settings: { slidesToShow: 1 }, // Móvil: 1 card
+        settings: { 
+          slidesToShow: 2,
+        },
       },
     ],
   }
 
+  // Configuración solo para mobile
+  const mobileSettings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    autoplay: true,
+    autoplaySpeed: 3000,
+    arrows: false,
+  }
+
+  // Componente de card reutilizable
+  const TestimonialCard = ({ testimonial, isMobile = false }) => (
+    <div className={`bg-white rounded-2xl shadow-md ${isMobile ? 'p-6 mx-4 min-h-[200px]' : 'p-4 mx-3 min-h-[180px]'} flex flex-col justify-between`}>
+      <div className="flex items-center gap-3 mb-3">
+        <img
+          src={testimonial.avatar}
+          alt={testimonial.name}
+          className={`rounded-full object-cover flex-shrink-0 ${isMobile ? 'w-12 h-12' : 'w-10 h-10'}`}
+        />
+        <div className="flex-1 min-w-0">
+          <h4 className={`font-semibold truncate ${isMobile ? 'text-base' : 'text-sm'}`} style={{ color: "#2C3A61" }}>
+            {testimonial.name}
+          </h4>
+          <div className="flex mt-1">
+            {[...Array(testimonial.rating)].map((_, i) => (
+              <Star
+                key={i}
+                className={`text-yellow-400 fill-current ${isMobile ? 'h-4 w-4' : 'h-3 w-3'}`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+      <p className={`italic leading-relaxed flex-1 ${isMobile ? 'text-sm' : 'text-xs'}`} style={{ color: "#2C3A61" }}>
+        "{testimonial.text}"
+      </p>
+    </div>
+  )
+
   return (
     <section className="py-20 bg-white">
-      <div className="max-w-8xl mx-auto px-8">
+      <div className="max-w-8xl mx-auto px-6 lg:px-12"> {/* Contenedor más grande y más padding */}
         <h2 className="text-3xl font-bold text-center text-gray-900 mb-12" style={{ color: "#2C3A61" }}>
           Testimonios
         </h2>
 
-        {/* Padding horizontal del carrusel → controla el espacio entre el borde de la sección y las cards */}
-        <Slider {...settings} className="px-2 sm:px-10 lg:px-20">
-          {testimonials.map((testimonial, index) => (
-            <div key={index} className="flex justify-center h-full"> 
-              {/* Card principal */}
-              <div 
-                className="
-                  bg-white rounded-2xl shadow-md 
-                  flex flex-col justify-between 
-                  min-w-[250px] max-w-[320px] w-full
-                  h-auto min-h-[180px] 
-                  mx-auto  
-                  transition-transform hover:scale-[1.03] 
-                  hover:shadow-lg duration-300 ease-in-out
-                "
-              >
-                {/* Header de la card (imagen + nombre + estrellas) */}
-                <div className="flex items-center gap-3 px-4 pt-6"> 
-                  <img
-                    src={testimonial.avatar}
-                    alt={testimonial.name}
-                    className="w-10 h-10 rounded-full"
-                  />
-                  <div>
-                    <h4 className="font-semibold text-gray-900 break-words" style={{ color: "#2C3A61" }}>
-                      {testimonial.name}
-                    </h4>
-                    <div className="flex">
-                      {[...Array(testimonial.rating)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className="h-4 w-4 text-yellow-400 fill-current"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Texto del testimonio */}
-                <p className="text-gray-600 italic text-sm leading-relaxed px-4 pb-4 break-words" style={{ color: "#2C3A61" }}>
-                  "{testimonial.text}"
-                </p>
+        {/* VERSION DESKTOP (oculta en mobile) */}
+        <div className="hidden md:block px-4 lg:px-8"> {/* Más padding horizontal en desktop */}
+          <Slider {...desktopSettings}>
+            {testimonials.map((testimonial, index) => (
+              <div key={index}>
+                <TestimonialCard testimonial={testimonial} />
               </div>
-            </div>
-          ))}
-        </Slider>
+            ))}
+          </Slider>
+        </div>
+
+        {/* VERSION MOBILE (oculta en desktop) */}
+        <div className="block md:hidden">
+          <Slider {...mobileSettings}>
+            {testimonials.map((testimonial, index) => (
+              <div key={index}>
+                <TestimonialCard testimonial={testimonial} isMobile={true} />
+              </div>
+            ))}
+          </Slider>
+        </div>
       </div>
     </section>
   )

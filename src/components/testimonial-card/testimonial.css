@@ -1,4 +1,40 @@
-.slick-slider .slick-list{
-    
+.slick-slider .slick-list {
+    width: 100%;
     height: 250px;
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+.testimonials-slider .slick-list {
+    overflow: visible;
+    height: auto; /* Permite que la altura se ajuste */
+    padding: 0 20px; /* Espacio horizontal */
+}
+
+.testimonials-slider .slick-track {
+    display: flex;
+    align-items: stretch; /* Las cards tendrán la misma altura */
+}
+
+.testimonials-slider .slick-slide {
+    padding: 10px; /* Espacio entre cards */
+}
+
+.testimonials-slider .slick-slide > div {
+    height: 100%;
+}
+
+@media (max-width: 768px) {
+    .testimonials-slider .slick-center {
+        transform: scale(1);
+    }
+    
+    .testimonials-slider .slick-list {
+        padding: 0 30px; /* Más espacio en mobile */
+        height: auto;
+    }
+    
+    .testimonials-slider .slick-slide {
+        padding: 15px; /* Más espacio entre cards en mobile */
+    }
 }
