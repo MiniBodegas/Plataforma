@@ -19,13 +19,26 @@ export function WarehouseCard({ warehouse = {} }) {
 
   const canNavigate = typeof id === "number" || typeof id === "string"
 
-  const handleReserve = () => {
+  const handleReserve = (e) => {
+    e.stopPropagation() // Evita que se active el click de la card
     if (!canNavigate) return
     navigate(`/bodegas/${id}`, { state: { warehouse } })
   }
 
+  const handleCardClick = () => {
+    if (!canNavigate) return
+    navigate(`/bodegas/${id}`, { state: { warehouse } })
+  }
+
+  const handleLinkClick = (e) => {
+    e.stopPropagation() // Evita que se active el click de la card cuando se hace click en el link
+  }
+
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow w-full max-w-[500px] h-[550px] flex flex-col">
+    <div 
+      className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow w-full max-w-[500px] h-[550px] flex flex-col cursor-pointer"
+      onClick={handleCardClick}
+    >
       {/* Imagen */}
       <div className="relative h-40 sm:h-56">
         <img
@@ -45,6 +58,7 @@ export function WarehouseCard({ warehouse = {} }) {
               to="/perfil-bodegas"
               className="font-semibold text-base sm:text-lg text-[#2C3A61] line-clamp-1 underline decoration-2 underline-offset-4 hover:text-[#4B799B] transition-colors"
               title="Ir al perfil de la compañía"
+              onClick={handleLinkClick}
             >
               {name}
             </Link>

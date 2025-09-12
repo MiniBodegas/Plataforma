@@ -16,17 +16,18 @@ export function FeaturesCards() {
       description: "Compara precios, ubicaciones y servicios disponibles en tiempo real",
     },
     {
-      order: 3,
-      icon: CreditCard,
-      title: "Reserva y paga",
-      description: "Reserva tu bodega y paga de forma segura en línea",
-    },
-    {
       order: 2,
       icon: FileText,
       title: "Contrata",
       description: "Agenda tu visita y contrata el servicio que más te convenga",
     },
+    {
+      order: 3,
+      icon: CreditCard,
+      title: "Reserva y paga",
+      description: "Reserva tu bodega y paga de forma segura en línea",
+    },
+    
     
   ]
 
