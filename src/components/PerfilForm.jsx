@@ -1,10 +1,13 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 export function PerfilForm() {
   const [nombre, setNombre] = useState("Juan Esteban Ramirez Perdomo");
   const [email, setEmail] = useState("juan.ramirez@email.com");
   const [telefono, setTelefono] = useState("3001234567");
   const [imagen, setImagen] = useState(null);
+  const navigate = useNavigate();
 
   const handleImagenChange = (e) => {
     const file = e.target.files[0];
@@ -19,10 +22,24 @@ export function PerfilForm() {
     alert("Datos actualizados correctamente");
   };
 
+  const handleBack = () => {
+    navigate(-1);
+  };
+
   return (
     <div className="min-h-screen flex flex-col justify-between bg-white">
       <div>
-        <h2 className="text-2xl font-bold text-[#2C3A61] text-center mt-12 mb-2">
+        {/* Flecha de regreso */}
+        <div className="p-4">
+          <button
+            onClick={handleBack}
+            className="text-[#2C3A61] hover:text-[#1e2a47] transition-colors"
+          >
+            <ArrowLeft className="h-6 w-6" />
+          </button>
+        </div>
+
+        <h2 className="text-2xl font-bold text-[#2C3A61] text-center mt-4 mb-2">
           Editar perfil
         </h2>
         <form

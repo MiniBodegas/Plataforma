@@ -1,7 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { ReservaCard, NavBarProveedores } from "../../components";
 
 export function BodegasUsuario() {
+  const navigate = useNavigate();
+
   const [reservas, setReservas] = useState([
     {
       id: 1,
@@ -30,6 +34,10 @@ export function BodegasUsuario() {
   const reservasProcesando = reservas.filter((r) => r.estado === "procesando");
   const reservasRechazadas = reservas.filter((r) => r.estado === "rechazada");
 
+  const handleBack = () => {
+    navigate(-1);
+  };
+
   const renderSeccion = (titulo, reservasArray) => (
     <div className="mb-10">
       <h3 className="text-xl font-bold text-center text-[#2C3A61] mb-4">
@@ -52,6 +60,16 @@ export function BodegasUsuario() {
   return (
     <div className="min-h-screen bg-white px-6 py-10">
       <div className="max-w-4xl mx-auto">
+        
+        {/* Flecha de regreso */}
+        <div className="mb-4">
+          <button
+            onClick={handleBack}
+            className="text-[#2C3A61] hover:text-[#1e2a47] transition-colors"
+          >
+            <ArrowLeft className="h-6 w-6" />
+          </button>
+        </div>
 
         {/* Nombre usuario */}
         <h2 className="text-2xl md:text-3xl font-bold text-[#2C3A61] text-center my-8">
