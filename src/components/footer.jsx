@@ -1,10 +1,28 @@
 import { Instagram, Facebook, MessageCircle } from "lucide-react"
-import { Link, useLocation } from "react-router-dom"
+import { useLocation } from "react-router-dom"
+import { useAuth } from "../contexts/AuthContext"
 
 export function Footer() {
   const location = useLocation()
-  // Detecta modo proveedor por la ruta, puedes ajustar la lógica según tu app
+  const { user, signOut } = useAuth()
+  
+  // Detecta modo proveedor por la ruta
   const isProveedor = location.pathname.includes("proveedor")
+  const isUserLoggedAsProveedor = user?.user_metadata?.user_type === 'proveedor'
+  const isUserLoggedAsRegular = user && user?.user_metadata?.user_type !== 'proveedor'
+
+  const handleContextSwitch = async (targetRoute) => {
+    // Si hay un usuario logueado y está cambiando de contexto
+    if (user) {
+      await signOut()
+      // Pequeño delay para asegurar que se deslogueó
+      setTimeout(() => {
+        window.location.href = targetRoute
+      }, 100)
+    } else {
+      window.location.href = targetRoute
+    }
+  }
 
   return (
     <footer className="bg-white border-t">
@@ -23,15 +41,21 @@ export function Footer() {
             <ul className="space-y-2 text-gray-600">
               {isProveedor ? (
                 <li>
-                  <Link to="/" className="hover:text-gray-900">
-                    Regístrate como usuario
-                  </Link>
+                  <button 
+                    onClick={() => handleContextSwitch("/")}
+                    className="hover:text-gray-900 text-left"
+                  >
+                    {user ? "Ir a sección de usuarios" : "Ir a sección de usuarios"}
+                  </button>
                 </li>
               ) : (
                 <li>
-                  <Link to="/home-proveedor" className="hover:text-gray-900">
-                    Regístrate como proveedor
-                  </Link>
+                  <button 
+                    onClick={() => handleContextSwitch("/home-proveedor")}
+                    className="hover:text-gray-900 text-left"
+                  >
+                    {user ? "Ir a sección de proveedores " : "Ir a sección de proveedores"}
+                  </button>
                 </li>
               )}
             </ul>

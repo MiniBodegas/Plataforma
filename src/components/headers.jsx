@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, User } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export function Header({ tipo }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -11,6 +13,11 @@ export function Header({ tipo }) {
 
   const closeMenu = () => {
     setIsMenuOpen(false);
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    closeMenu();
   };
 
   return (
@@ -37,13 +44,43 @@ export function Header({ tipo }) {
                 <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-[#2C3A61] transition-all duration-300 group-hover:w-full"></span>
               </Link>
 
-              <Link 
-                to="/register"
-                className="px-4 py-2 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
-                hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 inline-block whitespace-nowrap"
-              >
-                Regístrate
-              </Link>
+              {/* Mostrar diferentes botones según el estado de autenticación */}
+              {user ? (
+                <div className="flex items-center space-x-4">
+                  <Link 
+                    to="/perfil-user"
+                    className="flex items-center gap-2 px-4 py-2 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
+                    hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 whitespace-nowrap"
+                  >
+                    <User className="h-4 w-4" />
+                    Mi Perfil
+                  </Link>
+                  <button 
+                    onClick={handleLogout}
+                    className="px-4 py-2 rounded font-semibold bg-[#2C3A61] text-white 
+                    hover:bg-[#1e2a47] transition-colors duration-300 whitespace-nowrap"
+                  >
+                    Cerrar Sesión
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-3">
+                  <Link 
+                    to="/login"
+                    className="px-4 py-2 rounded font-semibold text-[#2C3A61] 
+                    hover:bg-gray-100 transition-colors duration-300 whitespace-nowrap"
+                  >
+                    Iniciar Sesión
+                  </Link>
+                  <Link 
+                    to="/register"
+                    className="px-4 py-2 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
+                    hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 whitespace-nowrap"
+                  >
+                    Regístrate
+                  </Link>
+                </div>
+              )}
             </>
           )}
 
@@ -65,13 +102,43 @@ export function Header({ tipo }) {
                 <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-[#2C3A61] transition-all duration-300 group-hover:w-full"></span>
               </Link>
 
-              <Link 
-                to="/register-proveedores"
-                className="px-3 lg:px-4 py-2 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
-                hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 inline-block whitespace-nowrap text-sm lg:text-base"
-              >
-                Regístrate como Proveedor
-              </Link>
+              {/* Mostrar diferentes botones según el estado de autenticación para proveedores */}
+              {user ? (
+                <div className="flex items-center space-x-4">
+                  <Link 
+                    to="/perfil-proveedor"
+                    className="flex items-center gap-2 px-3 lg:px-4 py-2 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
+                    hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 whitespace-nowrap text-sm lg:text-base"
+                  >
+                    <User className="h-4 w-4" />
+                    Mi Perfil
+                  </Link>
+                  <button 
+                    onClick={handleLogout}
+                    className="px-3 lg:px-4 py-2 rounded font-semibold bg-[#2C3A61] text-white 
+                    hover:bg-[#1e2a47] transition-colors duration-300 whitespace-nowrap text-sm lg:text-base"
+                  >
+                    Cerrar Sesión
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-3">
+                  <Link 
+                    to="/login-proveedores"
+                    className="px-3 lg:px-4 py-2 rounded font-semibold text-[#2C3A61] 
+                    hover:bg-gray-100 transition-colors duration-300 whitespace-nowrap text-sm lg:text-base"
+                  >
+                    Iniciar Sesión
+                  </Link>
+                  <Link 
+                    to="/register-proveedores"
+                    className="px-3 lg:px-4 py-2 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
+                    hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 whitespace-nowrap text-sm lg:text-base"
+                  >
+                    Regístrate como Proveedor
+                  </Link>
+                </div>
+              )}
             </>
           )}
         </nav>
@@ -107,14 +174,46 @@ export function Header({ tipo }) {
                 Calcula tu espacio
               </Link>
 
-              <Link 
-                to="/register"
-                className="px-4 py-3 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
-                hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 text-center"
-                onClick={closeMenu}
-              >
-                Regístrate
-              </Link>
+              {/* Menú mobile para usuarios */}
+              {user ? (
+                <>
+                  <Link 
+                    to="/perfil-user"
+                    className="flex items-center gap-2 px-4 py-3 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
+                    hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 text-center"
+                    onClick={closeMenu}
+                  >
+                    <User className="h-4 w-4" />
+                    Mi Perfil
+                  </Link>
+                  <button 
+                    onClick={handleLogout}
+                    className="px-4 py-3 rounded font-semibold bg-[#2C3A61] text-white 
+                    hover:bg-[#1e2a47] transition-colors duration-300 text-center w-full"
+                  >
+                    Cerrar Sesión
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link 
+                    to="/login"
+                    className="px-4 py-3 rounded font-semibold text-[#2C3A61] 
+                    hover:bg-gray-100 transition-colors duration-300 text-center"
+                    onClick={closeMenu}
+                  >
+                    Iniciar Sesión
+                  </Link>
+                  <Link 
+                    to="/register"
+                    className="px-4 py-3 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
+                    hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 text-center"
+                    onClick={closeMenu}
+                  >
+                    Regístrate
+                  </Link>
+                </>
+              )}
             </>
           )}
 
@@ -136,14 +235,46 @@ export function Header({ tipo }) {
                 Dashboard
               </Link>
 
-              <Link 
-                to="/register-proveedores"
-                className="px-4 py-3 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
-                hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 text-center"
-                onClick={closeMenu}
-              >
-                Regístrate como Proveedor
-              </Link>
+              {/* Menú mobile para proveedores */}
+              {user ? (
+                <>
+                  <Link 
+                    to="/perfil-proveedor"
+                    className="flex items-center gap-2 px-4 py-3 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
+                    hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 text-center"
+                    onClick={closeMenu}
+                  >
+                    <User className="h-4 w-4" />
+                    Mi Perfil
+                  </Link>
+                  <button 
+                    onClick={handleLogout}
+                    className="px-4 py-3 rounded font-semibold bg-[#2C3A61] text-white 
+                    hover:bg-[#1e2a47] transition-colors duration-300 text-center w-full"
+                  >
+                    Cerrar Sesión
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link 
+                    to="/login-proveedores"
+                    className="px-4 py-3 rounded font-semibold text-[#2C3A61] 
+                    hover:bg-gray-100 transition-colors duration-300 text-center"
+                    onClick={closeMenu}
+                  >
+                    Iniciar Sesión
+                  </Link>
+                  <Link 
+                    to="/register-proveedores"
+                    className="px-4 py-3 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
+                    hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 text-center"
+                    onClick={closeMenu}
+                  >
+                    Regístrate como Proveedor
+                  </Link>
+                </>
+              )}
             </>
           )}
         </nav>

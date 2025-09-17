@@ -1,21 +1,54 @@
 import { useState } from "react"
 import { Eye, EyeOff } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
+import { useAuth } from "../contexts/AuthContext"
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   })
 
-  const handleSubmit = (e) => {
+  const { signIn } = useAuth()
+  const navigate = useNavigate()
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log("Form submitted:", formData)
+    
+    // Validaciones
+    if (!formData.email || !formData.password) {
+      setError('Por favor completa todos los campos')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const { error } = await signIn(formData.email, formData.password)
+
+      if (error) {
+        setError(error.message === 'Invalid login credentials' 
+          ? 'Credenciales incorrectas. Verifica tu email y contraseña.' 
+          : error.message)
+      } else {
+        // Login exitoso, redirigir al dashboard o home
+        navigate('/')
+      }
+    } catch (err) {
+      setError('Ocurrió un error inesperado')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+    // Limpiar errores cuando el usuario empiece a escribir
+    if (error) setError('')
   }
 
   return (
@@ -35,8 +68,16 @@ export function LoginForm() {
         {/* Formulario derecha */}
         <div className="p-8 md:p-12">
           <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-            Crear cuenta
+            Iniciar sesión
           </h2>
+
+          {/* Mensaje de error */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
 
             {/* Correo */}
@@ -50,9 +91,11 @@ export function LoginForm() {
                 placeholder="Escribe tu correo"
                 value={formData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
+                disabled={loading}
                 className="w-full h-12 rounded-2xl border border-gray-300 px-4 
                             bg-white text-gray-900 
-                            focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
+                            focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none
+                            disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -68,32 +111,57 @@ export function LoginForm() {
                   placeholder="Escribe tu contraseña"
                   value={formData.password}
                   onChange={(e) => handleInputChange("password", e.target.value)}
-                  className="w-full h-12 rounded-2xl border border-gray-300 px-4 
+                  disabled={loading}
+                  className="w-full h-12 rounded-2xl border border-gray-300 px-4 pr-12
                             bg-white text-gray-900 
-                            focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
+                            focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none
+                            disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  disabled={loading}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:opacity-50"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
             </div>
 
+            {/* Enlace "Olvidé mi contraseña" */}
+            <div className="text-right">
+              <Link 
+                to="/forgot-password" 
+                className="text-sm text-[#4B799B] hover:underline"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
+
             {/* Botón */}
             <button
               type="submit"
-              className="w-full h-12 rounded-lg bg-[#4B799B] hover:bg-blue-700 text-white font-semibold transition-colors"
+              disabled={loading}
+              className="w-full h-12 rounded-lg bg-[#4B799B] hover:bg-blue-700 text-white font-semibold transition-colors
+                        disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              Regístrate
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Iniciando sesión...
+                </div>
+              ) : (
+                'Iniciar sesión'
+              )}
             </button>
 
             {/* Enlace */}
             <div className="text-center">
-              <Link to="/register" className="text-[#4B799B] hover:underline font-medium">
-                Todavia no tienes cuenta? Registrate
+              <Link 
+                to="/register" 
+                className="text-[#4B799B] hover:underline font-medium"
+              >
+                ¿Todavía no tienes cuenta? Regístrate
               </Link>
             </div>
           </form>
