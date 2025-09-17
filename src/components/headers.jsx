@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export function Header({ tipo }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -18,6 +19,18 @@ export function Header({ tipo }) {
   const handleLogout = async () => {
     await signOut();
     closeMenu();
+  };
+
+  // Función para manejar enlaces protegidos
+  const handleProtectedLink = (targetRoute, loginRoute) => {
+    closeMenu();
+    if (user && user?.user_metadata?.user_type === 'proveedor') {
+      navigate(targetRoute);
+    } else {
+      // Guardar la ruta a la que quería ir para redirigir después del login
+      localStorage.setItem('redirectAfterLogin', targetRoute);
+      navigate(loginRoute);
+    }
   };
 
   return (
@@ -86,24 +99,28 @@ export function Header({ tipo }) {
 
           {tipo === "proveedor" && (
             <>
-              <Link
-                to="/bodega-editor-proveedor"
-                className="text-base font-medium relative group whitespace-nowrap"
+              {/* Mostrar siempre "Crea tu mini bodega", pero protegerlo */}
+              <button
+                onClick={() => handleProtectedLink('/bodega-editor-proveedor', '/login-proveedores')}
+                className="text-base font-medium relative group whitespace-nowrap cursor-pointer bg-transparent border-none p-0 text-[#2C3A61]"
               >
                 Crea tu mini bodega
                 <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-[#2C3A61] transition-all duration-300 group-hover:w-full"></span>
-              </Link>
+              </button>
 
-              <Link
-                to="/mis-bodegas"
-                className="text-base font-medium relative group whitespace-nowrap"
-              >
-                Dashboard
-                <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-[#2C3A61] transition-all duration-300 group-hover:w-full"></span>
-              </Link>
+              {/* Dashboard solo visible para proveedores logueados */}
+              {user && user?.user_metadata?.user_type === 'proveedor' && (
+                <Link
+                  to="/mis-bodegas"
+                  className="text-base font-medium relative group whitespace-nowrap"
+                >
+                  Dashboard
+                  <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-[#2C3A61] transition-all duration-300 group-hover:w-full"></span>
+                </Link>
+              )}
 
               {/* Mostrar diferentes botones según el estado de autenticación para proveedores */}
-              {user ? (
+              {user && user?.user_metadata?.user_type === 'proveedor' ? (
                 <div className="flex items-center space-x-4">
                   <Link 
                     to="/perfil-proveedor"
@@ -219,24 +236,27 @@ export function Header({ tipo }) {
 
           {tipo === "proveedor" && (
             <>
-              <Link
-                to="/bodega-editor-proveedor"
-                className="text-base font-medium py-2 px-3 rounded hover:bg-gray-50 transition-colors duration-200"
-                onClick={closeMenu}
+              {/* Mostrar siempre "Crea tu mini bodega" en mobile, pero protegerlo */}
+              <button
+                onClick={() => handleProtectedLink('/bodega-editor-proveedor', '/login-proveedores')}
+                className="text-base font-medium py-2 px-3 rounded hover:bg-gray-50 transition-colors duration-200 text-left w-full bg-transparent border-none"
               >
                 Crea tu mini bodega
-              </Link>
+              </button>
 
-              <Link
-                to="/mis-bodegas"
-                className="text-base font-medium py-2 px-3 rounded hover:bg-gray-50 transition-colors duration-200"
-                onClick={closeMenu}
-              >
-                Dashboard
-              </Link>
+              {/* Dashboard solo visible para proveedores logueados en mobile */}
+              {user && user?.user_metadata?.user_type === 'proveedor' && (
+                <Link
+                  to="/mis-bodegas"
+                  className="text-base font-medium py-2 px-3 rounded hover:bg-gray-50 transition-colors duration-200"
+                  onClick={closeMenu}
+                >
+                  Dashboard
+                </Link>
+              )}
 
               {/* Menú mobile para proveedores */}
-              {user ? (
+              {user && user?.user_metadata?.user_type === 'proveedor' ? (
                 <>
                   <Link 
                     to="/perfil-proveedor"

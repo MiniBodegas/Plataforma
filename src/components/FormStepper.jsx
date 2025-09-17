@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ExtraServices } from "./ExtraServices";
+import { useAuth } from "../contexts/AuthContext";
 
 export function FormStepper({ onDataChange, reservationData }) {
+  const { user, signIn, signUp } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [showLogin, setShowLogin] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
   const [formData, setFormData] = useState({
     tipoDocumento: '',
     numeroDocumento: '',
@@ -12,8 +16,23 @@ export function FormStepper({ onDataChange, reservationData }) {
     servicios: [],
     email: '',
     password: '',
+    nombre: '',
     ...reservationData
   });
+
+  // Verificar si el usuario ya está logueado al montar el componente
+  useEffect(() => {
+    if (user) {
+      // Si el usuario está logueado, saltar al paso 2
+      setCurrentStep(2);
+      // Pre-llenar con datos del usuario si están disponibles
+      setFormData(prev => ({
+        ...prev,
+        email: user.email || '',
+        nombre: user.user_metadata?.full_name || prev.nombre || '',
+      }));
+    }
+  }, [user]);
 
   const handleFormChange = (field, value) => {
     const newData = { ...formData, [field]: value };
@@ -25,6 +44,8 @@ export function FormStepper({ onDataChange, reservationData }) {
 
   const handleInputChange = (field) => (event) => {
     handleFormChange(field, event.target.value);
+    // Limpiar errores de autenticación al escribir
+    if (authError) setAuthError('');
   };
 
   const handleFechaChange = (event) => {
@@ -55,15 +76,70 @@ export function FormStepper({ onDataChange, reservationData }) {
     { value: 'NIT', label: 'NIT (Persona Jurídica)' }
   ];
 
-  // Simulación de login/register
-  const handleLoginSubmit = (e) => {
+  // Manejo de login con Supabase
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    setCurrentStep(2);
+    
+    if (!formData.email || !formData.password) {
+      setAuthError('Por favor completa todos los campos');
+      return;
+    }
+
+    setLoading(true);
+    setAuthError('');
+
+    try {
+      const { error } = await signIn(formData.email, formData.password);
+      
+      if (error) {
+        setAuthError(error.message === 'Invalid login credentials' 
+          ? 'Credenciales incorrectas. Verifica tu email y contraseña.' 
+          : error.message);
+      } else {
+        // Login exitoso, avanzar al paso 2
+        setCurrentStep(2);
+      }
+    } catch (err) {
+      setAuthError('Ocurrió un error inesperado');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRegisterSubmit = (e) => {
+  // Manejo de registro con Supabase
+  const handleRegisterSubmit = async (e) => {
     e.preventDefault();
-    setCurrentStep(2);
+    
+    if (!formData.nombre || !formData.email || !formData.password) {
+      setAuthError('Por favor completa todos los campos');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setAuthError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    setLoading(true);
+    setAuthError('');
+
+    try {
+      const { error } = await signUp(formData.email, formData.password, {
+        full_name: formData.nombre,
+        user_type: 'usuario'
+      });
+
+      if (error) {
+        setAuthError(error.message);
+      } else {
+        // Registro exitoso, avanzar al paso 2
+        setCurrentStep(2);
+      }
+    } catch (err) {
+      setAuthError('Ocurrió un error inesperado');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -112,92 +188,145 @@ export function FormStepper({ onDataChange, reservationData }) {
       <div className="mb-6">
         {currentStep === 1 && (
           <div>
-            {!showLogin ? (
-              <form onSubmit={handleRegisterSubmit} className="bg-gray-50 p-4 rounded-lg shadow w-full">
-                <div className="mb-2">
-                  <label className="block text-sm font-medium mb-1 text-[#2C3A61]">Nombre</label>
-                  <input
-                    type="text"
-                    value={formData.nombre || ""}
-                    onChange={handleInputChange('nombre')}
-                    className="w-full p-2 border border-gray-300 rounded-md bg-white text-gray-900"
-                    required
-                  />
-                </div>
-                <div className="mb-2">
-                  <label className="block text-sm font-medium mb-1 text-[#2C3A61]">Email</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange('email')}
-                    className="w-full p-2 border border-gray-300 rounded-md bg-white text-gray-900"
-                    required
-                  />
-                </div>
-                <div className="mb-2">
-                  <label className="block text-sm font-medium mb-1 text-[#2C3A61]">Contraseña</label>
-                  <input
-                    type="password"
-                    value={formData.password}
-                    onChange={handleInputChange('password')}
-                    className="w-full p-2 border border-gray-300 rounded-md bg-white text-gray-900"
-                    required
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full bg-[#4B799B] text-white py-2 rounded-md font-semibold hover:bg-[#3b5f7a] transition"
-                >
-                  Registrarse
-                </button>
-                <div className="text-center mt-4">
+            {/* Mostrar información del usuario si está logueado */}
+            {user ? (
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-green-800 font-medium">¡Ya estás logueado!</p>
+                    <p className="text-green-600 text-sm">
+                      Conectado como: {user.email}
+                    </p>
+                  </div>
                   <button
-                    type="button"
-                    className="text-[#4B799B] hover:underline font-medium"
-                    onClick={() => setShowLogin(true)}
+                    onClick={() => setCurrentStep(2)}
+                    className="bg-[#4B799B] text-white px-4 py-2 rounded-md hover:bg-[#3b5f7a] transition"
                   >
-                    Ya tengo cuenta
+                    Continuar
                   </button>
                 </div>
-              </form>
+              </div>
             ) : (
-              <form onSubmit={handleLoginSubmit} className="bg-gray-50 p-4 rounded-lg shadow w-full">
-                <div className="mb-2">
-                  <label className="block text-sm font-medium mb-1 text-[#2C3A61]">Email</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange('email')}
-                    className="w-full p-2 border border-gray-300 rounded-md bg-white text-gray-900"
-                    required
-                  />
-                </div>
-                <div className="mb-2">
-                  <label className="block text-sm font-medium mb-1 text-[#2C3A61]">Contraseña</label>
-                  <input
-                    type="password"
-                    value={formData.password}
-                    onChange={handleInputChange('password')}
-                    className="w-full p-2 border border-gray-300 rounded-md bg-white text-gray-900"
-                    required
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full bg-[#4B799B] text-white py-2 rounded-md font-semibold hover:bg-[#3b5f7a] transition"
-                >
-                  Iniciar sesión
-                </button>
-                <div className="text-center mt-4">
-                  <button
-                    type="button"
-                    className="text-[#4B799B] hover:underline font-medium"
-                    onClick={() => setShowLogin(false)}
-                  >
-                    Quiero registrarme
-                  </button>
-                </div>
-              </form>
+              <>
+                {/* Mensaje de error de autenticación */}
+                {authError && (
+                  <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+                    {authError}
+                  </div>
+                )}
+
+                {!showLogin ? (
+                  <form onSubmit={handleRegisterSubmit} className="bg-gray-50 p-4 rounded-lg shadow w-full">
+                    <div className="mb-2">
+                      <label className="block text-sm font-medium mb-1 text-[#2C3A61]">Nombre</label>
+                      <input
+                        type="text"
+                        value={formData.nombre || ""}
+                        onChange={handleInputChange('nombre')}
+                        className="w-full p-2 border border-gray-300 rounded-md bg-white text-gray-900"
+                        disabled={loading}
+                        required
+                      />
+                    </div>
+                    <div className="mb-2">
+                      <label className="block text-sm font-medium mb-1 text-[#2C3A61]">Email</label>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={handleInputChange('email')}
+                        className="w-full p-2 border border-gray-300 rounded-md bg-white text-gray-900"
+                        disabled={loading}
+                        required
+                      />
+                    </div>
+                    <div className="mb-2">
+                      <label className="block text-sm font-medium mb-1 text-[#2C3A61]">Contraseña</label>
+                      <input
+                        type="password"
+                        value={formData.password}
+                        onChange={handleInputChange('password')}
+                        className="w-full p-2 border border-gray-300 rounded-md bg-white text-gray-900"
+                        disabled={loading}
+                        placeholder="Mínimo 6 caracteres"
+                        required
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-[#4B799B] text-white py-2 rounded-md font-semibold hover:bg-[#3b5f7a] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    >
+                      {loading ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Registrando...
+                        </div>
+                      ) : (
+                        'Registrarse'
+                      )}
+                    </button>
+                    <div className="text-center mt-4">
+                      <button
+                        type="button"
+                        className="text-[#4B799B] hover:underline font-medium"
+                        onClick={() => setShowLogin(true)}
+                        disabled={loading}
+                      >
+                        Ya tengo cuenta
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <form onSubmit={handleLoginSubmit} className="bg-gray-50 p-4 rounded-lg shadow w-full">
+                    <div className="mb-2">
+                      <label className="block text-sm font-medium mb-1 text-[#2C3A61]">Email</label>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={handleInputChange('email')}
+                        className="w-full p-2 border border-gray-300 rounded-md bg-white text-gray-900"
+                        disabled={loading}
+                        required
+                      />
+                    </div>
+                    <div className="mb-2">
+                      <label className="block text-sm font-medium mb-1 text-[#2C3A61]">Contraseña</label>
+                      <input
+                        type="password"
+                        value={formData.password}
+                        onChange={handleInputChange('password')}
+                        className="w-full p-2 border border-gray-300 rounded-md bg-white text-gray-900"
+                        disabled={loading}
+                        required
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-[#4B799B] text-white py-2 rounded-md font-semibold hover:bg-[#3b5f7a] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    >
+                      {loading ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Iniciando sesión...
+                        </div>
+                      ) : (
+                        'Iniciar sesión'
+                      )}
+                    </button>
+                    <div className="text-center mt-4">
+                      <button
+                        type="button"
+                        className="text-[#4B799B] hover:underline font-medium"
+                        onClick={() => setShowLogin(false)}
+                        disabled={loading}
+                      >
+                        Quiero registrarme
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </>
             )}
           </div>
         )}

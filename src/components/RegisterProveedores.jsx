@@ -66,21 +66,23 @@ export function RegisterProveedores() {
         tipo_documento: formData.TipoDeDocumento,
         numero_documento: formData.NumeroDeDocumento,
         celular: formData.Celular,
-        user_type: 'proveedor'
+        user_type: 'proveedor',
+        needs_plan_selection: true // Marcar que necesita seleccionar plan
       }
 
-      // Agregar redirectTo específico para proveedores
+      // Redirigir a planes después de confirmar email
       const { data, error } = await signUp(formData.Email, formData.Contraseña, userMetadata, {
-        redirectTo: `${window.location.origin}/home-proveedor?confirmed=true`
+        redirectTo: `${window.location.origin}/planes?new_user=true`
       })
 
       if (error) {
         setError(error.message)
       } else {
-        setMessage('¡Cuenta de proveedor creada exitosamente! Revisa tu correo para confirmar tu cuenta.')
+        setMessage('¡Cuenta de proveedor creada exitosamente! Revisa tu correo para confirmar tu cuenta y después podrás seleccionar tu plan.')
         
+        // Redirigir al login con un parámetro para indicar que debe ir a planes
         setTimeout(() => {
-          navigate('/login-proveedores')
+          navigate('/login-proveedores?redirect_to=planes')
         }, 3000)
       }
     } catch (err) {
