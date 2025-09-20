@@ -24,10 +24,10 @@ export function CardBodegas({
   const [editMetraje, setEditMetraje] = useState(false);
   const [editDescripcion, setEditDescripcion] = useState(false);
   const [editContenido, setEditContenido] = useState(false);
+  const [editPrecio, setEditPrecio] = useState(false);
   const [editDireccion, setEditDireccion] = useState(false);
   const [editCiudad, setEditCiudad] = useState(false);
   const [editZona, setEditZona] = useState(false);
-  const [editPrecio, setEditPrecio] = useState(false);
   const [flipped, setFlipped] = useState(false);
 
   // Formatear precio para mostrar
@@ -42,10 +42,10 @@ export function CardBodegas({
   };
 
   return (
-    <div className={`flip-card w-72 h-[420px]${flipped ? " flipped" : ""}`}>
+    <div className={`flip-card w-72 h-[480px]${flipped ? " flipped" : ""}`}>
       <div className="flip-inner">
         {/* Cara frontal */}
-        <div className="flip-front bg-[#F7F8FA] rounded-2xl shadow p-6 flex flex-col items-center w-72 h-[420px]">
+        <div className="flip-front bg-[#F7F8FA] rounded-2xl shadow p-6 flex flex-col items-center w-72 h-[480px]">
           <div className="bg-[#E9E9E9] rounded-xl w-full h-36 flex flex-col justify-center items-center mb-4">
             {imagen ? (
               <img
@@ -69,7 +69,7 @@ export function CardBodegas({
           
           <div className="w-full text-center flex-1">
             {/* Metraje editable */}
-            <div className="flex items-center justify-center mb-2">
+            <div className="flex items-center justify-center mb-3">
               {editMetraje ? (
                 <input
                   type="text"
@@ -91,7 +91,7 @@ export function CardBodegas({
             </div>
             
             {/* Descripción editable */}
-            <div className="flex items-center justify-center text-[#2C3A61] text-sm mb-2">
+            <div className="flex items-center justify-center text-[#2C3A61] text-sm mb-3">
               <span className="font-semibold">Es como:</span>
               {editDescripcion ? (
                 <input
@@ -135,22 +135,46 @@ export function CardBodegas({
                 </span>
               )}
             </div>
+
+            {/* Precio Mensual - MOVIDO AQUÍ */}
+            <div className="mb-4 bg-white rounded-lg p-3 border-2 border-[#BFD6EA]">
+              <label className="block text-sm font-semibold text-[#2C3A61] mb-2">💰 Precio Mensual:</label>
+              {editPrecio ? (
+                <input
+                  type="number"
+                  value={precioMensual}
+                  onChange={e => onPrecioMensualChange && onPrecioMensualChange(e.target.value)}
+                  className="w-full p-2 rounded bg-white text-[#2C3A61] border text-sm"
+                  onBlur={() => setEditPrecio(false)}
+                  autoFocus
+                  placeholder="350000"
+                  min="0"
+                />
+              ) : (
+                <div
+                  className="w-full p-2 rounded bg-gray-50 text-[#2C3A61] border cursor-pointer hover:bg-gray-100 transition text-sm font-bold text-center"
+                  onClick={() => setEditPrecio(true)}
+                >
+                  {precioMensual ? formatearPrecio(precioMensual) : "Ingresa el precio mensual"}
+                </div>
+              )}
+            </div>
           </div>
           
           {/* Botón para voltear la card */}
           <button
             className="w-full py-3 rounded-xl border border-[#BFD6EA] text-[#2C3A61] font-bold bg-white hover:bg-[#E9E9E9] transition"
             onClick={() => setFlipped(true)}
-            title="Ver ubicación y precio"
+            title="Ver ubicación"
           >
-            📍 Ubicación y Precio 💰
+            📍 Ubicación y Detalles
           </button>
         </div>
         
-        {/* Cara trasera - Ubicación y Precio */}
-        <div className="flip-back bg-[#F7F8FA] rounded-2xl shadow p-6 flex flex-col justify-between w-72 h-[420px]">
+        {/* Cara trasera - Ubicación y Detalles */}
+        <div className="flip-back bg-[#F7F8FA] rounded-2xl shadow p-6 flex flex-col justify-between w-72 h-[480px]">
           <div className="w-full text-center">
-            <h3 className="font-bold text-[#2C3A61] text-lg mb-6">📍 Ubicación y Precio</h3>
+            <h3 className="font-bold text-[#2C3A61] text-lg mb-6">📍 Ubicación y Detalles</h3>
             
             {/* Dirección */}
             <div className="mb-4">
@@ -160,17 +184,17 @@ export function CardBodegas({
                   value={direccion}
                   onChange={e => onDireccionChange && onDireccionChange(e.target.value)}
                   className="w-full p-2 rounded bg-white text-[#2C3A61] border text-sm resize-none"
-                  rows="2"
+                  rows="3"
                   onBlur={() => setEditDireccion(false)}
                   autoFocus
-                  placeholder="Calle 123 #45-67, Edificio A"
+                  placeholder="Calle 123 #45-67, Edificio A, Local 101"
                 />
               ) : (
                 <div
-                  className="w-full p-2 rounded bg-gray-50 text-[#2C3A61] border cursor-pointer hover:bg-gray-100 transition text-sm min-h-[50px] flex items-center"
+                  className="w-full p-2 rounded bg-gray-50 text-[#2C3A61] border cursor-pointer hover:bg-gray-100 transition text-sm min-h-[60px] flex items-center"
                   onClick={() => setEditDireccion(true)}
                 >
-                  {direccion || "Ingresa la dirección de la mini bodega"}
+                  {direccion || "Ingresa la dirección completa de la mini bodega"}
                 </div>
               )}
             </div>
@@ -199,7 +223,7 @@ export function CardBodegas({
             </div>
 
             {/* Zona */}
-            <div className="mb-4">
+            <div className="mb-6">
               <label className="block text-sm font-semibold text-[#2C3A61] mb-2">Zona:</label>
               {editZona ? (
                 <select
@@ -222,30 +246,6 @@ export function CardBodegas({
                   onClick={() => setEditZona(true)}
                 >
                   {zona || "Selecciona la zona"}
-                </div>
-              )}
-            </div>
-
-            {/* Precio Mensual */}
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-[#2C3A61] mb-2">Precio Mensual:</label>
-              {editPrecio ? (
-                <input
-                  type="number"
-                  value={precioMensual}
-                  onChange={e => onPrecioMensualChange && onPrecioMensualChange(e.target.value)}
-                  className="w-full p-2 rounded bg-white text-[#2C3A61] border text-sm"
-                  onBlur={() => setEditPrecio(false)}
-                  autoFocus
-                  placeholder="350000"
-                  min="0"
-                />
-              ) : (
-                <div
-                  className="w-full p-2 rounded bg-gray-50 text-[#2C3A61] border cursor-pointer hover:bg-gray-100 transition text-sm font-bold"
-                  onClick={() => setEditPrecio(true)}
-                >
-                  {precioMensual ? formatearPrecio(precioMensual) : "Ingresa el precio mensual"}
                 </div>
               )}
             </div>
