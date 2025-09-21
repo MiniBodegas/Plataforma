@@ -4,13 +4,38 @@ import { Trash2, Save, Loader2 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 
 export function BodegaEditorProveedorScreen() {
+  // Estados existentes actualizados para incluir todos los campos
   const [bodegas, setBodegas] = useState([
-    { metraje: "", descripcion: "", contenido: "", imagen: null, direccion: "" },
-    { metraje: "", descripcion: "", contenido: "", imagen: null, direccion: "" }
+    { 
+      metraje: "", 
+      descripcion: "", 
+      contenido: "", 
+      imagen: null, 
+      direccion: "",
+      ciudad: "",
+      zona: "",
+      precioMensual: "" // ✅ Asegurar que está incluido
+    },
+    { 
+      metraje: "", 
+      descripcion: "", 
+      contenido: "", 
+      imagen: null, 
+      direccion: "",
+      ciudad: "",
+      zona: "",
+      precioMensual: "" // ✅ Asegurar que está incluido
+    }
   ]);
   const [empresa, setEmpresa] = useState("");
   const [imagenesCarrusel, setImagenesCarrusel] = useState([]);
   
+  // ✅ NUEVOS ESTADOS para DescriptionEditor
+  const [direccionGeneral, setDireccionGeneral] = useState("");
+  const [descripcionGeneral, setDescripcionGeneral] = useState("");
+  const [caracteristicas, setCaracteristicas] = useState("");
+  const [imagenesDescripcion, setImagenesDescripcion] = useState([]);
+
   // Estados para el usuario autenticado
   const [usuario, setUsuario] = useState(null);
   const [empresaId, setEmpresaId] = useState(null);
@@ -72,6 +97,20 @@ export function BodegaEditorProveedorScreen() {
                 direccion: b.direccion
               })));
             }
+
+            // Cargar descripción existente
+            const { data: descripcionExistente } = await supabase
+              .from('empresa_descripcion')
+              .select('*')
+              .eq('empresa_id', empresaExistente.id)
+              .single();
+              
+            if (descripcionExistente) {
+              setDireccionGeneral(descripcionExistente.direccion_general || "");
+              setDescripcionGeneral(descripcionExistente.descripcion_general || "");
+              setCaracteristicas(descripcionExistente.caracteristicas?.join(', ') || "");
+              setImagenesDescripcion(descripcionExistente.imagenes_urls || []);
+            }
           }
         }
       } catch (error) {
@@ -88,7 +127,16 @@ export function BodegaEditorProveedorScreen() {
   const handleAgregarBodega = () => {
     setBodegas([
       ...bodegas,
-      { metraje: "", descripcion: "", contenido: "", imagen: null, direccion: "" }
+      { 
+        metraje: "", 
+        descripcion: "", 
+        contenido: "", 
+        imagen: null, 
+        direccion: "",
+        ciudad: "",
+        zona: "",
+        precioMensual: "" // ✅ Incluir precio
+      }
     ]);
   };
 
@@ -170,14 +218,52 @@ export function BodegaEditorProveedorScreen() {
     return results.filter(url => url !== null);
   };
 
-  // 🚀 FUNCIÓN PRINCIPAL: Guardar todo de una vez
+  // Función para subir imágenes de descripción
+  const uploadDescripcionImages = async (imagenes) => {
+    if (!imagenes || imagenes.length === 0) return [];
+    
+    const uploadPromises = imagenes.map(async (img, index) => {
+      if (typeof img === 'string') {
+        return img; // Ya es una URL
+      }
+      
+      try {
+        const fileExt = img.name.split('.').pop();
+        const fileName = `${Date.now()}-desc-${index}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `descripcion/${fileName}`;
+
+        const { data, error } = await supabase.storage
+          .from('imagenes')
+          .upload(filePath, img, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (error) throw error;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('imagenes')
+          .getPublicUrl(filePath);
+
+        return publicUrl;
+      } catch (error) {
+        console.error(`Error uploading descripcion image ${index}:`, error);
+        return null;
+      }
+    });
+
+    const results = await Promise.all(uploadPromises);
+    return results.filter(url => url !== null);
+  };
+
+  // 🚀 FUNCIÓN PRINCIPAL ACTUALIZADA: Guardar todo incluyendo descripción
   const handleGuardarTodo = async () => {
     setGuardandoTodo(true);
     
     try {
       console.log('🚀 Iniciando guardado completo...');
       
-      // ✅ VALIDACIONES
+      // ✅ VALIDACIONES (actualizadas)
       if (!empresa.trim()) {
         alert('❌ Por favor ingresa el nombre de la empresa');
         return;
@@ -189,7 +275,13 @@ export function BodegaEditorProveedorScreen() {
       }
 
       const bodegasValidas = bodegas.filter(b => 
-        b.metraje && b.descripcion && b.contenido && b.direccion
+        b.metraje && 
+        b.descripcion && 
+        b.contenido && 
+        b.direccion && 
+        b.ciudad && 
+        b.zona && 
+        b.precioMensual // ✅ Validar precio también
       );
 
       if (bodegasValidas.length === 0) {
@@ -238,12 +330,10 @@ export function BodegaEditorProveedorScreen() {
       const urlsCarrusel = await uploadCarruselImages(imagenesCarrusel);
       
       // Limpiar carrusel existente
-      if (empresaId) {
-        await supabase
-          .from('carrusel_imagenes')
-          .delete()
-          .eq('empresa_id', empresaData.id);
-      }
+      await supabase
+        .from('carrusel_imagenes')
+        .delete()
+        .eq('empresa_id', empresaData.id);
 
       // Insertar nuevas imágenes del carrusel
       if (urlsCarrusel.length > 0) {
@@ -263,18 +353,62 @@ export function BodegaEditorProveedorScreen() {
 
       console.log('✅ Carrusel guardado');
 
-      // 📦 PASO 3: Guardar mini bodegas
-      console.log('📦 Guardando mini bodegas...');
+      // 📝 PASO 3: Guardar descripción de empresa
+      console.log('📝 Guardando descripción de empresa...');
       
-      // Limpiar mini bodegas existentes si es actualización
-      if (empresaId) {
-        await supabase
-          .from('mini_bodegas')
-          .delete()
+      // Subir imágenes de descripción
+      const urlsDescripcion = await uploadDescripcionImages(imagenesDescripcion);
+      
+      // Convertir características a array
+      const caracteristicasArray = caracteristicas 
+        ? caracteristicas.split(',').map(c => c.trim()).filter(c => c.length > 0)
+        : [];
+
+      // Verificar si ya existe descripción
+      const { data: descripcionExistente } = await supabase
+        .from('empresa_descripcion')
+        .select('id')
+        .eq('empresa_id', empresaData.id)
+        .single();
+
+      const descripcionData = {
+        empresa_id: empresaData.id,
+        direccion_general: direccionGeneral?.trim() || null,
+        descripcion_general: descripcionGeneral?.trim() || null,
+        caracteristicas: caracteristicasArray,
+        imagenes_urls: urlsDescripcion
+      };
+
+      if (descripcionExistente) {
+        // Actualizar descripción existente
+        const { error: descError } = await supabase
+          .from('empresa_descripcion')
+          .update(descripcionData)
           .eq('empresa_id', empresaData.id);
+
+        if (descError) throw descError;
+      } else {
+        // Crear nueva descripción
+        const { error: descError } = await supabase
+          .from('empresa_descripcion')
+          .insert([descripcionData]);
+
+        if (descError) throw descError;
       }
 
+      console.log('✅ Descripción guardada');
+
+      // 📦 PASO 4: Guardar mini bodegas
+      console.log('📦 Guardando mini bodegas...');
+      
+      // Limpiar mini bodegas existentes
+      await supabase
+        .from('mini_bodegas')
+        .delete()
+        .eq('empresa_id', empresaData.id);
+
       // Subir imágenes y guardar cada mini bodega
+      const bodegasGuardadas = [];
       for (let i = 0; i < bodegasValidas.length; i++) {
         const bodega = bodegasValidas[i];
         
@@ -297,27 +431,94 @@ export function BodegaEditorProveedorScreen() {
           descripcion: bodega.descripcion.trim(),
           contenido: bodega.contenido.trim(),
           direccion: bodega.direccion.trim(),
+          ciudad: bodega.ciudad.trim(),
+          zona: bodega.zona,
+          precio_mensual: parseFloat(bodega.precioMensual), // ✅ Convertir a número
           imagen_url: imagenUrl,
           disponible: true,
-          ciudad: 'Bogotá',
-          zona: 'Norte',
           orden: i
         };
 
-        const { error: bodegaError } = await supabase
+        const { data: bodegaInsertada, error: bodegaError } = await supabase
           .from('mini_bodegas')
-          .insert([bodegaData]);
+          .insert([bodegaData])
+          .select();
 
         if (bodegaError) throw bodegaError;
+        
+        // Agregar la bodega guardada con su ID
+        bodegasGuardadas.push(bodegaInsertada[0]);
       }
 
       console.log('✅ Mini bodegas guardadas');
 
+      // 🔄 PASO 5: RECARGAR DATOS DESDE LA BASE DE DATOS
+      console.log('🔄 Recargando datos actualizados desde la BD...');
+      
+      // Recargar empresa
+      const { data: empresaActualizada } = await supabase
+        .from('empresas')
+        .select('*')
+        .eq('id', empresaData.id)
+        .single();
+      
+      if (empresaActualizada) {
+        setEmpresa(empresaActualizada.nombre);
+        setPerfilCompleto(true);
+      }
+
+      // Recargar carrusel
+      const { data: carruselActualizado } = await supabase
+        .from('carrusel_imagenes')
+        .select('imagen_url')
+        .eq('empresa_id', empresaData.id)
+        .order('orden');
+      
+      if (carruselActualizado) {
+        setImagenesCarrusel(carruselActualizado.map(img => img.imagen_url));
+      }
+
+      // Recargar descripción
+      const { data: descripcionActualizada } = await supabase
+        .from('empresa_descripcion')
+        .select('*')
+        .eq('empresa_id', empresaData.id)
+        .single();
+      
+      if (descripcionActualizada) {
+        setDireccionGeneral(descripcionActualizada.direccion_general || "");
+        setDescripcionGeneral(descripcionActualizada.descripcion_general || "");
+        setCaracteristicas(descripcionActualizada.caracteristicas?.join(', ') || "");
+        setImagenesDescripcion(descripcionActualizada.imagenes_urls || []);
+      }
+
+      // Recargar mini bodegas
+      const { data: bodegasActualizadas } = await supabase
+        .from('mini_bodegas')
+        .select('*')
+        .eq('empresa_id', empresaData.id)
+        .order('orden');
+      
+      if (bodegasActualizadas) {
+        setBodegas(bodegasActualizadas.map(b => ({
+          id: b.id,
+          metraje: b.metraje,
+          descripcion: b.descripcion,
+          contenido: b.contenido,
+          imagen: b.imagen_url,
+          direccion: b.direccion,
+          ciudad: b.ciudad,
+          zona: b.zona,
+          precioMensual: b.precio_mensual?.toString() || ""
+        })));
+      }
+
+      console.log('✅ Datos recargados exitosamente');
+
       // 🎉 ÉXITO
-      setPerfilCompleto(true);
       setGuardadoExitoso(true);
       
-      alert(`🎉 ¡Perfil guardado exitosamente!\n\n✅ Empresa: ${empresaData.nombre}\n✅ Carrusel: ${urlsCarrusel.length} imágenes\n✅ Mini bodegas: ${bodegasValidas.length}`);
+      alert(`🎉 ¡Perfil guardado exitosamente!\n\n✅ Empresa: ${empresaData.nombre}\n✅ Carrusel: ${urlsCarrusel.length} imágenes\n✅ Descripción: ${descripcionGeneral ? 'Guardada' : 'Sin descripción'}\n✅ Mini bodegas: ${bodegasGuardadas.length}\n\n🔄 Los datos han sido recargados desde la base de datos.`);
       
       // Resetear estado después de 5 segundos
       setTimeout(() => setGuardadoExitoso(false), 5000);
@@ -327,6 +528,104 @@ export function BodegaEditorProveedorScreen() {
       alert(`❌ Error al guardar: ${error.message}`);
     } finally {
       setGuardandoTodo(false);
+    }
+  };
+
+  // Función recargarDatos actualizada
+  const recargarDatos = async () => {
+    if (!empresaId) return;
+    
+    setCargando(true);
+    try {
+      console.log('🔄 Recargando datos del perfil...');
+      
+      // Recargar empresa
+      const { data: empresaActualizada } = await supabase
+        .from('empresas')
+        .select('*')
+        .eq('id', empresaId)
+        .single();
+      
+      if (empresaActualizada) {
+        setEmpresa(empresaActualizada.nombre);
+      }
+
+      // Recargar carrusel
+      const { data: carruselActualizado } = await supabase
+        .from('carrusel_imagenes')
+        .select('imagen_url')
+        .eq('empresa_id', empresaId)
+        .order('orden');
+      
+      if (carruselActualizado) {
+        setImagenesCarrusel(carruselActualizado.map(img => img.imagen_url));
+      }
+
+      // Recargar mini bodegas
+      const { data: bodegasActualizadas } = await supabase
+        .from('mini_bodegas')
+        .select('*')
+        .eq('empresa_id', empresaId)
+        .order('orden');
+      
+      if (bodegasActualizadas && bodegasActualizadas.length > 0) {
+        setBodegas(bodegasActualizadas.map(b => ({
+          id: b.id,
+          metraje: b.metraje,
+          descripcion: b.descripcion,
+          contenido: b.contenido,
+          imagen: b.imagen_url,
+          direccion: b.direccion,
+          ciudad: b.ciudad,
+          zona: b.zona,
+          precioMensual: b.precio_mensual?.toString() || ""
+        })));
+      } else {
+        // Si no hay bodegas, mostrar plantilla inicial
+        setBodegas([
+          { 
+            metraje: "", 
+            descripcion: "", 
+            contenido: "", 
+            imagen: null, 
+            direccion: "",
+            ciudad: "",
+            zona: "",
+            precioMensual: ""
+          },
+          { 
+            metraje: "", 
+            descripcion: "", 
+            contenido: "", 
+            imagen: null, 
+            direccion: "",
+            ciudad: "",
+            zona: "",
+            precioMensual: ""
+          }
+        ]);
+      }
+
+      // Recargar descripción
+      const { data: descripcionActualizada } = await supabase
+        .from('empresa_descripcion')
+        .select('*')
+        .eq('empresa_id', empresaId)
+        .single();
+      
+      if (descripcionActualizada) {
+        setDireccionGeneral(descripcionActualizada.direccion_general || "");
+        setDescripcionGeneral(descripcionActualizada.descripcion_general || "");
+        setCaracteristicas(descripcionActualizada.caracteristicas?.join(', ') || "");
+        setImagenesDescripcion(descripcionActualizada.imagenes_urls || []);
+      }
+
+      console.log('✅ Datos recargados exitosamente');
+      
+    } catch (error) {
+      console.error('❌ Error recargando datos:', error);
+    } finally {
+      setCargando(false);
     }
   };
 
@@ -383,13 +682,30 @@ export function BodegaEditorProveedorScreen() {
             onEmpresaChange={setEmpresa}
             imagenes={imagenesCarrusel}
             onImagenesChange={setImagenesCarrusel}
-            hideGuardarButton={true} // ✅ Ocultar botón individual
           />
         </div>
 
-        <DescriptionEditor />
+        {/* SECCIÓN 2: Descripción General */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-center mb-6 text-[#2C3A61]">
+            📋 Descripción General
+          </h2>
+          
+          <DescriptionEditor 
+            empresa={empresa}
+            onEmpresaChange={setEmpresa}
+            direccion={direccionGeneral}
+            onDireccionChange={setDireccionGeneral}
+            descripcion={descripcionGeneral}
+            onDescripcionChange={setDescripcionGeneral}
+            caracteristicas={caracteristicas}
+            onCaracteristicasChange={setCaracteristicas}
+            imagenes={imagenesDescripcion}
+            onImagenesChange={setImagenesDescripcion}
+          />
+        </div>
         
-        {/* SECCIÓN 2: Mini Bodegas */}
+        {/* SECCIÓN 3: Mini Bodegas */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-center mb-6 text-[#2C3A61]">
             📦 Mini Bodegas
@@ -406,12 +722,18 @@ export function BodegaEditorProveedorScreen() {
                   contenido={bodega.contenido}
                   imagen={bodega.imagen}
                   direccion={bodega.direccion}
+                  ciudad={bodega.ciudad}
+                  zona={bodega.zona}
+                  precioMensual={bodega.precioMensual} // ✅ Asegurar que se pasa
                   hideGuardarButton={true} // ✅ Ocultar botón individual
                   onImagenChange={img => handleUpdateBodega(idx, "imagen", img)}
                   onMetrajeChange={val => handleUpdateBodega(idx, "metraje", val)}
                   onDescripcionChange={val => handleUpdateBodega(idx, "descripcion", val)}
                   onContenidoChange={val => handleUpdateBodega(idx, "contenido", val)}
                   onDireccionChange={val => handleUpdateBodega(idx, "direccion", val)}
+                  onCiudadChange={val => handleUpdateBodega(idx, "ciudad", val)}
+                  onZonaChange={val => handleUpdateBodega(idx, "zona", val)}
+                  onPrecioMensualChange={val => handleUpdateBodega(idx, "precioMensual", val)} // ✅ Handler para precio
                 />
                 <button
                   className="mt-4 bg-red-100 hover:bg-red-200 rounded-full p-2 transition-colors"
@@ -469,6 +791,24 @@ export function BodegaEditorProveedorScreen() {
             <p className="text-green-600 text-sm mt-2">
               Todos los datos han sido sincronizados con la base de datos.
             </p>
+          </div>
+        )}
+
+        {/* Botón de recarga manual (opcional) */}
+        {perfilCompleto && (
+          <div className="text-center mb-4">
+            <button
+              onClick={recargarDatos}
+              className="text-[#2C3A61] hover:text-[#4B799B] transition-colors text-sm flex items-center justify-center mx-auto"
+              disabled={cargando}
+            >
+              {cargando ? (
+                <Loader2 className="animate-spin h-4 w-4 mr-2" />
+              ) : (
+                <span className="mr-2">🔄</span>
+              )}
+              Recargar datos desde la base de datos
+            </button>
           </div>
         )}
       </div>

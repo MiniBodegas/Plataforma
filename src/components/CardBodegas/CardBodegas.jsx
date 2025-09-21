@@ -29,6 +29,7 @@ export function CardBodegas({
   const [editCiudad, setEditCiudad] = useState(false);
   const [editZona, setEditZona] = useState(false);
   const [flipped, setFlipped] = useState(false);
+  const [imagenError, setImagenError] = useState(false);
 
   // Formatear precio para mostrar
   const formatearPrecio = (precio) => {
@@ -41,122 +42,225 @@ export function CardBodegas({
     }).format(precio);
   };
 
+  // ✅ Función mejorada para obtener la URL correcta de la imagen
+  const getImageUrl = (img) => {
+    if (!img) {
+      console.log('🖼️ No hay imagen:', img);
+      return null;
+    }
+    
+    console.log('🖼️ Procesando imagen:', { 
+      tipo: typeof img, 
+      esFile: img instanceof File, 
+      valor: img 
+    });
+    
+    // Si es una string (URL de la DB)
+    if (typeof img === 'string') {
+      // Verificar si es una URL válida
+      try {
+        new URL(img);
+        console.log('✅ URL válida:', img);
+        return img;
+      } catch (e) {
+        console.error('❌ URL inválida:', img, e);
+        return null;
+      }
+    }
+    
+    // Si es un archivo File
+    if (img instanceof File) {
+      try {
+        const url = URL.createObjectURL(img);
+        console.log('✅ URL de archivo creada:', url);
+        return url;
+      } catch (e) {
+        console.error('❌ Error creando URL de archivo:', e);
+        return null;
+      }
+    }
+    
+    // Si tiene una propiedad url (en caso de objetos)
+    if (img && typeof img === 'object' && img.url) {
+      console.log('✅ URL desde objeto:', img.url);
+      return img.url;
+    }
+    
+    console.error('❌ Tipo de imagen no reconocido:', img);
+    return null;
+  };
+
+  // ✅ Verificar si hay imagen válida
+  const tieneImagen = () => {
+    const url = getImageUrl(imagen);
+    const valida = url !== null && !imagenError;
+    console.log('🔍 ¿Tiene imagen válida?:', valida, { url, imagenError });
+    return valida;
+  };
+
+  // ✅ Manejar error de imagen
+  const handleImageError = (e) => {
+    console.error('❌ Error cargando imagen:', {
+      src: e.target.src,
+      error: e.nativeEvent,
+      imagen: imagen
+    });
+    setImagenError(true);
+  };
+
+  // ✅ Resetear error cuando cambia la imagen
+  useState(() => {
+    if (imagen) {
+      setImagenError(false);
+    }
+  }, [imagen]);
+
   return (
     <div className={`flip-card w-72 h-[480px]${flipped ? " flipped" : ""}`}>
       <div className="flip-inner">
         {/* Cara frontal */}
         <div className="flip-front bg-[#F7F8FA] rounded-2xl shadow p-6 flex flex-col items-center w-72 h-[480px]">
+          {/* ✅ Sección de imagen corregida */}
           <div className="bg-[#E9E9E9] rounded-xl w-full h-36 flex flex-col justify-center items-center mb-4">
-            {imagen ? (
-              <img
-                src={typeof imagen === "string" ? imagen : URL.createObjectURL(imagen)}
-                alt="comparativa"
-                className="object-contain h-full w-full rounded-xl"
-              />
+            {tieneImagen() ? (
+              <div className="relative w-full h-full">
+                <img
+                  src={getImageUrl(imagen)}
+                  alt="Mini bodega"
+                  className="object-contain h-full w-full rounded-xl"
+                  onError={handleImageError}
+                  onLoad={() => {
+                    console.log('✅ Imagen cargada exitosamente:', getImageUrl(imagen));
+                    setImagenError(false);
+                  }}
+                />
+              </div>
             ) : (
-              <label className="cursor-pointer flex flex-col items-center">
+              <label className="cursor-pointer flex flex-col items-center w-full h-full justify-center">
                 <Image className="h-10 w-10 text-[#2C3A61]" />
-                <span className="text-[#2C3A61] mt-2 text-sm text-center">Sube una imagen de tu mini bodega</span>
+                <span className="text-[#2C3A61] mt-2 text-sm text-center">
+                  {imagenError 
+                    ? "Error cargando imagen - Sube una nueva"
+                    : "Sube una imagen de tu mini bodega"
+                  }
+                </span>
                 <input
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={e => onImagenChange && onImagenChange(e.target.files[0])}
+                  onChange={e => {
+                    setImagenError(false);
+                    onImagenChange && onImagenChange(e.target.files[0]);
+                  }}
                 />
               </label>
             )}
           </div>
           
           <div className="w-full text-center flex-1">
-            {/* Metraje editable */}
+            {/* ✅ Metraje editable - con control de desbordamiento */}
             <div className="flex items-center justify-center mb-3">
               {editMetraje ? (
                 <input
                   type="text"
                   value={metraje}
                   onChange={e => onMetrajeChange && onMetrajeChange(e.target.value)}
-                  className="font-bold text-[#2C3A61] text-lg w-full bg-white text-center rounded px-2 py-1"
+                  className="font-bold text-[#2C3A61] text-lg bg-white text-center rounded px-2 py-1"
+                  style={{ maxWidth: '200px', minWidth: '100px' }}
                   onBlur={() => setEditMetraje(false)}
                   autoFocus
                   placeholder="Ej: 15 m²"
                 />
               ) : (
                 <span
-                  className="font-bold text-[#2C3A61] text-lg block w-full cursor-pointer hover:bg-gray-100 rounded px-2 py-1 transition"
+                  className="font-bold text-[#2C3A61] text-lg block w-full cursor-pointer hover:bg-gray-100 rounded px-2 py-1 transition truncate"
                   onClick={() => setEditMetraje(true)}
+                  title={metraje || "Metraje de tu mini bodega"}
                 >
                   {metraje || "Metraje de tu mini bodega"}
                 </span>
               )}
             </div>
             
-            {/* Descripción editable */}
+            {/* ✅ Descripción editable - con control de desbordamiento */}
             <div className="flex items-center justify-center text-[#2C3A61] text-sm mb-3">
-              <span className="font-semibold">Es como:</span>
+              <span className="font-semibold whitespace-nowrap mr-2">Es como:</span>
               {editDescripcion ? (
                 <input
                   type="text"
                   value={descripcion}
                   onChange={e => onDescripcionChange && onDescripcionChange(e.target.value)}
-                  className="ml-2 flex-1 bg-white text-[#2C3A61] rounded px-2 py-1"
+                  className="flex-1 bg-white text-[#2C3A61] rounded px-2 py-1"
+                  style={{ maxWidth: '150px', minWidth: '80px' }}
                   onBlur={() => setEditDescripcion(false)}
                   autoFocus
                   placeholder="un closet pequeño"
                 />
               ) : (
                 <span
-                  className="ml-2 flex-1 cursor-pointer hover:bg-gray-100 rounded px-2 py-1 transition"
+                  className="flex-1 cursor-pointer hover:bg-gray-100 rounded px-2 py-1 transition truncate-text"
                   onClick={() => setEditDescripcion(true)}
+                  title={descripcion || "una comparativa de tamaño"}
                 >
                   {descripcion || "una comparativa de tamaño"}
                 </span>
               )}
             </div>
             
-            {/* Contenido editable */}
-            <div className="flex items-center justify-center text-[#2C3A61] text-sm mb-4">
-              <span className="font-semibold">¿Qué cabe?:</span>
+            {/* ✅ Contenido editable - con control de desbordamiento */}
+            <div className="flex items-center justify-center text-[#2C3A61] text-sm mb-3">
+              <span className="font-semibold whitespace-nowrap mr-2">¿Qué cabe?:</span>
               {editContenido ? (
                 <input
                   type="text"
                   value={contenido}
                   onChange={e => onContenidoChange && onContenidoChange(e.target.value)}
-                  className="ml-2 flex-1 bg-white text-[#2C3A61] rounded px-2 py-1"
+                  className="flex-1 bg-white text-[#2C3A61] rounded px-2 py-1"
+                  style={{ maxWidth: '140px', minWidth: '80px' }}
                   onBlur={() => setEditContenido(false)}
                   autoFocus
                   placeholder="cajas, ropa, documentos"
                 />
               ) : (
                 <span
-                  className="ml-2 flex-1 cursor-pointer hover:bg-gray-100 rounded px-2 py-1 transition"
+                  className="flex-1 cursor-pointer hover:bg-gray-100 rounded px-2 py-1 transition truncate-text"
                   onClick={() => setEditContenido(true)}
+                  title={contenido || "qué puede guardar"}
                 >
                   {contenido || "qué puede guardar"}
                 </span>
               )}
             </div>
 
-            {/* Precio Mensual - MOVIDO AQUÍ */}
-            <div className="mb-4 bg-white rounded-lg p-3 border-2 border-[#BFD6EA]">
-              <label className="block text-sm font-semibold text-[#2C3A61] mb-2">💰 Precio Mensual:</label>
+            {/* ✅ Precio mensual - con control de desbordamiento */}
+            <div className="flex items-center justify-center text-[#2C3A61] text-sm mb-4">
+              <span className="font-semibold whitespace-nowrap mr-2">💰 Precio:</span>
               {editPrecio ? (
                 <input
                   type="number"
                   value={precioMensual}
                   onChange={e => onPrecioMensualChange && onPrecioMensualChange(e.target.value)}
-                  className="w-full p-2 rounded bg-white text-[#2C3A61] border text-sm"
+                  className="flex-1 bg-white text-[#2C3A61] rounded px-2 py-1"
+                  style={{ 
+                    maxWidth: '120px', 
+                    minWidth: '80px',
+                    MozAppearance: 'textfield',
+                    WebkitAppearance: 'none',
+                    appearance: 'none'
+                  }}
                   onBlur={() => setEditPrecio(false)}
                   autoFocus
                   placeholder="350000"
                   min="0"
                 />
               ) : (
-                <div
-                  className="w-full p-2 rounded bg-gray-50 text-[#2C3A61] border cursor-pointer hover:bg-gray-100 transition text-sm font-bold text-center"
+                <span
+                  className="flex-1 cursor-pointer hover:bg-gray-100 rounded px-2 py-1 transition truncate-text"
                   onClick={() => setEditPrecio(true)}
+                  title={precioMensual ? formatearPrecio(precioMensual) : "precio mensual"}
                 >
-                  {precioMensual ? formatearPrecio(precioMensual) : "Ingresa el precio mensual"}
-                </div>
+                  {precioMensual ? formatearPrecio(precioMensual) : "precio mensual"}
+                </span>
               )}
             </div>
           </div>
@@ -176,7 +280,7 @@ export function CardBodegas({
           <div className="w-full text-center">
             <h3 className="font-bold text-[#2C3A61] text-lg mb-6">📍 Ubicación y Detalles</h3>
             
-            {/* Dirección */}
+            {/* ✅ Dirección - con control de desbordamiento */}
             <div className="mb-4">
               <label className="block text-sm font-semibold text-[#2C3A61] mb-2">Dirección:</label>
               {editDireccion ? (
@@ -193,13 +297,16 @@ export function CardBodegas({
                 <div
                   className="w-full p-2 rounded bg-gray-50 text-[#2C3A61] border cursor-pointer hover:bg-gray-100 transition text-sm min-h-[60px] flex items-center"
                   onClick={() => setEditDireccion(true)}
+                  title={direccion || "Ingresa la dirección completa"}
                 >
-                  {direccion || "Ingresa la dirección completa de la mini bodega"}
+                  <span className="truncate w-full">
+                    {direccion || "Ingresa la dirección completa de la mini bodega"}
+                  </span>
                 </div>
               )}
             </div>
 
-            {/* Ciudad */}
+            {/* ✅ Ciudad - con control de desbordamiento */}
             <div className="mb-4">
               <label className="block text-sm font-semibold text-[#2C3A61] mb-2">Ciudad:</label>
               {editCiudad ? (
@@ -216,13 +323,16 @@ export function CardBodegas({
                 <div
                   className="w-full p-2 rounded bg-gray-50 text-[#2C3A61] border cursor-pointer hover:bg-gray-100 transition text-sm"
                   onClick={() => setEditCiudad(true)}
+                  title={ciudad || "Selecciona la ciudad"}
                 >
-                  {ciudad || "Selecciona la ciudad"}
+                  <span className="truncate w-full">
+                    {ciudad || "Selecciona la ciudad"}
+                  </span>
                 </div>
               )}
             </div>
 
-            {/* Zona */}
+            {/* ✅ Zona - con control de desbordamiento */}
             <div className="mb-6">
               <label className="block text-sm font-semibold text-[#2C3A61] mb-2">Zona:</label>
               {editZona ? (
@@ -244,8 +354,11 @@ export function CardBodegas({
                 <div
                   className="w-full p-2 rounded bg-gray-50 text-[#2C3A61] border cursor-pointer hover:bg-gray-100 transition text-sm"
                   onClick={() => setEditZona(true)}
+                  title={zona || "Selecciona la zona"}
                 >
-                  {zona || "Selecciona la zona"}
+                  <span className="truncate w-full">
+                    {zona || "Selecciona la zona"}
+                  </span>
                 </div>
               )}
             </div>

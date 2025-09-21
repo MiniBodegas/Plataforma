@@ -23,3 +23,52 @@
 .flipped .flip-inner {
   transform: rotateY(180deg);
 }
+
+/* ✅ Quitar flechas de input number completamente */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* ✅ Controlar tamaño de TODOS los inputs en las cards */
+.flip-card input[type="text"], 
+.flip-card input[type="number"] {
+  max-width: 150px;
+  min-width: 80px;
+  text-align: center;
+  word-wrap: break-word;
+  overflow: hidden;
+}
+
+/* ✅ Input de precio específico más pequeño */
+.flip-card input[type="number"] {
+  max-width: 120px;
+  min-width: 80px;
+}
+
+/* ✅ Textarea también controlado */
+.flip-card textarea {
+  max-width: 100%;
+  resize: none;
+  word-wrap: break-word;
+}
+
+/* ✅ Select también controlado */
+.flip-card select {
+  max-width: 100%;
+  word-wrap: break-word;
+}
+
+/* ✅ Spans que pueden ser largos */
+.flip-card .truncate-text {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
