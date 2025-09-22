@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Image, RotateCcw } from "lucide-react";
 import './CardBodegas.css';
 
@@ -42,28 +42,22 @@ export function CardBodegas({
     }).format(precio);
   };
 
-  // ✅ Función mejorada para obtener la URL correcta de la imagen
+  // Función para obtener la URL correcta de la imagen
   const getImageUrl = (img) => {
-    if (!img) {
-      console.log('🖼️ No hay imagen:', img);
-      return null;
-    }
-    
-    console.log('🖼️ Procesando imagen:', { 
-      tipo: typeof img, 
-      esFile: img instanceof File, 
-      valor: img 
-    });
+    if (!img) return null;
     
     // Si es una string (URL de la DB)
     if (typeof img === 'string') {
+      // Si es URL de Supabase, agregar timestamp para evitar cache
+      if (img.includes('supabase.co')) {
+        return `${img}?t=${Date.now()}`;
+      }
+      
       // Verificar si es una URL válida
       try {
         new URL(img);
-        console.log('✅ URL válida:', img);
         return img;
       } catch (e) {
-        console.error('❌ URL inválida:', img, e);
         return null;
       }
     }
@@ -71,45 +65,33 @@ export function CardBodegas({
     // Si es un archivo File
     if (img instanceof File) {
       try {
-        const url = URL.createObjectURL(img);
-        console.log('✅ URL de archivo creada:', url);
-        return url;
+        return URL.createObjectURL(img);
       } catch (e) {
-        console.error('❌ Error creando URL de archivo:', e);
         return null;
       }
     }
     
-    // Si tiene una propiedad url (en caso de objetos)
-    if (img && typeof img === 'object' && img.url) {
-      console.log('✅ URL desde objeto:', img.url);
-      return img.url;
-    }
-    
-    console.error('❌ Tipo de imagen no reconocido:', img);
     return null;
   };
 
-  // ✅ Verificar si hay imagen válida
+  // Verificar si hay imagen válida
   const tieneImagen = () => {
     const url = getImageUrl(imagen);
-    const valida = url !== null && !imagenError;
-    console.log('🔍 ¿Tiene imagen válida?:', valida, { url, imagenError });
-    return valida;
+    return url !== null && !imagenError;
   };
 
-  // ✅ Manejar error de imagen
+  // Manejar error de imagen
   const handleImageError = (e) => {
-    console.error('❌ Error cargando imagen:', {
-      src: e.target.src,
-      error: e.nativeEvent,
-      imagen: imagen
-    });
     setImagenError(true);
   };
 
-  // ✅ Resetear error cuando cambia la imagen
-  useState(() => {
+  // Manejar carga exitosa de imagen
+  const handleImageLoad = (e) => {
+    setImagenError(false);
+  };
+
+  // Resetear error cuando cambia la imagen
+  useEffect(() => {
     if (imagen) {
       setImagenError(false);
     }
@@ -120,7 +102,7 @@ export function CardBodegas({
       <div className="flip-inner">
         {/* Cara frontal */}
         <div className="flip-front bg-[#F7F8FA] rounded-2xl shadow p-6 flex flex-col items-center w-72 h-[480px]">
-          {/* ✅ Sección de imagen corregida */}
+          {/* Sección de imagen */}
           <div className="bg-[#E9E9E9] rounded-xl w-full h-36 flex flex-col justify-center items-center mb-4">
             {tieneImagen() ? (
               <div className="relative w-full h-full">
@@ -129,10 +111,10 @@ export function CardBodegas({
                   alt="Mini bodega"
                   className="object-contain h-full w-full rounded-xl"
                   onError={handleImageError}
-                  onLoad={() => {
-                    console.log('✅ Imagen cargada exitosamente:', getImageUrl(imagen));
-                    setImagenError(false);
-                  }}
+                  onLoad={handleImageLoad}
+                  crossOrigin="anonymous"
+                  referrerPolicy="no-referrer"
+                  loading="lazy"
                 />
               </div>
             ) : (
@@ -158,7 +140,7 @@ export function CardBodegas({
           </div>
           
           <div className="w-full text-center flex-1">
-            {/* ✅ Metraje editable - con control de desbordamiento */}
+            {/* Metraje editable */}
             <div className="flex items-center justify-center mb-3">
               {editMetraje ? (
                 <input
@@ -182,7 +164,7 @@ export function CardBodegas({
               )}
             </div>
             
-            {/* ✅ Descripción editable - con control de desbordamiento */}
+            {/* Descripción editable */}
             <div className="flex items-center justify-center text-[#2C3A61] text-sm mb-3">
               <span className="font-semibold whitespace-nowrap mr-2">Es como:</span>
               {editDescripcion ? (
@@ -207,7 +189,7 @@ export function CardBodegas({
               )}
             </div>
             
-            {/* ✅ Contenido editable - con control de desbordamiento */}
+            {/* Contenido editable */}
             <div className="flex items-center justify-center text-[#2C3A61] text-sm mb-3">
               <span className="font-semibold whitespace-nowrap mr-2">¿Qué cabe?:</span>
               {editContenido ? (
@@ -232,7 +214,7 @@ export function CardBodegas({
               )}
             </div>
 
-            {/* ✅ Precio mensual - con control de desbordamiento */}
+            {/* Precio mensual */}
             <div className="flex items-center justify-center text-[#2C3A61] text-sm mb-4">
               <span className="font-semibold whitespace-nowrap mr-2">💰 Precio:</span>
               {editPrecio ? (
@@ -280,7 +262,7 @@ export function CardBodegas({
           <div className="w-full text-center">
             <h3 className="font-bold text-[#2C3A61] text-lg mb-6">📍 Ubicación y Detalles</h3>
             
-            {/* ✅ Dirección - con control de desbordamiento */}
+            {/* Dirección */}
             <div className="mb-4">
               <label className="block text-sm font-semibold text-[#2C3A61] mb-2">Dirección:</label>
               {editDireccion ? (
@@ -306,7 +288,7 @@ export function CardBodegas({
               )}
             </div>
 
-            {/* ✅ Ciudad - con control de desbordamiento */}
+            {/* Ciudad */}
             <div className="mb-4">
               <label className="block text-sm font-semibold text-[#2C3A61] mb-2">Ciudad:</label>
               {editCiudad ? (
@@ -332,7 +314,7 @@ export function CardBodegas({
               )}
             </div>
 
-            {/* ✅ Zona - con control de desbordamiento */}
+            {/* Zona */}
             <div className="mb-6">
               <label className="block text-sm font-semibold text-[#2C3A61] mb-2">Zona:</label>
               {editZona ? (
@@ -378,3 +360,4 @@ export function CardBodegas({
     </div>
   );
 }
+

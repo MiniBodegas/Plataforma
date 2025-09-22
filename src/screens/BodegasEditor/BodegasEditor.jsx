@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { BodegaCarruselEditor, DescriptionEditor, CardBodegas, AgregarMiniBodegaBtn } from "../../components/index";
-import { Trash2, Save, Loader2 } from "lucide-react";
+import { Trash2, Save, Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 
 export function BodegaEditorProveedorScreen() {
@@ -43,6 +43,18 @@ export function BodegaEditorProveedorScreen() {
   const [cargando, setCargando] = useState(true);
   const [guardandoTodo, setGuardandoTodo] = useState(false);
   const [guardadoExitoso, setGuardadoExitoso] = useState(false);
+
+  // ✅ NUEVOS ESTADOS para mejor UX
+  const [mensaje, setMensaje] = useState({ tipo: null, texto: "" });
+  const [eliminandoBodega, setEliminandoBodega] = useState(null);
+
+  // ✅ Función para mostrar mensajes temporales
+  const mostrarMensaje = (tipo, texto, duracion = 3000) => {
+    setMensaje({ tipo, texto });
+    setTimeout(() => {
+      setMensaje({ tipo: null, texto: "" });
+    }, duracion);
+  };
 
   // Obtener usuario autenticado al cargar
   useEffect(() => {
@@ -138,11 +150,47 @@ export function BodegaEditorProveedorScreen() {
         precioMensual: "" // ✅ Incluir precio
       }
     ]);
+    mostrarMensaje('success', '✅ Nueva mini bodega agregada');
   };
 
-  // Eliminar una card
-  const handleEliminarBodega = (idx) => {
-    setBodegas(bodegas.filter((_, i) => i !== idx));
+  // ✅ MEJORAR: Eliminar con confirmación
+  const handleEliminarBodega = async (idx) => {
+    const bodega = bodegas[idx];
+    
+    // ✅ Confirmación más profesional
+    const confirmacion = window.confirm(
+      `¿Estás seguro de que quieres eliminar esta mini bodega?\n\n` +
+      `📦 Metraje: ${bodega.metraje || 'Sin especificar'}\n` +
+      `📝 Descripción: ${bodega.descripcion || 'Sin descripción'}\n` +
+      `📍 Dirección: ${bodega.direccion || 'Sin dirección'}\n\n` +
+      `⚠️ Esta acción no se puede deshacer.`
+    );
+
+    if (!confirmacion) return;
+
+    setEliminandoBodega(idx);
+
+    try {
+      // Si tiene ID, eliminar de la base de datos
+      if (bodega.id) {
+        const { error } = await supabase
+          .from('mini_bodegas')
+          .delete()
+          .eq('id', bodega.id);
+
+        if (error) throw error;
+      }
+
+      // Eliminar del estado local
+      setBodegas(bodegas.filter((_, i) => i !== idx));
+      mostrarMensaje('success', '✅ Mini bodega eliminada correctamente');
+
+    } catch (error) {
+      console.error('Error eliminando mini bodega:', error);
+      mostrarMensaje('error', `❌ Error eliminando mini bodega: ${error.message}`);
+    } finally {
+      setEliminandoBodega(null);
+    }
   };
 
   // Actualizar una bodega
@@ -261,16 +309,14 @@ export function BodegaEditorProveedorScreen() {
     setGuardandoTodo(true);
     
     try {
-      console.log('🚀 Iniciando guardado completo...');
-      
-      // ✅ VALIDACIONES (actualizadas)
+      // ✅ VALIDACIONES mejoradas con mensajes específicos
       if (!empresa.trim()) {
-        alert('❌ Por favor ingresa el nombre de la empresa');
+        mostrarMensaje('error', '❌ Por favor ingresa el nombre de la empresa');
         return;
       }
 
       if (!imagenesCarrusel || imagenesCarrusel.length === 0) {
-        alert('❌ Por favor agrega al menos una imagen del carrusel');
+        mostrarMensaje('error', '❌ Por favor agrega al menos una imagen del carrusel');
         return;
       }
 
@@ -281,20 +327,30 @@ export function BodegaEditorProveedorScreen() {
         b.direccion && 
         b.ciudad && 
         b.zona && 
-        b.precioMensual // ✅ Validar precio también
+        b.precioMensual
       );
 
       if (bodegasValidas.length === 0) {
-        alert('❌ Por favor completa al menos una mini bodega');
+        mostrarMensaje('error', '❌ Por favor completa al menos una mini bodega con todos los campos');
         return;
       }
 
+      // Validar precios
+      for (const bodega of bodegasValidas) {
+        const precio = parseFloat(bodega.precioMensual);
+        if (isNaN(precio) || precio <= 0) {
+          mostrarMensaje('error', `❌ El precio "${bodega.precioMensual}" no es válido. Debe ser un número mayor a 0.`);
+          return;
+        }
+      }
+
+      // ✅ Mostrar progreso
+      mostrarMensaje('info', '🔄 Guardando empresa...', 10000);
+
       // 🏢 PASO 1: Guardar/Actualizar empresa
-      console.log('📝 Guardando empresa...');
       let empresaData;
       
       if (empresaId) {
-        // Actualizar empresa existente
         const { data, error } = await supabase
           .from('empresas')
           .update({ 
@@ -307,7 +363,6 @@ export function BodegaEditorProveedorScreen() {
         if (error) throw error;
         empresaData = data[0];
       } else {
-        // Crear nueva empresa
         const { data, error } = await supabase
           .from('empresas')
           .insert([{
@@ -322,20 +377,16 @@ export function BodegaEditorProveedorScreen() {
         setEmpresaId(empresaData.id);
       }
 
-      console.log('✅ Empresa guardada:', empresaData);
-
       // 🖼️ PASO 2: Subir y guardar imágenes del carrusel
-      console.log('📸 Subiendo imágenes del carrusel...');
+      mostrarMensaje('info', '📸 Subiendo imágenes del carrusel...', 10000);
       
       const urlsCarrusel = await uploadCarruselImages(imagenesCarrusel);
       
-      // Limpiar carrusel existente
       await supabase
         .from('carrusel_imagenes')
         .delete()
         .eq('empresa_id', empresaData.id);
 
-      // Insertar nuevas imágenes del carrusel
       if (urlsCarrusel.length > 0) {
         const carruselData = urlsCarrusel.map((url, index) => ({
           empresa_id: empresaData.id,
@@ -351,20 +402,15 @@ export function BodegaEditorProveedorScreen() {
         if (carruselError) throw carruselError;
       }
 
-      console.log('✅ Carrusel guardado');
-
       // 📝 PASO 3: Guardar descripción de empresa
-      console.log('📝 Guardando descripción de empresa...');
+      mostrarMensaje('info', '📝 Guardando descripción...', 10000);
       
-      // Subir imágenes de descripción
       const urlsDescripcion = await uploadDescripcionImages(imagenesDescripcion);
       
-      // Convertir características a array
       const caracteristicasArray = caracteristicas 
         ? caracteristicas.split(',').map(c => c.trim()).filter(c => c.length > 0)
         : [];
 
-      // Verificar si ya existe descripción
       const { data: descripcionExistente } = await supabase
         .from('empresa_descripcion')
         .select('id')
@@ -380,7 +426,6 @@ export function BodegaEditorProveedorScreen() {
       };
 
       if (descripcionExistente) {
-        // Actualizar descripción existente
         const { error: descError } = await supabase
           .from('empresa_descripcion')
           .update(descripcionData)
@@ -388,7 +433,6 @@ export function BodegaEditorProveedorScreen() {
 
         if (descError) throw descError;
       } else {
-        // Crear nueva descripción
         const { error: descError } = await supabase
           .from('empresa_descripcion')
           .insert([descripcionData]);
@@ -396,25 +440,20 @@ export function BodegaEditorProveedorScreen() {
         if (descError) throw descError;
       }
 
-      console.log('✅ Descripción guardada');
-
       // 📦 PASO 4: Guardar mini bodegas
-      console.log('📦 Guardando mini bodegas...');
+      mostrarMensaje('info', '📦 Guardando mini bodegas...', 10000);
       
-      // Limpiar mini bodegas existentes
       await supabase
         .from('mini_bodegas')
         .delete()
         .eq('empresa_id', empresaData.id);
 
-      // Subir imágenes y guardar cada mini bodega
       const bodegasGuardadas = [];
       for (let i = 0; i < bodegasValidas.length; i++) {
         const bodega = bodegasValidas[i];
         
-        console.log(`Procesando mini bodega ${i + 1}...`);
+        mostrarMensaje('info', `📦 Procesando mini bodega ${i + 1} de ${bodegasValidas.length}...`, 10000);
         
-        // Subir imagen si no es una URL
         let imagenUrl = null;
         if (bodega.imagen) {
           if (typeof bodega.imagen === 'string') {
@@ -424,7 +463,6 @@ export function BodegaEditorProveedorScreen() {
           }
         }
 
-        // Guardar mini bodega
         const bodegaData = {
           empresa_id: empresaData.id,
           metraje: bodega.metraje.trim(),
@@ -433,7 +471,7 @@ export function BodegaEditorProveedorScreen() {
           direccion: bodega.direccion.trim(),
           ciudad: bodega.ciudad.trim(),
           zona: bodega.zona,
-          precio_mensual: parseFloat(bodega.precioMensual), // ✅ Convertir a número
+          precio_mensual: parseFloat(bodega.precioMensual),
           imagen_url: imagenUrl,
           disponible: true,
           orden: i
@@ -446,86 +484,57 @@ export function BodegaEditorProveedorScreen() {
 
         if (bodegaError) throw bodegaError;
         
-        // Agregar la bodega guardada con su ID
         bodegasGuardadas.push(bodegaInsertada[0]);
       }
 
-      console.log('✅ Mini bodegas guardadas');
-
-      // 🔄 PASO 5: RECARGAR DATOS DESDE LA BASE DE DATOS
-      console.log('🔄 Recargando datos actualizados desde la BD...');
+      // 🔄 PASO 5: RECARGAR DATOS
+      mostrarMensaje('info', '🔄 Actualizando datos...', 10000);
       
-      // Recargar empresa
-      const { data: empresaActualizada } = await supabase
-        .from('empresas')
-        .select('*')
-        .eq('id', empresaData.id)
-        .single();
-      
-      if (empresaActualizada) {
-        setEmpresa(empresaActualizada.nombre);
-        setPerfilCompleto(true);
-      }
-
-      // Recargar carrusel
-      const { data: carruselActualizado } = await supabase
-        .from('carrusel_imagenes')
-        .select('imagen_url')
-        .eq('empresa_id', empresaData.id)
-        .order('orden');
-      
-      if (carruselActualizado) {
-        setImagenesCarrusel(carruselActualizado.map(img => img.imagen_url));
-      }
-
-      // Recargar descripción
-      const { data: descripcionActualizada } = await supabase
-        .from('empresa_descripcion')
-        .select('*')
-        .eq('empresa_id', empresaData.id)
-        .single();
-      
-      if (descripcionActualizada) {
-        setDireccionGeneral(descripcionActualizada.direccion_general || "");
-        setDescripcionGeneral(descripcionActualizada.descripcion_general || "");
-        setCaracteristicas(descripcionActualizada.caracteristicas?.join(', ') || "");
-        setImagenesDescripcion(descripcionActualizada.imagenes_urls || []);
-      }
-
-      // Recargar mini bodegas
-      const { data: bodegasActualizadas } = await supabase
+      // Recargar las bodegas guardadas con todos los campos
+      const { data: bodegasFinales } = await supabase
         .from('mini_bodegas')
         .select('*')
         .eq('empresa_id', empresaData.id)
         .order('orden');
-      
-      if (bodegasActualizadas) {
-        setBodegas(bodegasActualizadas.map(b => ({
+
+      if (bodegasFinales && bodegasFinales.length > 0) {
+        // ✅ MAPEO CORREGIDO - incluir todos los campos
+        setBodegas(bodegasFinales.map(b => ({
           id: b.id,
-          metraje: b.metraje,
-          descripcion: b.descripcion,
-          contenido: b.contenido,
+          metraje: b.metraje || "",
+          descripcion: b.descripcion || "",
+          contenido: b.contenido || "",
           imagen: b.imagen_url,
-          direccion: b.direccion,
-          ciudad: b.ciudad,
-          zona: b.zona,
-          precioMensual: b.precio_mensual?.toString() || ""
+          direccion: b.direccion || "",
+          ciudad: b.ciudad || "", // ✅ AGREGADO
+          zona: b.zona || "", // ✅ AGREGADO
+          precioMensual: b.precio_mensual ? b.precio_mensual.toString() : "" // ✅ AGREGADO
         })));
       }
 
-      console.log('✅ Datos recargados exitosamente');
-
-      // 🎉 ÉXITO
-      setGuardadoExitoso(true);
-      
-      alert(`🎉 ¡Perfil guardado exitosamente!\n\n✅ Empresa: ${empresaData.nombre}\n✅ Carrusel: ${urlsCarrusel.length} imágenes\n✅ Descripción: ${descripcionGeneral ? 'Guardada' : 'Sin descripción'}\n✅ Mini bodegas: ${bodegasGuardadas.length}\n\n🔄 Los datos han sido recargados desde la base de datos.`);
-      
-      // Resetear estado después de 5 segundos
-      setTimeout(() => setGuardadoExitoso(false), 5000);
+      // ✅ ÉXITO - Mensaje discreto y profesional
+      setPerfilCompleto(true);
+      mostrarMensaje('success', `✅ Perfil guardado correctamente (${bodegasFinales.length} mini bodegas)`);
 
     } catch (error) {
       console.error('❌ Error guardando perfil completo:', error);
-      alert(`❌ Error al guardar: ${error.message}`);
+      
+      // ✅ Manejo de errores específicos
+      let mensajeError = 'Error desconocido';
+      
+      if (error.message.includes('violates foreign key constraint')) {
+        mensajeError = 'Error de relación en la base de datos';
+      } else if (error.message.includes('duplicate key')) {
+        mensajeError = 'Ya existe un registro con esos datos';
+      } else if (error.message.includes('network')) {
+        mensajeError = 'Error de conexión. Verifica tu internet';
+      } else if (error.message.includes('storage')) {
+        mensajeError = 'Error subiendo imágenes';
+      } else {
+        mensajeError = error.message;
+      }
+      
+      mostrarMensaje('error', `❌ ${mensajeError}`, 8000);
     } finally {
       setGuardandoTodo(false);
     }
@@ -537,30 +546,6 @@ export function BodegaEditorProveedorScreen() {
     
     setCargando(true);
     try {
-      console.log('🔄 Recargando datos del perfil...');
-      
-      // Recargar empresa
-      const { data: empresaActualizada } = await supabase
-        .from('empresas')
-        .select('*')
-        .eq('id', empresaId)
-        .single();
-      
-      if (empresaActualizada) {
-        setEmpresa(empresaActualizada.nombre);
-      }
-
-      // Recargar carrusel
-      const { data: carruselActualizado } = await supabase
-        .from('carrusel_imagenes')
-        .select('imagen_url')
-        .eq('empresa_id', empresaId)
-        .order('orden');
-      
-      if (carruselActualizado) {
-        setImagenesCarrusel(carruselActualizado.map(img => img.imagen_url));
-      }
-
       // Recargar mini bodegas
       const { data: bodegasActualizadas } = await supabase
         .from('mini_bodegas')
@@ -569,41 +554,35 @@ export function BodegaEditorProveedorScreen() {
         .order('orden');
       
       if (bodegasActualizadas && bodegasActualizadas.length > 0) {
+        // ✅ MAPEO CORREGIDO - incluir todos los campos
         setBodegas(bodegasActualizadas.map(b => ({
           id: b.id,
-          metraje: b.metraje,
-          descripcion: b.descripcion,
-          contenido: b.contenido,
+          metraje: b.metraje || "",
+          descripcion: b.descripcion || "",
+          contenido: b.contenido || "",
           imagen: b.imagen_url,
-          direccion: b.direccion,
-          ciudad: b.ciudad,
-          zona: b.zona,
-          precioMensual: b.precio_mensual?.toString() || ""
+          direccion: b.direccion || "",
+          ciudad: b.ciudad || "", // ✅ AGREGADO
+          zona: b.zona || "", // ✅ AGREGADO
+          precioMensual: b.precio_mensual ? b.precio_mensual.toString() : "" // ✅ AGREGADO y convertido a string
         })));
       } else {
-        // Si no hay bodegas, mostrar plantilla inicial
+        // Si no hay bodegas, mantener la estructura por defecto
         setBodegas([
-          { 
-            metraje: "", 
-            descripcion: "", 
-            contenido: "", 
-            imagen: null, 
-            direccion: "",
-            ciudad: "",
-            zona: "",
-            precioMensual: ""
-          },
-          { 
-            metraje: "", 
-            descripcion: "", 
-            contenido: "", 
-            imagen: null, 
-            direccion: "",
-            ciudad: "",
-            zona: "",
-            precioMensual: ""
-          }
+          { metraje: "", descripcion: "", contenido: "", imagen: null, direccion: "", ciudad: "", zona: "", precioMensual: "" },
+          { metraje: "", descripcion: "", contenido: "", imagen: null, direccion: "", ciudad: "", zona: "", precioMensual: "" }
         ]);
+      }
+
+      // Recargar carrusel
+      const { data: carruselActualizado } = await supabase
+        .from('carrusel_imagenes')
+        .select('imagen_url, orden')
+        .eq('empresa_id', empresaId)
+        .order('orden');
+      
+      if (carruselActualizado) {
+        setImagenesCarrusel(carruselActualizado.map(img => img.imagen_url));
       }
 
       // Recargar descripción
@@ -616,17 +595,48 @@ export function BodegaEditorProveedorScreen() {
       if (descripcionActualizada) {
         setDireccionGeneral(descripcionActualizada.direccion_general || "");
         setDescripcionGeneral(descripcionActualizada.descripcion_general || "");
-        setCaracteristicas(descripcionActualizada.caracteristicas?.join(', ') || "");
+        setCaracteristicas(
+          descripcionActualizada.caracteristicas 
+            ? descripcionActualizada.caracteristicas.join(', ')
+            : ""
+        );
         setImagenesDescripcion(descripcionActualizada.imagenes_urls || []);
       }
-
-      console.log('✅ Datos recargados exitosamente');
       
     } catch (error) {
-      console.error('❌ Error recargando datos:', error);
+      console.error('Error recargando datos:', error);
+      mostrarMensaje('error', `❌ Error recargando datos: ${error.message}`, 5000);
     } finally {
       setCargando(false);
     }
+  };
+
+  // ✅ Componente para mostrar mensajes
+  const MensajeEstado = () => {
+    if (!mensaje.tipo) return null;
+
+    const estilos = {
+      success: 'bg-green-50 border-green-200 text-green-800',
+      error: 'bg-red-50 border-red-200 text-red-800',
+      info: 'bg-blue-50 border-blue-200 text-blue-800',
+      warning: 'bg-yellow-50 border-yellow-200 text-yellow-800'
+    };
+
+    const iconos = {
+      success: <CheckCircle className="h-5 w-5" />,
+      error: <AlertTriangle className="h-5 w-5" />,
+      info: <Loader2 className="h-5 w-5 animate-spin" />,
+      warning: <AlertTriangle className="h-5 w-5" />
+    };
+
+    return (
+      <div className={`fixed top-4 right-4 z-50 p-4 border rounded-lg shadow-lg max-w-md ${estilos[mensaje.tipo]}`}>
+        <div className="flex items-center">
+          {iconos[mensaje.tipo]}
+          <span className="ml-2 font-medium">{mensaje.texto}</span>
+        </div>
+      </div>
+    );
   };
 
   if (cargando) {
@@ -658,12 +668,15 @@ export function BodegaEditorProveedorScreen() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* ✅ Componente de mensajes */}
+      <MensajeEstado />
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         
         {/* Header con info del usuario */}
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-[#2C3A61] mb-2">
-            👋 Bienvenido, {usuario.email}
+            👋 Bienvenido, {usuario?.email}
           </h1>
           <p className="text-gray-600">
             {perfilCompleto ? 'Edita tu perfil de proveedor' : 'Completa tu perfil de proveedor de mini bodegas'}
@@ -735,12 +748,23 @@ export function BodegaEditorProveedorScreen() {
                   onZonaChange={val => handleUpdateBodega(idx, "zona", val)}
                   onPrecioMensualChange={val => handleUpdateBodega(idx, "precioMensual", val)} // ✅ Handler para precio
                 />
+                
+                {/* ✅ Botón eliminar mejorado */}
                 <button
-                  className="mt-4 bg-red-100 hover:bg-red-200 rounded-full p-2 transition-colors"
+                  className={`mt-4 rounded-full p-2 transition-all duration-200 ${
+                    eliminandoBodega === idx 
+                      ? 'bg-red-200 cursor-not-allowed' 
+                      : 'bg-red-100 hover:bg-red-200 hover:scale-105'
+                  }`}
                   onClick={() => handleEliminarBodega(idx)}
+                  disabled={eliminandoBodega === idx}
                   title="Eliminar mini bodega"
                 >
-                  <Trash2 className="h-5 w-5 text-red-600" />
+                  {eliminandoBodega === idx ? (
+                    <Loader2 className="h-5 w-5 text-red-600 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-5 w-5 text-red-600" />
+                  )}
                 </button>
               </div>
             ))}
@@ -752,13 +776,13 @@ export function BodegaEditorProveedorScreen() {
           </div>
         </div>
         
-        {/* 🚀 BOTÓN PRINCIPAL: Guardar Todo */}
+        {/* ✅ BOTÓN PRINCIPAL mejorado */}
         <div className="flex justify-center mt-8">
           <button
-            className={`font-bold px-8 py-3 rounded-xl shadow transition text-lg flex items-center justify-center min-w-[300px] ${
-              guardadoExitoso
-                ? 'bg-green-500 text-white'
-                : 'bg-[#2C3A61] text-white hover:bg-[#4B799B]'
+            className={`font-bold px-8 py-3 rounded-xl shadow transition-all duration-200 text-lg flex items-center justify-center min-w-[300px] ${
+              guardandoTodo
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-[#2C3A61] text-white hover:bg-[#4B799B] hover:scale-105'
             }`}
             onClick={handleGuardarTodo}
             disabled={guardandoTodo}
@@ -766,12 +790,7 @@ export function BodegaEditorProveedorScreen() {
             {guardandoTodo ? (
               <>
                 <Loader2 className="animate-spin h-5 w-5 mr-3" />
-                Guardando todo...
-              </>
-            ) : guardadoExitoso ? (
-              <>
-                <Save className="h-5 w-5 mr-3" />
-                ¡Guardado Exitosamente! ✅
+                Guardando...
               </>
             ) : (
               <>
@@ -782,21 +801,9 @@ export function BodegaEditorProveedorScreen() {
           </button>
         </div>
 
-        {/* Mensaje de estado */}
-        {guardadoExitoso && (
-          <div className="mt-6 p-4 bg-green-100 border border-green-300 rounded-lg text-center max-w-2xl mx-auto">
-            <p className="text-green-700 font-medium">
-              🎉 ¡Tu perfil de proveedor ha sido guardado exitosamente!
-            </p>
-            <p className="text-green-600 text-sm mt-2">
-              Todos los datos han sido sincronizados con la base de datos.
-            </p>
-          </div>
-        )}
-
-        {/* Botón de recarga manual (opcional) */}
+        {/* ✅ Botón de recarga mejorado */}
         {perfilCompleto && (
-          <div className="text-center mb-4">
+          <div className="text-center mt-4">
             <button
               onClick={recargarDatos}
               className="text-[#2C3A61] hover:text-[#4B799B] transition-colors text-sm flex items-center justify-center mx-auto"
@@ -807,7 +814,7 @@ export function BodegaEditorProveedorScreen() {
               ) : (
                 <span className="mr-2">🔄</span>
               )}
-              Recargar datos desde la base de datos
+              Recargar datos
             </button>
           </div>
         )}
