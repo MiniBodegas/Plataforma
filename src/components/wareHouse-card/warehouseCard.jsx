@@ -6,7 +6,7 @@ export function WarehouseCard({ warehouse = {} }) {
 
   const {
     id,
-    name = "Ciudad sin nombre",
+    name = "Empresa sin nombre",
     location = "Ubicación no disponible",
     sizes = [],
     priceRange = { min: 0, max: 0 },
@@ -19,8 +19,17 @@ export function WarehouseCard({ warehouse = {} }) {
 
   const canNavigate = typeof id === "number" || typeof id === "string"
 
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(price)
+  }
+
   const handleReserve = (e) => {
-    e.stopPropagation() // Evita que se active el click de la card
+    e.stopPropagation()
     if (!canNavigate) return
     navigate(`/bodegas/${id}`, { state: { warehouse } })
   }
@@ -31,7 +40,7 @@ export function WarehouseCard({ warehouse = {} }) {
   }
 
   const handleLinkClick = (e) => {
-    e.stopPropagation() // Evita que se active el click de la card cuando se hace click en el link
+    e.stopPropagation()
   }
 
   return (
@@ -47,6 +56,17 @@ export function WarehouseCard({ warehouse = {} }) {
           loading="lazy"
           className="w-full h-full object-cover"
         />
+        {priceRange.min > 0 && (
+          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md">
+            <div className="text-xs font-semibold text-[#2C3A61]">
+              {priceRange.min === priceRange.max 
+                ? formatPrice(priceRange.min)
+                : `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
+              }
+            </div>
+            <div className="text-xs text-gray-600">por mes</div>
+          </div>
+        )}
       </div>
 
       {/* Contenido */}
@@ -55,7 +75,7 @@ export function WarehouseCard({ warehouse = {} }) {
           <div className="flex items-center justify-between mb-1 sm:mb-2">
             {/* Nombre con link al perfil de la compañía */}
             <Link
-              to="/perfil-bodegas"
+              to={`/perfil-bodegas/${id}`}
               className="font-semibold text-base sm:text-lg text-[#2C3A61] line-clamp-1 underline decoration-2 underline-offset-4 hover:text-[#4B799B] transition-colors"
               title="Ir al perfil de la compañía"
               onClick={handleLinkClick}
@@ -70,9 +90,6 @@ export function WarehouseCard({ warehouse = {} }) {
                 <Star className="h-4 w-4 text-yellow-400 fill-current" />
                 <span className="text-xs sm:text-sm text-[#2C3A61] font-medium">{Number(rating).toFixed(1)}</span>
                 <span className="text-xs text-gray-500">({reviewCount || 25} reseñas)</span>
-              </div>
-              <div className="text-right hidden sm:block">
-                <div className="text-xs text-gray-500">Calificación promedio</div>
               </div>
             </div>
           )}
@@ -89,14 +106,16 @@ export function WarehouseCard({ warehouse = {} }) {
             <span className="text-xs sm:text-sm font-medium text-[#2C3A61]">Tamaños disponibles:</span>
           </div>
           <div className="flex flex-wrap gap-1">
-            {sizes.map((size, index) => (
+            {sizes.length > 0 ? sizes.map((size, index) => (
               <span
                 key={index}
                 className="px-2 py-1 bg-blue-50 border border-blue-200 rounded-md text-xs text-[#2C3A61]"
               >
                 {size}
               </span>
-            ))}
+            )) : (
+              <span className="text-xs text-gray-500">Consultar tamaños disponibles</span>
+            )}
           </div>
         </div>
 

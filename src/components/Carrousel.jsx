@@ -1,37 +1,23 @@
 import { useState } from "react";
 
-const slides = [
-  {
-    id: 1,
-    image: "https://rentabox.com.co/wp-content/uploads/2025/07/image-01-1140x894.jpg",
-    title: "Rentabox",
-  },
-  {
-    id: 2,
-    image: "https://rentabox.com.co/wp-content/uploads/2025/07/image-02-888x1140.jpg",
-    title: "Rentabox",
-  },
-  {
-    id: 3,
-    image: "https://findhome.cl/wp-content/uploads/2024/09/Mini-Bodegas-en-Chile-1280x640.webp",
-    title: "Rentabox",
-  },
-  {
-    id: 4,
-    image: "https://coatiminibodegas.mx/img/coati/0mini-bodegas-coati.jpg",
-    title: "Rentabox",
-  },
-];
+// Ejemplo de cómo actualizar Carrousel para recibir props
+export function Carrousel({ images = [], title = "" }) {
+  // Usar images en lugar de datos estáticos
+  // Si no hay imágenes, usar una por defecto
+  const defaultImages = [
+    "https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop",
+  ];
 
-export function Carrousel() {
+  const carouselImages = images.length > 0 ? images : defaultImages;
+
   const [current, setCurrent] = useState(0);
 
-  const nextSlide = () => {     
-    setCurrent((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
+  const nextSlide = () => {
+    setCurrent((prev) => (prev === carouselImages.length - 1 ? 0 : prev + 1));
   };
 
   const prevSlide = () => {
-    setCurrent((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
+    setCurrent((prev) => (prev === 0 ? carouselImages.length - 1 : prev - 1));
   };
 
   return (
@@ -39,8 +25,8 @@ export function Carrousel() {
       {/* Imagen */}
       <div className="relative w-full h-[300px] md:h-[400px] rounded-2xl overflow-hidden shadow-lg">
         <img
-          src={slides[current].image}
-          alt={slides[current].title}
+          src={carouselImages[current].image}
+          alt={carouselImages[current].title}
           className="w-full h-full object-cover"
         />
 
@@ -63,12 +49,12 @@ export function Carrousel() {
 
       {/* Texto */}
       <p className="text-center mt-4 text-lg font-semibold">
-        {slides[current].title}
+        {carouselImages[current].title}
       </p>
 
       {/* Indicadores */}
       <div className="flex justify-center mt-2 space-x-2">
-        {slides.map((_, index) => (
+        {carouselImages.map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrent(index)}

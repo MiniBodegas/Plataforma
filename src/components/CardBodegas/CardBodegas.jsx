@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Image, RotateCcw } from "lucide-react";
 import './CardBodegas.css';
 
-export function CardBodegas({
+export function  CardBodegas({
   id = null,
   metraje = "",
   descripcion = "",
@@ -15,7 +15,7 @@ export function CardBodegas({
   onImagenChange,
   onMetrajeChange,
   onDescripcionChange,
-  onContenidoChange,
+  onContenidoChange,    
   onDireccionChange,
   onCiudadChange,
   onZonaChange,
