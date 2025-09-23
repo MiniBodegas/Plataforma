@@ -13,15 +13,27 @@ export function BodegasDisponibles() {
     navigate(-1)
   }
 
+  // Validar que el ID existe
+  if (!id) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="p-4">
+          <button onClick={handleBack} className="text-[#2C3A61] hover:text-[#1e2a47] transition-colors">
+            <ArrowLeft className="h-6 w-6" />
+          </button>
+        </div>
+        <div className="flex justify-center items-center min-h-[400px]">
+          <p className="text-center text-gray-600 text-lg">ID de bodega no válido</p>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        {/* Header con flecha de regreso */}
         <div className="p-4">
-          <button
-            onClick={handleBack}
-            className="text-[#2C3A61] hover:text-[#1e2a47] transition-colors"
-          >
+          <button onClick={handleBack} className="text-[#2C3A61] hover:text-[#1e2a47] transition-colors">
             <ArrowLeft className="h-6 w-6" />
           </button>
         </div>
@@ -39,12 +51,8 @@ export function BodegasDisponibles() {
   if (error) {
     return (
       <div className="min-h-screen bg-white">
-        {/* Header con flecha de regreso */}
         <div className="p-4">
-          <button
-            onClick={handleBack}
-            className="text-[#2C3A61] hover:text-[#1e2a47] transition-colors"
-          >
+          <button onClick={handleBack} className="text-[#2C3A61] hover:text-[#1e2a47] transition-colors">
             <ArrowLeft className="h-6 w-6" />
           </button>
         </div>
@@ -67,12 +75,8 @@ export function BodegasDisponibles() {
   if (!warehouse) {
     return (
       <div className="min-h-screen bg-white">
-        {/* Header con flecha de regreso */}
         <div className="p-4">
-          <button
-            onClick={handleBack}
-            className="text-[#2C3A61] hover:text-[#1e2a47] transition-colors"
-          >
+          <button onClick={handleBack} className="text-[#2C3A61] hover:text-[#1e2a47] transition-colors">
             <ArrowLeft className="h-6 w-6" />
           </button>
         </div>
@@ -82,6 +86,23 @@ export function BodegasDisponibles() {
         </div>
       </div>
     )
+  }
+
+  // Validaciones adicionales para los componentes
+  const safeWarehouse = {
+    id: warehouse.id,
+    name: warehouse.name || 'Empresa sin nombre',
+    description: warehouse.description || 'Sin descripción disponible',
+    address: warehouse.address || 'Dirección no disponible',
+    features: warehouse.features || [],
+    rating: warehouse.rating || 0,
+    reviewCount: warehouse.reviewCount || 0,
+    images: warehouse.images || [],
+    availableSizes: warehouse.availableSizes || [],
+    city: warehouse.city || 'Ciudad no disponible',
+    zone: warehouse.zone || 'Zona no disponible',
+    miniBodegas: warehouse.miniBodegas || [],
+    ...warehouse // Mantener otras propiedades
   }
 
   return (
@@ -96,32 +117,33 @@ export function BodegasDisponibles() {
         </button>
       </div>
 
-      {/* Pasar datos reales a los componentes */}
+      {/* Pasar datos seguros a los componentes */}
       <Carrousel 
-        images={warehouse.images}
-        title={warehouse.name}
+        images={safeWarehouse.images}
+        title={safeWarehouse.name}
       />
       
       <CompanyDescription 
-        warehouse={warehouse}
-        name={warehouse.name}
-        description={warehouse.description}
-        address={warehouse.address}
-        features={warehouse.features}
-        rating={warehouse.rating}
-        reviewCount={warehouse.reviewCount}
+        warehouse={safeWarehouse}
+        name={safeWarehouse.name}
+        description={safeWarehouse.description}
+        address={safeWarehouse.address}
+        features={safeWarehouse.features}
+        rating={safeWarehouse.rating}
+        reviewCount={safeWarehouse.reviewCount}
       />
       
       <SizeCardReserved 
-        warehouse={warehouse}
-        availableSizes={warehouse.availableSizes}
+        warehouse={safeWarehouse}
+        availableSizes={safeWarehouse.availableSizes}
+        companyName={safeWarehouse.name} // Prop específica que necesita SizeCardReserved
       />
 
       <MapaBodegas 
-        city={warehouse.city}
-        zone={warehouse.zone}
-        address={warehouse.address}
-        bodegas={warehouse.miniBodegas}
+        city={safeWarehouse.city}
+        zone={safeWarehouse.zone}
+        address={safeWarehouse.address}
+        bodegas={safeWarehouse.miniBodegas}
         className="max-w-6xl mx-auto rounded-2xl overflow-hidden shadow-lg"
         height="600px"
       />

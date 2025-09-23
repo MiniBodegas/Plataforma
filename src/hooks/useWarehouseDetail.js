@@ -49,7 +49,7 @@ export function useWarehouseDetail(empresaId) {
 
       if (bodegasError) {
         console.error('❌ Error obteniendo mini bodegas:', bodegasError)
-        throw bodegasError
+        // No hacer throw, continuar sin mini bodegas
       }
 
       console.log('✅ Mini bodegas encontradas:', miniBodegas)
@@ -67,24 +67,13 @@ export function useWarehouseDetail(empresaId) {
 
       console.log('✅ Carrusel encontrado:', carruselImagenes)
 
-      // Obtener descripción adicional si existe
-      const { data: descripcionEmpresa, error: descripcionError } = await supabase
-        .from('empresa_descripcion')
-        .select('*')
-        .eq('empresa_id', empresaId)
-        .single()
-
-      if (descripcionError) {
-        console.warn('⚠️ No hay descripción adicional:', descripcionError)
-      }
-
       // Transformar datos al formato esperado
       const warehouseDetail = {
         id: empresa.id,
-        name: empresa.nombre,
-        description: empresa.descripcion_general || descripcionEmpresa?.descripcion_general || 'Sin descripción',
-        address: descripcionEmpresa?.direccion_general || 'Dirección no disponible',
-        features: empresa.caracteristicas || descripcionEmpresa?.caracteristicas || [],
+        name: empresa.nombre || 'Empresa sin nombre',
+        description: empresa.descripcion_general || 'Sin descripción disponible',
+        address: 'Dirección no disponible', // Ajustar según tu DB
+        features: empresa.caracteristicas || [],
         
         // Imágenes del carrusel
         images: carruselImagenes?.map(img => img.imagen_url) || [],
@@ -94,26 +83,25 @@ export function useWarehouseDetail(empresaId) {
           id: bodega.id,
           size: `${bodega.metraje}m³`,
           price: parseFloat(bodega.precio_mensual) || 0,
-          description: bodega.descripcion,
-          content: bodega.contenido,
-          address: bodega.direccion,
-          city: bodega.ciudad,
-          zone: bodega.zona,
+          description: bodega.descripcion || 'Sin descripción',
+          content: bodega.contenido || 'Sin especificar contenido',
+          address: bodega.direccion || 'Dirección no disponible',
+          city: bodega.ciudad || 'Ciudad no disponible',
+          zone: bodega.zona || 'Zona no disponible',
           image: bodega.imagen_url,
-          available: true // Puedes agregar lógica de disponibilidad
+          available: true
         })) || [],
 
         // Datos adicionales
         city: miniBodegas?.[0]?.ciudad || 'Ciudad no disponible',
         zone: miniBodegas?.[0]?.zona || 'Zona no disponible',
-        rating: 4.5, // Temporal, implementar sistema de ratings
+        rating: 4.5,
         reviewCount: Math.floor(Math.random() * 50) + 10,
         
         // Datos raw para otros componentes
         empresa: empresa,
         miniBodegas: miniBodegas || [],
-        carruselImagenes: carruselImagenes || [],
-        descripcionEmpresa: descripcionEmpresa
+        carruselImagenes: carruselImagenes || []
       }
 
       console.log('🎉 Warehouse detail completo:', warehouseDetail)
