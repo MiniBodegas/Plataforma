@@ -92,7 +92,7 @@ export function BodegaEditorProveedorScreen() {
               setImagenesCarrusel(imagenesExistentes.map(img => img.imagen_url));
             }
 
-            // Cargar mini bodegas existentes
+            // ✅ CORREGIR: Cargar mini bodegas existentes con todos los campos
             const { data: bodegasExistentes } = await supabase
               .from('mini_bodegas')
               .select('*')
@@ -100,14 +100,25 @@ export function BodegaEditorProveedorScreen() {
               .order('created_at');
               
             if (bodegasExistentes && bodegasExistentes.length > 0) {
+              console.log('Bodegas cargadas desde DB:', bodegasExistentes); // Debug
+              
               setBodegas(bodegasExistentes.map(b => ({
                 id: b.id,
-                metraje: b.metraje,
-                descripcion: b.descripcion,
-                contenido: b.contenido,
+                metraje: b.metraje || "",
+                descripcion: b.descripcion || "",
+                contenido: b.contenido || "",
                 imagen: b.imagen_url,
-                direccion: b.direccion
+                direccion: b.direccion || "",
+                ciudad: b.ciudad || "", // ✅ AGREGADO
+                zona: b.zona || "", // ✅ AGREGADO
+                precioMensual: b.precio_mensual ? b.precio_mensual.toString() : "" // ✅ AGREGADO y convertido a string
               })));
+            } else {
+              // Si no hay bodegas en la DB, mantener la estructura inicial
+              setBodegas([
+                { metraje: "", descripcion: "", contenido: "", imagen: null, direccion: "", ciudad: "", zona: "", precioMensual: "" },
+                { metraje: "", descripcion: "", contenido: "", imagen: null, direccion: "", ciudad: "", zona: "", precioMensual: "" }
+              ]);
             }
 
             // Cargar descripción existente
@@ -123,10 +134,21 @@ export function BodegaEditorProveedorScreen() {
               setCaracteristicas(descripcionExistente.caracteristicas?.join(', ') || "");
               setImagenesDescripcion(descripcionExistente.imagenes_urls || []);
             }
+          } else {
+            // Si no hay empresa, mantener estructura inicial
+            setBodegas([
+              { metraje: "", descripcion: "", contenido: "", imagen: null, direccion: "", ciudad: "", zona: "", precioMensual: "" },
+              { metraje: "", descripcion: "", contenido: "", imagen: null, direccion: "", ciudad: "", zona: "", precioMensual: "" }
+            ]);
           }
         }
       } catch (error) {
         console.error('Error obteniendo usuario:', error);
+        // En caso de error, mantener estructura inicial
+        setBodegas([
+          { metraje: "", descripcion: "", contenido: "", imagen: null, direccion: "", ciudad: "", zona: "", precioMensual: "" },
+          { metraje: "", descripcion: "", contenido: "", imagen: null, direccion: "", ciudad: "", zona: "", precioMensual: "" }
+        ]);
       } finally {
         setCargando(false);
       }
@@ -729,7 +751,6 @@ export function BodegaEditorProveedorScreen() {
             {bodegas.map((bodega, idx) => (
               <div key={idx} className="flex flex-col items-center w-full max-w-sm">
                 <CardBodegas
-                  id={bodega.id}
                   metraje={bodega.metraje}
                   descripcion={bodega.descripcion}
                   contenido={bodega.contenido}
