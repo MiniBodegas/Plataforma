@@ -1,9 +1,10 @@
 import { Instagram, Facebook, MessageCircle } from "lucide-react"
-import { useLocation } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
 
 export function Footer() {
   const location = useLocation()
+  const navigate = useNavigate()
   const { user, signOut } = useAuth()
   
   // Detecta modo proveedor por la ruta
@@ -12,14 +13,38 @@ export function Footer() {
   const isUserLoggedAsRegular = user && user?.user_metadata?.user_type !== 'proveedor'
 
   const handleContextSwitch = async (targetRoute) => {
-    // Si hay un usuario logueado y está cambiando de contexto
-    if (user) {
-      await signOut()
-      // Pequeño delay para asegurar que se deslogueó
-      setTimeout(() => {
-        window.location.href = targetRoute
-      }, 100)
-    } else {
+    try {
+      console.log('🔄 Cambiando contexto a:', targetRoute)
+      
+      // Si hay un usuario logueado y está cambiando de contexto
+      if (user) {
+        console.log('👤 Usuario logueado, haciendo logout...')
+        
+        // Hacer logout de forma segura
+        const { error } = await signOut()
+        if (error) {
+          console.error('❌ Error en signOut:', error)
+          // Continuar de todos modos
+        }
+        
+        // Limpiar cualquier estado residual
+        localStorage.removeItem('supabase.auth.token')
+        sessionStorage.clear()
+        
+        // Esperar un poco más para asegurar que se completó el logout
+        setTimeout(() => {
+          console.log('🏠 Navegando a:', targetRoute)
+          navigate(targetRoute, { replace: true })
+          // Forzar recarga de la página para limpiar estado completamente
+          window.location.reload()
+        }, 200)
+      } else {
+        console.log('🔄 No hay usuario, navegando directamente')
+        navigate(targetRoute, { replace: true })
+      }
+    } catch (error) {
+      console.error('💥 Error en cambio de contexto:', error)
+      // Como fallback, hacer navegación directa
       window.location.href = targetRoute
     }
   }
@@ -54,7 +79,7 @@ export function Footer() {
                     onClick={() => handleContextSwitch("/home-proveedor")}
                     className="hover:text-gray-900 text-left"
                   >
-                    {user ? "Ir a sección de proveedores " : "Ir a sección de proveedores"}
+                    {user ? "Ir a sección de proveedores" : "Ir a sección de proveedores"}
                   </button>
                 </li>
               )}
