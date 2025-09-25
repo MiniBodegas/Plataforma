@@ -17,6 +17,11 @@ export function BodegaScreen() {
   const ciudadSeleccionada = searchParams.get('ciudad') || ''
   const { warehouses, loading, error } = useWarehouses()
 
+  // Scroll to top cuando se monta el componente
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Filtrar warehouses cuando cambien los filtros o se carguen los datos
   useEffect(() => {
     if (!warehouses.length) {
