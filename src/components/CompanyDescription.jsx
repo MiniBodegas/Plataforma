@@ -10,6 +10,15 @@ export function CompanyDescription({
   rating = 0,
   reviewCount = 0
 }) {
+  // Debug mejorado
+  console.log('🏢 CompanyDescription recibió:', {
+    warehouse,
+    warehouseName: warehouse?.name,
+    warehouseDescription: warehouse?.description,
+    companyImage: warehouse?.companyImage, // Nueva imagen específica
+    carruselImages: warehouse?.images
+  })
+
   // Extraer datos del warehouse o usar props directas
   const companyName = warehouse?.name || name;
   const companyDescription = warehouse?.description || description;
@@ -17,16 +26,17 @@ export function CompanyDescription({
   const companyFeatures = warehouse?.features || features;
   const companyRating = warehouse?.rating || rating;
   const companyReviewCount = warehouse?.reviewCount || reviewCount;
-  
+
   // Obtener ubicación para mostrar
   const location = warehouse?.city && warehouse?.zone 
     ? `${warehouse.zone} - ${warehouse.city}`
     : companyAddress;
 
-  // Imagen principal - usar la primera del carrusel o una por defecto
-  const mainImage = warehouse?.images?.[0] 
-    || warehouse?.miniBodegas?.[0]?.image
-    || "https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop";
+  // USAR LA IMAGEN ESPECÍFICA PARA COMPANY DESCRIPTION
+  const mainImage = warehouse?.companyImage || 
+                   "https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop";
+
+  console.log('🖼️ CompanyDescription usando imagen:', mainImage)
 
   // Características por defecto si no hay ninguna
   const defaultFeatures = [
@@ -80,23 +90,28 @@ export function CompanyDescription({
       <div className="bg-[#4B799B] text-white rounded-2xl p-6 mb-8">
         <h3 className="font-semibold text-lg mb-2">Descripción</h3>
         <p className="leading-relaxed">
-          {companyDescription}
+          {companyDescription && companyDescription !== 'Sin descripción disponible' 
+            ? companyDescription 
+            : 'Esta empresa aún no ha proporcionado una descripción detallada de sus servicios.'
+          }
         </p>
       </div>
 
       {/* Imagen + Características */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-        {/* Imagen */}
+        {/* Imagen ESPECÍFICA para CompanyDescription */}
         <div>
           <img
             src={mainImage}
-            alt={`Imagen de ${companyName}`}
+            alt={`Imagen corporativa de ${companyName}`}
             className="rounded-2xl shadow-md w-full object-cover h-64 md:h-80"
             loading="lazy"
             onError={(e) => {
+              console.error('❌ Error cargando imagen de company:', mainImage)
               e.target.src = "https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop";
             }}
           />
+
         </div>
 
         {/* Características */}
@@ -116,51 +131,8 @@ export function CompanyDescription({
               No hay características específicas disponibles para esta empresa.
             </p>
           )}
-
-          {/* Información adicional */}
-          {warehouse?.availableSizes && warehouse.availableSizes.length > 0 && (
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <h4 className="font-medium text-gray-800 mb-2">Tamaños disponibles:</h4>
-              <div className="flex flex-wrap gap-2">
-                {warehouse.availableSizes.slice(0, 4).map((size, index) => (
-                  <span 
-                    key={index}
-                    className="px-3 py-1 bg-[#4B799B] text-white text-sm rounded-full"
-                  >
-                    {size.size}
-                  </span>
-                ))}
-                {warehouse.availableSizes.length > 4 && (
-                  <span className="px-3 py-1 bg-gray-200 text-gray-600 text-sm rounded-full">
-                    +{warehouse.availableSizes.length - 4} más
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
-
-      {/* Información de contacto si existe */}
-      {warehouse?.empresa && (
-        <div className="mt-8 bg-white rounded-2xl shadow p-6">
-          <h3 className="font-semibold text-lg mb-4 text-gray-800">Información de la empresa</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-            <div>
-              <span className="font-medium">Empresa:</span> {warehouse.empresa.nombre}
-            </div>
-            {warehouse.empresa.created_at && (
-              <div>
-                <span className="font-medium">Miembro desde:</span>{' '}
-                {new Date(warehouse.empresa.created_at).toLocaleDateString('es-CO', {
-                  year: 'numeric',
-                  month: 'long'
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </section>
   );
 }

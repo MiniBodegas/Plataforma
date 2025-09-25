@@ -70,13 +70,6 @@ export function Carrousel({ images = [], title = "Galería de imágenes" }) {
           }}
         />
 
-        {/* Overlay con información */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
-          <p className="text-white text-lg font-medium">
-            {carouselImages[current].title}
-          </p>
-        </div>
-
         {/* Botones de navegación - solo mostrar si hay más de una imagen */}
         {carouselImages.length > 1 && (
           <>

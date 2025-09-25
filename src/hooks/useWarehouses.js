@@ -90,6 +90,21 @@ export function useWarehouses() {
       for (const empresa of todasEmpresas) {
         console.log(`🏢 Procesando empresa: ${empresa.nombre} (ID: ${empresa.id})`)
 
+        // Obtener descripción de empresa_descripcion
+        let empresaDescripcion = null
+        try {
+          const { data: descripcion } = await supabase
+            .from('empresa_descripcion')
+            .select('*')
+            .eq('empresa_id', empresa.id)
+            .single()
+          
+          empresaDescripcion = descripcion
+          console.log(`  📝 Descripción encontrada: ${descripcion?.descripcion_general}`)
+        } catch (error) {
+          console.log(`  ⚠️ No hay descripción para empresa ${empresa.id}`)
+        }
+
         // Obtener mini_bodegas de esta empresa
         let miniBodegas = []
         if (!bodegasTestError) {
@@ -141,7 +156,8 @@ export function useWarehouses() {
           image: imagenPrincipal || 'https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop',
           features: empresa.caracteristicas || [],
           rating: 4.5,
-          description: empresa.descripcion_general || empresa.descripcion || 'Sin descripción',
+          // USAR DESCRIPCIÓN DE LA TABLA CORRECTA
+          description: empresaDescripcion?.descripcion_general || 'Sin descripción',
           reviewCount: Math.floor(Math.random() * 50) + 10,
           miniBodegas: miniBodegas
         }
