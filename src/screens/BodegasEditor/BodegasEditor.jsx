@@ -721,35 +721,52 @@ export function BodegaEditorProveedorScreen() {
         }
       }
 
-      // 🔄 PASO 5: ACTUALIZAR ESTADO LOCAL
-      mostrarMensaje('info', '🔄 Finalizando...', 10000);
-     
-      // ✅ ORDENAR por campo 'orden'
-      const bodegasFinalesOrdenadas = todasLasBodegasGuardadas.sort((a, b) => (a.orden || 0) - (b.orden || 0));     
-      bodegasFinalesOrdenadas.forEach((b, i) => {
-      });
+      // 🔄 PASO 5: RECARGAR DATOS (reemplaza esta parte)
+      mostrarMensaje('info', '🔄 Actualizando datos...', 10000);
+      
+      // Recargar las bodegas guardadas con todos los campos
+      const { data: bodegasFinales } = await supabase
+        .from('mini_bodegas')
+        .select('*')
+        .eq('empresa_id', empresaData.id)
+        .order('orden');
 
-      // ✅ ACTUALIZAR ESTADO LOCAL con TODAS las bodegas guardadas
-      const nuevoBodegasEstado = bodegasFinalesOrdenadas.map(b => ({
-        id: b.id, // ✅ CRÍTICO: incluir ID de las nuevas bodegas
-        metraje: b.metraje || "",
-        descripcion: b.descripcion || "",
-        contenido: b.contenido || "",
-        imagen: b.imagen_url,
-        direccion: b.direccion || "",
-        ciudad: b.ciudad || "",
-        zona: b.zona || "",
-        precioMensual: b.precio_mensual ? b.precio_mensual.toString() : ""
-      }));
+      if (bodegasFinales && bodegasFinales.length > 0) {
+        // ✅ MAPEO CORREGIDO - incluir todos los campos
+        setBodegas(bodegasFinales.map(b => ({
+          id: b.id,
+          metraje: b.metraje || "",
+          descripcion: b.descripcion || "",
+          contenido: b.contenido || "",
+          imagen: b.imagen_url,
+          direccion: b.direccion || "",
+          ciudad: b.ciudad || "", // ✅ AGREGADO
+          zona: b.zona || "", // ✅ AGREGADO
+          precioMensual: b.precio_mensual ? b.precio_mensual.toString() : "" // ✅ AGREGADO
+        })));
+      }
 
-     
-      setBodegas(nuevoBodegasEstado);
-
-      // ✅ ÉXITO
+      // Después de recargar las bodegas, también recargar la descripción
+      const { data: descripcionActualizada } = await supabase
+        .from('empresa_descripcion')
+        .select('*')
+        .eq('empresa_id', empresaId)
+        .single();
+      
+      if (descripcionActualizada) {
+        setDireccionGeneral(descripcionActualizada.direccion_general || "");
+        setDescripcionGeneral(descripcionActualizada.descripcion_general || "");
+        setCaracteristicas(
+          descripcionActualizada.caracteristicas 
+            ? descripcionActualizada.caracteristicas.join(', ')
+            : ""
+        );
+        setImagenesDescripcion(descripcionActualizada.imagenes_urls || []);
+      }
+      
+      // ✅ ÉXITO - Mensaje discreto y profesional
       setPerfilCompleto(true);
-      mostrarMensaje('success', `🎉 ¡PERFIL GUARDADO EXITOSAMENTE! ${bodegasFinalesOrdenadas.length} mini bodegas guardadas`);
-      
-      
+      mostrarMensaje('success', `✅ Perfil guardado correctamente (${bodegasFinales.length} mini bodegas)`);
 
     } catch (error) {
       console.error('💥 ERROR CRÍTICO EN PROCESO DE GUARDADO:', error);
@@ -781,18 +798,9 @@ export function BodegaEditorProveedorScreen() {
   const recargarDatos = async () => {
     if (!empresaId) return;
     
-    // ✅ MOSTRAR ADVERTENCIA antes de recargar
-    const confirmar = window.confirm(
-      '⚠️ ¿Estás seguro de que quieres recargar los datos?\n\n' +
-      'Se perderán todos los cambios no guardados.\n' +
-      'Solo usa esta opción si hay problemas con los datos mostrados.'
-    );
-    
-    if (!confirmar) return;
-    
     setCargando(true);
     try {
-      // Recargar mini bodegas desde DB
+      // Recargar mini bodegas
       const { data: bodegasActualizadas } = await supabase
         .from('mini_bodegas')
         .select('*')
@@ -800,6 +808,7 @@ export function BodegaEditorProveedorScreen() {
         .order('orden');
       
       if (bodegasActualizadas && bodegasActualizadas.length > 0) {
+        // ✅ MAPEO CORREGIDO - incluir todos los campos
         setBodegas(bodegasActualizadas.map(b => ({
           id: b.id,
           metraje: b.metraje || "",
@@ -807,19 +816,19 @@ export function BodegaEditorProveedorScreen() {
           contenido: b.contenido || "",
           imagen: b.imagen_url,
           direccion: b.direccion || "",
-          ciudad: b.ciudad || "",
-          zona: b.zona || "",
-          precioMensual: b.precio_mensual ? b.precio_mensual.toString() : ""
+          ciudad: b.ciudad || "", // ✅ AGREGADO
+          zona: b.zona || "", // ✅ AGREGADO
+          precioMensual: b.precio_mensual ? b.precio_mensual.toString() : "" // ✅ AGREGADO y convertido a string
         })));
       } else {
-        // Si no hay bodegas, mantener estructura básica
+        // Si no hay bodegas, mantener la estructura por defecto
         setBodegas([
           { metraje: "", descripcion: "", contenido: "", imagen: null, direccion: "", ciudad: "", zona: "", precioMensual: "" },
           { metraje: "", descripcion: "", contenido: "", imagen: null, direccion: "", ciudad: "", zona: "", precioMensual: "" }
         ]);
       }
 
-      // Recargar otros datos...
+      // Recargar carrusel
       const { data: carruselActualizado } = await supabase
         .from('carrusel_imagenes')
         .select('imagen_url, orden')
@@ -830,6 +839,7 @@ export function BodegaEditorProveedorScreen() {
         setImagenesCarrusel(carruselActualizado.map(img => img.imagen_url));
       }
 
+      // Recargar descripción
       const { data: descripcionActualizada } = await supabase
         .from('empresa_descripcion')
         .select('*')
@@ -846,8 +856,6 @@ export function BodegaEditorProveedorScreen() {
         );
         setImagenesDescripcion(descripcionActualizada.imagenes_urls || []);
       }
-      
-      mostrarMensaje('success', '✅ Datos recargados desde la base de datos');
       
     } catch (error) {
       console.error('Error recargando datos:', error);

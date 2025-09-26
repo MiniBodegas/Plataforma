@@ -20,20 +20,23 @@ export function useWarehouseDetail(id) {
       setLoading(true)
       setError(null)
 
-      // Consultar empresa específica con sus datos relacionados
       const { data: empresa, error: empresaError } = await supabase
         .from('empresas')
         .select(`
           *,
           carrusel_imagenes(imagen_url, orden),
-          empresa_descripcion(*),
+          empresa_descripcion!inner(
+            descripcion_general,
+            direccion_general,
+            caracteristicas,
+            imagenes_urls
+          ),
           mini_bodegas(*)
         `)
         .eq('id', id)
         .single()
 
       if (empresaError) {
-        console.error('❌ Error consultando empresa:', empresaError)
         throw empresaError
       }
 
@@ -42,8 +45,9 @@ export function useWarehouseDetail(id) {
         return
       }
 
+      const descripcion = empresa.empresa_descripcion
+
       // Transformar datos (SIN FILTRAR NADA AÚN)
-      const descripcion = empresa.empresa_descripcion?.[0]
       const carruselImagenes = empresa.carrusel_imagenes?.sort((a, b) => a.orden - b.orden) || []
       const miniBodegas = empresa.mini_bodegas || []
 
@@ -56,7 +60,6 @@ export function useWarehouseDetail(id) {
         max: Math.max(...precios)
       } : { min: 0, max: 0 }
 
-      // ✅ CORREGIR EL TYPO AQUÍ
       const sizes = metrajes.length > 0 ? metrajes.map(m => `${m}m³`) : []
 
       // Obtener ubicaciones únicas
@@ -80,12 +83,10 @@ export function useWarehouseDetail(id) {
         .filter(img => img.imagen_url)
         .map(img => img.imagen_url)
 
-      console.log('📸 Imágenes del carrusel en BD:', imagenesCarrusel.length)
-
-      // ✅ LIMITAR A MÁXIMO 3 IMÁGENES
+      // Limitar a máximo 3 imágenes
       let imagenesPrincipal = imagenesCarrusel.slice(0, 3)
 
-      // ✅ Si no hay suficientes, completar con imágenes de mini bodegas (máximo 3 total)
+      // Si no hay suficientes, completar con imágenes de mini bodegas (máximo 3 total)
       if (imagenesPrincipal.length < 3) {
         const imagenesMiniBodegas = miniBodegas
           .filter(b => b.imagen_url)
@@ -95,21 +96,14 @@ export function useWarehouseDetail(id) {
         const imagenesExtra = imagenesMiniBodegas.slice(0, faltantes)
         
         imagenesPrincipal = [...imagenesPrincipal, ...imagenesExtra]
-        
-        console.log('📸 Agregadas imágenes de mini bodegas:', imagenesExtra.length)
       }
 
-      // ✅ Si aún no hay imágenes, usar imagen por defecto
+      // Si aún no hay imágenes, usar imagen por defecto
       if (imagenesPrincipal.length === 0) {
         imagenesPrincipal = ["https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop"]
       }
 
-      console.log('📸 Imágenes finales para carrusel:', {
-        total: imagenesPrincipal.length,
-        urls: imagenesPrincipal
-      })
-
-      // ✅ IMAGEN PRINCIPAL PARA LA CARD
+      // Imagen principal para la card
       let companyImage = null
       if (imagenesCarrusel.length > 0) {
         companyImage = imagenesCarrusel[0]
@@ -119,7 +113,6 @@ export function useWarehouseDetail(id) {
         companyImage = "https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop"
       }
 
-      // ✅ EN EL WAREHOUSE, USAR LAS IMÁGENES LIMITADAS
       const warehouse = {
         id: empresa.id,
         name: empresa.nombre,
@@ -129,12 +122,12 @@ export function useWarehouseDetail(id) {
         cities: ciudades,
         zones: zonas,
         address: descripcion?.direccion_general || '',
-        description: descripcion?.descripcion_general || `${empresa.nombre} ofrece espacios seguros y accesibles para almacenamiento.`,
+        description: descripcion?.descripcion_general,
         features: features,
         priceRange: priceRange,
         sizes: sizes,
         availableSizes: sizes,
-        images: imagenesPrincipal, // ✅ SOLO MÁXIMO 3 IMÁGENES
+        images: imagenesPrincipal,
         image: companyImage,
         companyImage: companyImage,
         rating: 4.5,
