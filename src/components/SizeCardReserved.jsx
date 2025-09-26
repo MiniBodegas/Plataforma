@@ -7,24 +7,8 @@ export function SizeCardReserved({
 }) {
   const navigate = useNavigate();
 
-  // ✅ DEBUG PARA VER QUÉ LLEGA
-  console.log('🔍 SizeCardReserved - Datos recibidos:', {
-    warehouse: warehouse.name,
-    miniBodegas: warehouse.miniBodegas?.length || 0,
-    ciudadesDeLasBodegas: warehouse.miniBodegas?.map(b => b.ciudad),
-    miniBodegasCompletas: warehouse.miniBodegas?.map(b => ({
-      id: b.id,
-      ciudad: b.ciudad,
-      zona: b.zona,
-      metraje: b.metraje,
-      precio: b.precio_mensual
-    }))
-  });
-
   // ✅ USAR DIRECTAMENTE LAS MINI BODEGAS YA FILTRADAS
   const miniBodegasFiltradas = warehouse.miniBodegas || [];
-
-  console.log('✅ Mini bodegas a usar para cards:', miniBodegasFiltradas.length);
 
   // ✅ CREAR CARDS SOLO CON LAS BODEGAS FILTRADAS (NO usar datos estáticos)
   const sizeGuides = miniBodegasFiltradas.map(bodega => ({
@@ -47,19 +31,7 @@ export function SizeCardReserved({
     caracteristicas: bodega.caracteristicas
   }));
 
-  console.log('✅ SizeGuides generadas:', {
-    total: sizeGuides.length,
-    cards: sizeGuides.map(s => ({
-      title: s.title,
-      precio: s.precio,
-      ciudad: s.city,
-      disponible: s.available
-    }))
-  });
-
-  const handleReservar = (guia) => {
-    console.log('🔗 Reservando bodega:', guia);
-    
+  const handleReservar = (guia) => {  
     navigate('/reservas', {
       state: {
         bodegaSeleccionada: {

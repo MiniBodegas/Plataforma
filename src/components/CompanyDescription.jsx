@@ -10,15 +10,7 @@ export function CompanyDescription({
   rating = 0,
   reviewCount = 0
 }) {
-  // Debug mejorado
-  console.log('🏢 CompanyDescription recibió:', {
-    warehouse,
-    warehouseName: warehouse?.name,
-    warehouseDescription: warehouse?.description,
-    companyImage: warehouse?.companyImage, // Nueva imagen específica
-    carruselImages: warehouse?.images
-  })
-
+ 
   // Extraer datos del warehouse o usar props directas
   const companyName = warehouse?.name || name;
   const companyDescription = warehouse?.description || description;
@@ -35,8 +27,6 @@ export function CompanyDescription({
   // USAR LA IMAGEN ESPECÍFICA PARA COMPANY DESCRIPTION
   const mainImage = warehouse?.companyImage || 
                    "https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop";
-
-  console.log('🖼️ CompanyDescription usando imagen:', mainImage)
 
   // Características por defecto si no hay ninguna
   const defaultFeatures = [

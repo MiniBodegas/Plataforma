@@ -15,15 +15,6 @@ export function BodegasDisponibles() {
   const zonaFiltro = searchParams.get('zona')
   const empresaFiltro = searchParams.get('empresa')
 
-  console.log('🔍 BodegasDisponibles - URL y filtros:', {
-    url: window.location.href,
-    searchParams: searchParams.toString(),
-    ciudadFiltro,
-    zonaFiltro,
-    empresaFiltro,
-    warehouseId: id
-  })
-
   const handleBack = () => {
     navigate(-1)
   }
@@ -105,16 +96,6 @@ export function BodegasDisponibles() {
 
   // ✅ DATOS ORIGINALES ANTES DE FILTRAR
   const miniBodegasOriginales = warehouse.miniBodegas || []
-  console.log('📦 Mini bodegas ANTES de filtrar:', {
-    total: miniBodegasOriginales.length,
-    todas: miniBodegasOriginales.map(b => ({
-      id: b.id,
-      ciudad: b.ciudad,
-      zona: b.zona,
-      metraje: b.metraje,
-      precio: b.precio_mensual
-    }))
-  })
 
   // ✅ APLICAR FILTRADO PASO A PASO
   let miniBodegasFiltradas = [...miniBodegasOriginales]
@@ -124,10 +105,10 @@ export function BodegasDisponibles() {
     const antesDelFiltro = miniBodegasFiltradas.length
     miniBodegasFiltradas = miniBodegasFiltradas.filter(bodega => {
       const coincide = bodega.ciudad?.toLowerCase().includes(ciudadFiltro.toLowerCase())
-      console.log(`🏙️ Evaluando bodega ${bodega.id}: ciudad="${bodega.ciudad}" vs filtro="${ciudadFiltro}" = ${coincide}`)
+      
       return coincide
     })
-    console.log(`🏙️ Filtro ciudad "${ciudadFiltro}": ${antesDelFiltro} → ${miniBodegasFiltradas.length}`)
+   
   }
 
   // FILTRAR POR ZONA
@@ -135,22 +116,9 @@ export function BodegasDisponibles() {
     const antesDelFiltro = miniBodegasFiltradas.length
     miniBodegasFiltradas = miniBodegasFiltradas.filter(bodega => {
       const coincide = bodega.zona?.toLowerCase().includes(zonaFiltro.toLowerCase())
-      console.log(`📍 Evaluando bodega ${bodega.id}: zona="${bodega.zona}" vs filtro="${zonaFiltro}" = ${coincide}`)
       return coincide
     })
-    console.log(`📍 Filtro zona "${zonaFiltro}": ${antesDelFiltro} → ${miniBodegasFiltradas.length}`)
   }
-
-  console.log('✅ Mini bodegas DESPUÉS de filtrar:', {
-    total: miniBodegasFiltradas.length,
-    filtradas: miniBodegasFiltradas.map(b => ({
-      id: b.id,
-      ciudad: b.ciudad,
-      zona: b.zona,
-      metraje: b.metraje,
-      precio: b.precio_mensual
-    }))
-  })
 
   // ✅ SI NO HAY BODEGAS EN LA CIUDAD BUSCADA, MOSTRAR MENSAJE
   if ((ciudadFiltro && ciudadFiltro !== 'null') || (zonaFiltro && zonaFiltro !== 'null')) {
@@ -220,42 +188,7 @@ export function BodegasDisponibles() {
     tituloEmpresa += ` (${zonaFiltro})`
   }
 
-  console.log('✅ Warehouse filtrado FINAL:', {
-    nombre: tituloEmpresa,
-    totalBodegas: safeWarehouse.totalBodegas,
-    priceRange: safeWarehouse.priceRange,
-    availableSizes: safeWarehouse.availableSizes.length,
-    miniBodegasFinales: safeWarehouse.miniBodegas.map(b => ({
-      ciudad: b.ciudad,
-      zona: b.zona,
-      metraje: b.metraje,
-      precio: b.precio_mensual
-    }))
-  })
-
-  // En la parte de filtrado, agrega este log al inicio:
-  console.log('🔍 BodegasDisponibles - ESTADO INICIAL:', {
-    url: window.location.href,
-    parametros: {
-      ciudadFiltro,
-      zonaFiltro,
-      empresaFiltro
-    },
-    warehouse: warehouse ? {
-      id: warehouse.id,
-      name: warehouse.name,
-      totalMiniBodegas: warehouse.miniBodegas?.length || 0,
-      miniBodegasDetalle: warehouse.miniBodegas?.map(b => ({
-        id: b.id,
-        ciudad: b.ciudad,
-        zona: b.zona,
-        metraje: b.metraje,
-        precio: b.precio_mensual
-      })) || []
-    } : null
-  })
-
-  return (
+return (
     <div className="min-h-screen bg-white">
       {/* Header con flecha de regreso */}
       <div className="p-4">
@@ -266,19 +199,6 @@ export function BodegasDisponibles() {
           <ArrowLeft className="h-6 w-6" />
         </button>
       </div>
-
-      {/* ✅ MOSTRAR INFORMACIÓN DEL FILTRO APLICADO */}
-      {((ciudadFiltro && ciudadFiltro !== 'null') || (zonaFiltro && zonaFiltro !== 'null')) && (
-        <div className="px-4 pb-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-sm text-blue-700">
-              📍 Mostrando bodegas en {ciudadFiltro && ciudadFiltro !== 'null' ? ciudadFiltro : 'Todas las ciudades'}
-              {zonaFiltro && zonaFiltro !== 'null' ? ` - ${zonaFiltro}` : ''} 
-              ({safeWarehouse.totalBodegas} disponible{safeWarehouse.totalBodegas !== 1 ? 's' : ''})
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* ✅ PASAR WAREHOUSE CON DATOS FILTRADOS */}
       <Carrousel 

@@ -19,8 +19,6 @@ export function useWarehouseDetail(id) {
     try {
       setLoading(true)
       setError(null)
-      
-      console.log('🔍 useWarehouseDetail - Consultando empresa ID:', id)
 
       // Consultar empresa específica con sus datos relacionados
       const { data: empresa, error: empresaError } = await supabase
@@ -39,24 +37,7 @@ export function useWarehouseDetail(id) {
         throw empresaError
       }
 
-      console.log('✅ DATOS CRUDOS DE LA BASE DE DATOS:', {
-        empresa: empresa.nombre,
-        totalMiniBodegas: empresa.mini_bodegas?.length || 0,
-        miniBodegasDetalle: empresa.mini_bodegas?.map(b => ({
-          id: b.id,
-          ciudad: b.ciudad,
-          zona: b.zona,
-          metraje: b.metraje,
-          precio: b.precio_mensual,
-          disponible: b.disponible,
-          descripcion: b.descripcion,
-          direccion: b.direccion,
-          imagen_url: b.imagen_url
-        })) || []
-      })
-
       if (!empresa) {
-        console.log('⚠️ No se encontró empresa con ID:', id)
         setWarehouse(null)
         return
       }
@@ -65,13 +46,6 @@ export function useWarehouseDetail(id) {
       const descripcion = empresa.empresa_descripcion?.[0]
       const carruselImagenes = empresa.carrusel_imagenes?.sort((a, b) => a.orden - b.orden) || []
       const miniBodegas = empresa.mini_bodegas || []
-
-      console.log('📋 TRANSFORMACIÓN DE DATOS:', {
-        empresaNombre: empresa.nombre,
-        descripcionEncontrada: !!descripcion,
-        imagenesCarrusel: carruselImagenes.length,
-        miniBodegasOriginales: miniBodegas.length
-      })
 
       // Calcular datos agregados de TODAS las mini bodegas (sin filtrar)
       const precios = miniBodegas.map(b => parseFloat(b.precio_mensual)).filter(p => !isNaN(p))
@@ -93,13 +67,6 @@ export function useWarehouseDetail(id) {
       const ciudades = [...new Set(miniBodegas.map(b => b.ciudad).filter(Boolean))]
       const zonas = [...new Set(miniBodegas.map(b => b.zona).filter(Boolean))]
 
-      console.log('🌍 UBICACIONES PROCESADAS:', {
-        ciudadesUnicas: ciudades,
-        zonasUnicas: zonas,
-        ubicacionPrincipal: location,
-        totalUbicaciones: ubicaciones.length
-      })
-
       // Características
       const features = descripcion?.caracteristicas || [
         "Vigilancia 24/7",
@@ -113,22 +80,46 @@ export function useWarehouseDetail(id) {
         .filter(img => img.imagen_url)
         .map(img => img.imagen_url)
 
-      const imagenesMiniBodegas = miniBodegas
-        .filter(b => b.imagen_url)
-        .map(b => b.imagen_url)
+      console.log('📸 Imágenes del carrusel en BD:', imagenesCarrusel.length)
 
-      const todasLasImagenes = [...imagenesCarrusel, ...imagenesMiniBodegas]
+      // ✅ LIMITAR A MÁXIMO 3 IMÁGENES
+      let imagenesPrincipal = imagenesCarrusel.slice(0, 3)
 
+      // ✅ Si no hay suficientes, completar con imágenes de mini bodegas (máximo 3 total)
+      if (imagenesPrincipal.length < 3) {
+        const imagenesMiniBodegas = miniBodegas
+          .filter(b => b.imagen_url)
+          .map(b => b.imagen_url)
+        
+        const faltantes = 3 - imagenesPrincipal.length
+        const imagenesExtra = imagenesMiniBodegas.slice(0, faltantes)
+        
+        imagenesPrincipal = [...imagenesPrincipal, ...imagenesExtra]
+        
+        console.log('📸 Agregadas imágenes de mini bodegas:', imagenesExtra.length)
+      }
+
+      // ✅ Si aún no hay imágenes, usar imagen por defecto
+      if (imagenesPrincipal.length === 0) {
+        imagenesPrincipal = ["https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop"]
+      }
+
+      console.log('📸 Imágenes finales para carrusel:', {
+        total: imagenesPrincipal.length,
+        urls: imagenesPrincipal
+      })
+
+      // ✅ IMAGEN PRINCIPAL PARA LA CARD
       let companyImage = null
-      if (carruselImagenes.length > 0 && carruselImagenes[0]?.imagen_url) {
-        companyImage = carruselImagenes[0].imagen_url
-      } else if (imagenesMiniBodegas.length > 0) {
-        companyImage = imagenesMiniBodegas[0]
+      if (imagenesCarrusel.length > 0) {
+        companyImage = imagenesCarrusel[0]
+      } else if (miniBodegas.length > 0 && miniBodegas[0].imagen_url) {
+        companyImage = miniBodegas[0].imagen_url
       } else {
         companyImage = "https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop"
       }
 
-      // ✅ CREAR WAREHOUSE CON TODOS LOS DATOS SIN FILTRAR
+      // ✅ EN EL WAREHOUSE, USAR LAS IMÁGENES LIMITADAS
       const warehouse = {
         id: empresa.id,
         name: empresa.nombre,
@@ -143,33 +134,17 @@ export function useWarehouseDetail(id) {
         priceRange: priceRange,
         sizes: sizes,
         availableSizes: sizes,
-        images: todasLasImagenes.length > 0 ? todasLasImagenes : [companyImage],
+        images: imagenesPrincipal, // ✅ SOLO MÁXIMO 3 IMÁGENES
         image: companyImage,
         companyImage: companyImage,
         rating: 4.5,
         reviewCount: Math.floor(Math.random() * 50) + 10,
-        miniBodegas: miniBodegas, // ✅ TODAS LAS MINI BODEGAS SIN FILTRAR
+        miniBodegas: miniBodegas,
         empresa: empresa,
         totalBodegas: miniBodegas.length,
         disponible: miniBodegas.some(b => b.disponible !== false),
         created_at: empresa.created_at
       }
-
-      console.log('✅ WAREHOUSE FINAL CREADO:', {
-        id: warehouse.id,
-        name: warehouse.name,
-        totalMiniBodegas: warehouse.miniBodegas.length,
-        cities: warehouse.cities,
-        zones: warehouse.zones,
-        priceRange: warehouse.priceRange,
-        miniBodegasCompletas: warehouse.miniBodegas.map(b => ({
-          id: b.id,
-          ciudad: b.ciudad,
-          zona: b.zona,
-          metraje: b.metraje,
-          precio: b.precio_mensual
-        }))
-      })
 
       setWarehouse(warehouse)
 

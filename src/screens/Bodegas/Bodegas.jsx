@@ -20,21 +20,6 @@ export function BodegaScreen() {
   
   const { warehouses, loading, error, refetch } = useWarehouses()
 
-  // ✅ DEBUG: Ver datos que llegan
-  console.log('🔍 BodegaScreen - Datos recibidos:', {
-    totalWarehouses: warehouses.length,
-    ciudadBuscada: ciudadSeleccionada,
-    zonaBuscada: zonaSeleccionada,
-    empresaBuscada: empresaSeleccionada,
-    warehouses: warehouses.map(w => ({
-      name: w.name,
-      cities: w.cities,
-      zones: w.zones,
-      location: w.location,
-      totalBodegas: w.totalBodegas
-    }))
-  })
-
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -45,8 +30,6 @@ export function BodegaScreen() {
       setFilteredWarehouses([])
       return
     }
-
-    console.log('🔍 Aplicando filtros específicos por ciudad...')
 
     const filtered = warehouses.map(warehouse => {
       // ✅ CREAR COPIA DEL WAREHOUSE FILTRADO POR CIUDAD
@@ -104,7 +87,6 @@ export function BodegaScreen() {
       
     }).filter(Boolean) // Remover nulls
 
-    console.log('🎯 Warehouses filtrados específicamente:', filtered.length)
     setFilteredWarehouses(filtered)
     
   }, [warehouses, ciudadSeleccionada, zonaSeleccionada, empresaSeleccionada, filters])
@@ -166,17 +148,6 @@ export function BodegaScreen() {
             <h2 className="text-xl font-semibold" style={{ color: "#2C3A61" }}>
               {generarTitulo()}
             </h2>
-            
-            {/* ✅ DEBUG INFO EN DESARROLLO */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="text-xs text-gray-500 mt-2 bg-gray-50 p-2 rounded">
-                <strong>Debug:</strong> Total DB: {warehouses.length} | 
-                Filtrados: {filteredWarehouses.length} | 
-                Buscando ciudad: "{ciudadSeleccionada}" | 
-                Zona: "{zonaSeleccionada}" | 
-                Empresa: "{empresaSeleccionada}"
-              </div>
-            )}
           </div>
         </div>
       )}

@@ -19,14 +19,6 @@ export function WarehouseCard({ warehouse = {}, filtroActivo = null }) {
 
   const canNavigate = typeof id === "number" || typeof id === "string"
 
-  // ✅ DEBUG: Ver qué filtro está llegando
-  console.log('🔍 WarehouseCard - Filtro recibido:', {
-    filtroActivo,
-    ciudad: filtroActivo?.ciudad,
-    zona: filtroActivo?.zona,
-    empresa: filtroActivo?.empresa
-  })
-
   const formatPrice = (price) => {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
@@ -44,24 +36,18 @@ export function WarehouseCard({ warehouse = {}, filtroActivo = null }) {
       const params = new URLSearchParams()
       
       if (filtroActivo.ciudad) {
-        params.append('ciudad', filtroActivo.ciudad)
-        console.log('✅ Agregando parámetro ciudad:', filtroActivo.ciudad)
+        params.append('ciudad', filtroActivo.ciudad)     
       }
       if (filtroActivo.zona) {
-        params.append('zona', filtroActivo.zona)
-        console.log('✅ Agregando parámetro zona:', filtroActivo.zona)
+        params.append('zona', filtroActivo.zona)     
       }
       if (filtroActivo.empresa) {
-        params.append('empresa', filtroActivo.empresa)
-        console.log('✅ Agregando parámetro empresa:', filtroActivo.empresa)
-      }
-      
+        params.append('empresa', filtroActivo.empresa)     
+      }    
       if (params.toString()) {
         url += `?${params.toString()}`
       }
     }
-    
-    console.log('🔗 URL generada:', url)
     return url
   }
 
@@ -71,7 +57,6 @@ export function WarehouseCard({ warehouse = {}, filtroActivo = null }) {
     if (!canNavigate) return
     
     const urlWithFilters = generateUrlWithFilters(`/bodegas/${id}`)
-    console.log('🔗 Navegando a RESERVAR:', urlWithFilters)
     navigate(urlWithFilters, { state: { warehouse } })
   }
 
@@ -80,18 +65,15 @@ export function WarehouseCard({ warehouse = {}, filtroActivo = null }) {
     if (!canNavigate) return
     
     const urlWithFilters = generateUrlWithFilters(`/bodegas/${id}`)
-    console.log('🔗 Navegando a PERFIL por click de card:', urlWithFilters)
     navigate(urlWithFilters, { state: { warehouse } })
   }
 
   const handleLinkClick = (e) => {
     e.stopPropagation()
-    console.log('🔗 Click en link del nombre - va al perfil')
   }
 
   // ✅ GENERAR URL PARA EL LINK DEL PERFIL
   const perfilUrl = generateUrlWithFilters(`/perfil-bodegas/${id}`)
-  console.log('🔗 URL para Link del perfil:', perfilUrl)
 
   return (
     <div 
@@ -199,20 +181,7 @@ export function WarehouseCard({ warehouse = {}, filtroActivo = null }) {
           </div>
         )}
 
-        {filtroActivo && (filtroActivo.ciudad || filtroActivo.zona) && (
-          <div className="mb-2">
-            <div className="bg-blue-50 border border-blue-200 rounded-md px-2 py-1">
-              <p className="text-xs text-blue-700">
-                📍 Mostrando disponibilidad en{' '}
-                {filtroActivo.ciudad}
-                {filtroActivo.zona && ` - ${filtroActivo.zona}`}
-              </p>
-            </div>
-          </div>
-        )}
-
         <div className="mt-auto">
-          {/* ✅ BOTÓN RESERVAR - VA A /bodegas/${id} */}
           <button
             type="button"
             aria-label={`Reservar ${name}`}

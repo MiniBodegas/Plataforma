@@ -66,7 +66,6 @@ export function BodegaEditorProveedorScreen() {
         
         if (user) {
           setUsuario(user);
-          console.log('Usuario autenticado:', user);
           
           // Verificar si ya tiene empresa creada
           const { data: empresaExistente, error: empresaError } = await supabase
@@ -79,7 +78,6 @@ export function BodegaEditorProveedorScreen() {
             setEmpresaId(empresaExistente.id);
             setEmpresa(empresaExistente.nombre);
             setPerfilCompleto(true);
-            console.log('Empresa existente encontrada:', empresaExistente);
             
             // Cargar imágenes del carrusel si existen
             const { data: imagenesExistentes } = await supabase
@@ -100,8 +98,6 @@ export function BodegaEditorProveedorScreen() {
               .order('created_at');
               
             if (bodegasExistentes && bodegasExistentes.length > 0) {
-              console.log('Bodegas cargadas desde DB:', bodegasExistentes); // Debug
-              
               setBodegas(bodegasExistentes.map(b => ({
                 id: b.id,
                 metraje: b.metraje || "",
@@ -330,12 +326,7 @@ export function BodegaEditorProveedorScreen() {
   const handleGuardarTodo = async () => {
     setGuardandoTodo(true);
     
-    try {
-      console.log('🚀 INICIANDO PROCESO DE GUARDADO COMPLETO');
-      console.log('👤 Usuario:', usuario?.id);
-      console.log('🏢 Empresa ID:', empresaId);
-      console.log('📦 Total bodegas en estado:', bodegas.length);
-      
+    try {      
       // ✅ VALIDACIONES mejoradas con mensajes específicos
       if (!empresa.trim()) {
         mostrarMensaje('error', '❌ Por favor ingresa el nombre de la empresa');
@@ -346,23 +337,6 @@ export function BodegaEditorProveedorScreen() {
         mostrarMensaje('error', '❌ Por favor agrega al menos una imagen del carrusel');
         return;
       }
-
-      // ✅ DEBUGGING DETALLADO de bodegas
-      console.log('🔍 ANÁLISIS DETALLADO DE BODEGAS:');
-      bodegas.forEach((b, index) => {
-        console.log(`  Bodega ${index}:`, {
-          id: b.id,
-          metraje: b.metraje,
-          descripcion: b.descripcion?.substring(0, 30) + '...',
-          contenido: b.contenido?.substring(0, 30) + '...',
-          direccion: b.direccion?.substring(0, 30) + '...',
-          ciudad: b.ciudad,
-          zona: b.zona,
-          precioMensual: b.precioMensual,
-          hasId: !!b.id,
-          isComplete: !!(b.metraje && b.descripcion && b.contenido && b.direccion && b.ciudad && b.zona && b.precioMensual)
-        });
-      });
 
       // ✅ FILTRAR bodegas válidas con debug
       const bodegasValidas = bodegas.filter(b => {
@@ -389,8 +363,6 @@ export function BodegaEditorProveedorScreen() {
         return isValid;
       });
 
-      console.log('✅ BODEGAS VÁLIDAS:', bodegasValidas.length);
-
       if (bodegasValidas.length === 0) {
         mostrarMensaje('error', '❌ Por favor completa al menos una mini bodega con todos los campos');
         return;
@@ -400,8 +372,6 @@ export function BodegaEditorProveedorScreen() {
       for (let i = 0; i < bodegasValidas.length; i++) {
         const bodega = bodegasValidas[i];
         const precio = parseFloat(bodega.precioMensual);
-        console.log(`💰 Validando precio bodega ${i}: "${bodega.precioMensual}" -> ${precio}`);
-        
         if (isNaN(precio) || precio <= 0) {
           mostrarMensaje('error', `❌ El precio "${bodega.precioMensual}" en la bodega ${i + 1} no es válido. Debe ser un número mayor a 0.`);
           return;
@@ -414,10 +384,7 @@ export function BodegaEditorProveedorScreen() {
       // 🏢 PASO 1: Guardar/Actualizar empresa con debug
       let empresaData;
       
-      console.log('🏢 PASO 1: Procesando empresa...');
-      
       if (empresaId) {
-        console.log('🔄 Actualizando empresa existente:', empresaId);
         const { data, error } = await supabase
           .from('empresas')
           .update({ 
@@ -433,9 +400,9 @@ export function BodegaEditorProveedorScreen() {
         }
         
         empresaData = data[0];
-        console.log('✅ Empresa actualizada:', empresaData);
+      
       } else {
-        console.log('➕ Creando nueva empresa...');
+        
         const { data, error } = await supabase
           .from('empresas')
           .insert([{
@@ -452,15 +419,14 @@ export function BodegaEditorProveedorScreen() {
         
         empresaData = data[0];
         setEmpresaId(empresaData.id);
-        console.log('✅ Nueva empresa creada:', empresaData);
       }
 
       // 🖼️ PASO 2: Imágenes del carrusel (mantener igual)
       mostrarMensaje('info', '📸 Subiendo imágenes del carrusel...', 10000);
-      console.log('📸 PASO 2: Procesando carrusel...', imagenesCarrusel.length, 'imágenes');
+    
       
       const urlsCarrusel = await uploadCarruselImages(imagenesCarrusel);
-      console.log('✅ URLs carrusel obtenidas:', urlsCarrusel.length);
+      
       
       await supabase
         .from('carrusel_imagenes')
@@ -483,12 +449,12 @@ export function BodegaEditorProveedorScreen() {
           console.error('❌ Error guardando carrusel:', carruselError);
           throw carruselError;
         }
-        console.log('✅ Carrusel guardado correctamente');
+        
       }
 
       // 📝 PASO 3: Descripción (mantener igual)
       mostrarMensaje('info', '📝 Guardando descripción...', 10000);
-      console.log('📝 PASO 3: Procesando descripción...');
+     
       
       const urlsDescripcion = await uploadDescripcionImages(imagenesDescripcion);
       
@@ -530,11 +496,10 @@ export function BodegaEditorProveedorScreen() {
           throw descError;
         }
       }
-      console.log('✅ Descripción guardada correctamente');
-
+      
       // 📦 PASO 4: CORREGIDO - Clasificar bodegas correctamente
       mostrarMensaje('info', '📦 Guardando mini bodegas...', 10000);
-      console.log('📦 PASO 4: INICIANDO PROCESAMIENTO DE MINI BODEGAS');
+     
 
       // ✅ OBTENER IDs QUE REALMENTE EXISTEN EN LA DB
       let idsRealesEnDB = [];
@@ -550,7 +515,7 @@ export function BodegaEditorProveedorScreen() {
         }
 
         idsRealesEnDB = bodegasEnDB.map(b => b.id);
-        console.log('🔍 IDs REALES EN DB:', idsRealesEnDB);
+        
       } catch (error) {
         console.error('❌ Error obteniendo IDs de la DB:', error);
         throw error;
@@ -560,25 +525,20 @@ export function BodegaEditorProveedorScreen() {
       const bodegasExistentes = bodegasValidas.filter(b => b.id && idsRealesEnDB.includes(b.id));
       const bodegasNuevas = bodegasValidas.filter(b => !b.id || !idsRealesEnDB.includes(b.id));
 
-      console.log('📊 CLASIFICACIÓN CORREGIDA DE BODEGAS:');
-      console.log('  🔄 Existentes (realmente en DB):', bodegasExistentes.length, bodegasExistentes.map(b => ({ id: b.id, metraje: b.metraje })));
-      console.log('  ➕ Nuevas (no en DB):', bodegasNuevas.length, bodegasNuevas.map(b => ({ id: b.id || 'SIN ID', metraje: b.metraje, precio: b.precioMensual })));
-
       const todasLasBodegasGuardadas = [];
 
       // ✅ PROCESAR BODEGAS EXISTENTES (las que realmente están en DB)
-      console.log('🔄 PROCESANDO BODEGAS EXISTENTES...');
+      
       for (let i = 0; i < bodegasExistentes.length; i++) {
         const bodega = bodegasExistentes[i];
         
         mostrarMensaje('info', `📦 Actualizando bodega existente ${i + 1}/${bodegasExistentes.length}...`, 10000);
-        console.log(`🔄 Procesando bodega existente ${i + 1}:`, { id: bodega.id, metraje: bodega.metraje });
-        
+       
         let imagenUrl = bodega.imagen;
         if (bodega.imagen && typeof bodega.imagen !== 'string') {
-          console.log('📸 Subiendo nueva imagen para bodega existente...');
+         
           imagenUrl = await uploadImage(bodega.imagen);
-          console.log('✅ Imagen subida:', imagenUrl);
+         
         }
 
         const bodegaData = {
@@ -595,7 +555,7 @@ export function BodegaEditorProveedorScreen() {
           updated_at: new Date().toISOString()
         };
 
-        console.log(`📝 Datos para actualizar bodega ${bodega.id}:`, bodegaData);
+       
 
         const { data: bodegaActualizada, error: bodegaError } = await supabase
           .from('mini_bodegas')
@@ -608,56 +568,30 @@ export function BodegaEditorProveedorScreen() {
           throw bodegaError;
         }
         
-        console.log(`✅ Bodega ${bodega.id} actualizada exitosamente:`, bodegaActualizada[0]);
+        
         todasLasBodegasGuardadas.push(bodegaActualizada[0]);
       }
 
       // ✅ PROCESAR BODEGAS NUEVAS (incluyendo las que tienen ID falso)
-      console.log('➕ PROCESANDO BODEGAS NUEVAS...');
+      
       for (let i = 0; i < bodegasNuevas.length; i++) {
         const bodega = bodegasNuevas[i];
         
         mostrarMensaje('info', `📦 Guardando nueva bodega ${i + 1}/${bodegasNuevas.length}...`, 10000);
-        console.log(`➕ Procesando nueva bodega ${i + 1}:`, { 
-          idOriginal: bodega.id || 'SIN ID',
-          metraje: bodega.metraje, 
-          precio: bodega.precioMensual,
-          ciudad: bodega.ciudad,
-          zona: bodega.zona 
-        });
-        
-        // ✅ VALIDACIÓN EXTRA POR BODEGA
-        console.log(`🔍 VALIDACIÓN DETALLADA BODEGA ${i + 1}:`, {
-          metraje: { valor: bodega.metraje, valido: !!bodega.metraje?.trim() },
-          descripcion: { valor: bodega.descripcion?.substring(0, 30) + '...', valido: !!bodega.descripcion?.trim() },
-          contenido: { valor: bodega.contenido?.substring(0, 30) + '...', valido: !!bodega.contenido?.trim() },
-          direccion: { valor: bodega.direccion?.substring(0, 30) + '...', valido: !!bodega.direccion?.trim() },
-          ciudad: { valor: bodega.ciudad, valido: !!bodega.ciudad?.trim() },
-          zona: { valor: bodega.zona, valido: !!bodega.zona },
-          precioMensual: { 
-            valor: bodega.precioMensual, 
-            parseado: parseFloat(bodega.precioMensual),
-            valido: !isNaN(parseFloat(bodega.precioMensual)) && parseFloat(bodega.precioMensual) > 0
-          }
-        });
         
         let imagenUrl = null;
         if (bodega.imagen) {
           if (typeof bodega.imagen === 'string') {
-            imagenUrl = bodega.imagen;
-            console.log('📸 Usando imagen existente (URL):', imagenUrl);
+            imagenUrl = bodega.imagen;         
           } else {
-            console.log('📸 Subiendo nueva imagen...');
             try {
               imagenUrl = await uploadImage(bodega.imagen);
-              console.log('✅ Nueva imagen subida:', imagenUrl);
             } catch (imageError) {
               console.error(`❌ Error subiendo imagen bodega ${i + 1}:`, imageError);
               imagenUrl = null;
             }
           }
         } else {
-          console.log('⚠️ Bodega sin imagen');
         }
 
         // ✅ LIMPIAR EL ID FALSO - no incluirlo en el insert
@@ -675,9 +609,6 @@ export function BodegaEditorProveedorScreen() {
           orden: bodegasExistentes.length + i
           // ✅ NO incluir 'id' aquí - dejar que la DB genere uno nuevo
         };
-
-        // ✅ VALIDACIÓN FINAL DE DATOS ANTES DE INSERTAR
-        console.log(`📝 DATOS FINALES PARA INSERTAR nueva bodega ${i + 1}:`, bodegaData);
         
         // Validar campos críticos
         const camposFaltantes = [];
@@ -695,7 +626,7 @@ export function BodegaEditorProveedorScreen() {
           throw new Error(`Bodega ${i + 1} tiene campos faltantes: ${camposFaltantes.join(', ')}`);
         }
 
-        console.log(`🚀 EJECUTANDO INSERT para bodega ${i + 1}...`);
+       
 
         try {
           // ✅ AGREGAR UN DELAY PEQUEÑO ENTRE INSERTS PARA EVITAR CONFLICTOS
@@ -737,7 +668,7 @@ export function BodegaEditorProveedorScreen() {
             throw new Error(`Bodega ${i + 1}: Insert exitoso pero sin datos retornados`);
           }
 
-          console.log(`🎉 NUEVA BODEGA ${i + 1} INSERTADA EXITOSAMENTE:`, bodegaInsertada[0]);
+         
           todasLasBodegasGuardadas.push(bodegaInsertada[0]);
 
         } catch (insertError) {
@@ -747,7 +678,7 @@ export function BodegaEditorProveedorScreen() {
       }
 
       // ✅ VERIFICACIÓN INMEDIATA después del bucle de bodegas nuevas
-      console.log('🔍 VERIFICACIÓN INMEDIATA EN LA DB...');
+     
       try {
         const { data: verificacionDB, error: verError } = await supabase
           .from('mini_bodegas')
@@ -758,19 +689,16 @@ export function BodegaEditorProveedorScreen() {
         if (verError) {
           console.error('❌ Error verificando DB:', verError);
         } else {
-          console.log('📊 VERIFICACIÓN INMEDIATA - Total en DB:', verificacionDB.length);
+         
           verificacionDB.forEach((b, i) => {
-            console.log(`  DB ${i + 1}: ID=${b.id}, Metraje=${b.metraje}, Precio=${b.precio_mensual}`);
+            
           });
         }
       } catch (verError) {
         console.error('❌ Error en verificación:', verError);
       }
 
-      console.log('📊 RESUMEN DE BODEGAS GUARDADAS:');
-      console.log('  🔄 Actualizadas:', bodegasExistentes.length);
-      console.log('  ➕ Insertadas:', bodegasNuevas.length);
-      console.log('  📦 Total guardadas:', todasLasBodegasGuardadas.length);
+    
 
       // ✅ LIMPIAR bodegas obsoletas (solo eliminar las que realmente existían antes)
       if (idsRealesEnDB.length > 0) {
@@ -778,8 +706,7 @@ export function BodegaEditorProveedorScreen() {
         const idsAEliminar = idsRealesEnDB.filter(id => !idsQueSeMantienenActualizados.includes(id));
         
         if (idsAEliminar.length > 0) {
-          console.log('🗑️ Eliminando bodegas obsoletas con IDs:', idsAEliminar);
-          
+         
           const { error: deleteError } = await supabase
             .from('mini_bodegas')
             .delete()
@@ -789,22 +716,17 @@ export function BodegaEditorProveedorScreen() {
           if (deleteError) {
             console.error('❌ Error eliminando bodegas obsoletas:', deleteError);
           } else {
-            console.log('✅ Bodegas obsoletas eliminadas');
+           
           }
         }
       }
 
       // 🔄 PASO 5: ACTUALIZAR ESTADO LOCAL
       mostrarMensaje('info', '🔄 Finalizando...', 10000);
-      console.log('🔄 PASO 5: ACTUALIZANDO ESTADO LOCAL');
-      
+     
       // ✅ ORDENAR por campo 'orden'
-      const bodegasFinalesOrdenadas = todasLasBodegasGuardadas.sort((a, b) => (a.orden || 0) - (b.orden || 0));
-      
-      console.log('📋 ESTADO FINAL:');
-      console.log('  Total final:', bodegasFinalesOrdenadas.length);
+      const bodegasFinalesOrdenadas = todasLasBodegasGuardadas.sort((a, b) => (a.orden || 0) - (b.orden || 0));     
       bodegasFinalesOrdenadas.forEach((b, i) => {
-        console.log(`  ${i + 1}. ID: ${b.id}, Metraje: ${b.metraje}, Precio: ${b.precio_mensual}`);
       });
 
       // ✅ ACTUALIZAR ESTADO LOCAL con TODAS las bodegas guardadas
@@ -820,14 +742,14 @@ export function BodegaEditorProveedorScreen() {
         precioMensual: b.precio_mensual ? b.precio_mensual.toString() : ""
       }));
 
-      console.log('🎯 NUEVO ESTADO DE BODEGAS:', nuevoBodegasEstado.length, 'bodegas');
+     
       setBodegas(nuevoBodegasEstado);
 
       // ✅ ÉXITO
       setPerfilCompleto(true);
       mostrarMensaje('success', `🎉 ¡PERFIL GUARDADO EXITOSAMENTE! ${bodegasFinalesOrdenadas.length} mini bodegas guardadas`);
       
-      console.log('🎉 PROCESO COMPLETADO EXITOSAMENTE');
+      
 
     } catch (error) {
       console.error('💥 ERROR CRÍTICO EN PROCESO DE GUARDADO:', error);
@@ -938,7 +860,6 @@ export function BodegaEditorProveedorScreen() {
   // Función para verificar las bodegas en la DB (temporal para debug)
   const verificarBodegasEnDB = async () => {
     if (!empresaId) {
-      console.log('❌ No hay empresa ID para verificar');
       return;
     }
 
@@ -954,10 +875,7 @@ export function BodegaEditorProveedorScreen() {
         return;
       }
 
-      console.log('🔍 VERIFICACIÓN DE BODEGAS EN DB:');
-      console.log('  Total en DB:', bodegasDB.length);
-      console.log('  Total en estado local:', bodegas.length);
-      
+     
       bodegasDB.forEach((b, i) => {
         console.log(`  DB ${i + 1}: ID=${b.id}, Metraje=${b.metraje}, Precio=${b.precio_mensual}, Empresa=${b.empresa_id}`);
       });
