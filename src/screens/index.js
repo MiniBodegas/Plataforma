@@ -22,3 +22,5 @@ export * from './PerfilForm/PerfilForm'
 export * from './PerfilProveedor/PerfilProveedor'
 export * from './PerfilFormProveedor/PerfilFormProveedor'
 export * from './BodegasEditor/BodegasEditor'
+
+export * from './ReservaConfirmada/ReservaConfirmada'

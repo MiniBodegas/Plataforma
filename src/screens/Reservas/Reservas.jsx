@@ -1,65 +1,78 @@
 import { useState } from 'react';
-import { ReservaCard,NavBarProveedores } from "../../components";
+import { ReservaCard, NavBarProveedores } from "../../components";
+import { useReservasByEmpresa } from '../../hooks/useReservasByEmpresa';
 
 export function Reservas() {
-  const [reservas, setReservas] = useState([
-    {
-      id: 1,
-      titulo: "Mini bodega de 10 m³",
-      sede: "Sede Yumbo",
-      cliente: "Juan Pérez",
-      fechaInicio: "10 de octubre",
-      precio: 250000,
-      estado: "pendiente",
-      imagen: "https://images.unsplash.com/photo-1611967164521-abae8fba4668?w=400"
-    },
-    {
-      id: 2,
-      titulo: "Bodega de 25 m³",
-      sede: "Sede Palmira",
-      cliente: "María García",
-      fechaInicio: "15 de octubre",
-      precio: 450000,
-      estado: "pendiente",
-      imagen: "https://images.unsplash.com/photo-1618220179428-22790b461013?w=400"
-    },
-    {
-      id: 3,
-      titulo: "Bodega de 15 m³",
-      sede: "Sede Yumbo",
-      cliente: "Carlos López",
-      fechaInicio: "20 de octubre",
-      precio: 350000,
-      estado: "aceptada",
-      imagen: "https://images.unsplash.com/photo-1535957998253-26ae1ef29506?w=400"
-    },
-    {
-      id: 4,
-      titulo: "Mini bodega de 8 m³",
-      sede: "Sede Palmira",
-      cliente: "Ana Rodríguez",
-      fechaInicio: "25 de octubre",
-      precio: 280000,
-      estado: "rechazada",
-      imagen: "https://images.unsplash.com/photo-1611967164521-abae8fba4668?w=400"
+  const { 
+    reservas, 
+    loading, 
+    error, 
+    actualizarEstadoReserva 
+  } = useReservasByEmpresa();
+
+  const [procesando, setProcesando] = useState(false);
+
+  const handleAceptar = async (id) => {
+    setProcesando(true);
+    const resultado = await actualizarEstadoReserva(id, 'aceptada');
+    
+    if (!resultado.success) {
+      alert(`Error al aceptar la reserva: ${resultado.error}`);
     }
-  ]);
-
-  const handleAceptar = (id) => {
-    setReservas(prevReservas =>
-      prevReservas.map(reserva =>
-        reserva.id === id ? { ...reserva, estado: 'aceptada' } : reserva
-      )
-    );
+    setProcesando(false);
   };
 
-  const handleRechazar = (id) => {
-    setReservas(prevReservas =>
-      prevReservas.map(reserva =>
-        reserva.id === id ? { ...reserva, estado: 'rechazada' } : reserva
-      )
-    );
+  const handleRechazar = async (id) => {
+    setProcesando(true);
+    const resultado = await actualizarEstadoReserva(id, 'rechazada');
+    
+    if (!resultado.success) {
+      alert(`Error al rechazar la reserva: ${resultado.error}`);
+    }
+    setProcesando(false);
   };
+
+  // Mostrar loading
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white px-6 py-8">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-[#2C3A61] mb-8 text-center">
+            Mis mini bodegas
+          </h2>
+          <NavBarProveedores />
+          
+          <div className="flex justify-center items-center py-20">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2C3A61] mx-auto mb-4"></div>
+              <p className="text-gray-600">Cargando reservas...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar error
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white px-6 py-8">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-[#2C3A61] mb-8 text-center">
+            Mis mini bodegas
+          </h2>
+          <NavBarProveedores />
+          
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+            <div className="text-red-600 text-lg font-semibold mb-2">
+              ❌ Error cargando reservas
+            </div>
+            <p className="text-red-500">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Filtrar reservas por estado
   const reservasPendientes = reservas.filter(r => r.estado === 'pendiente');
@@ -87,6 +100,7 @@ export function Reservas() {
               reserva={reserva}
               onAceptar={handleAceptar}
               onRechazar={handleRechazar}
+              disabled={procesando}
             />
           ))
         ) : (
@@ -129,6 +143,19 @@ export function Reservas() {
             <div className="text-red-600 text-sm">Rechazadas</div>
           </div>
         </div>
+
+        {/* Mensaje si no hay mini bodegas */}
+        {reservas.length === 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-8 text-center mb-8">
+            <div className="text-blue-600 text-4xl mb-3">🏢</div>
+            <h3 className="text-blue-800 text-lg font-semibold mb-2">
+              No tienes mini bodegas registradas
+            </h3>
+            <p className="text-blue-600">
+              Para recibir reservas, primero necesitas crear tu perfil de empresa y agregar mini bodegas.
+            </p>
+          </div>
+        )}
 
         {/* Secciones de reservas */}
         <div className="space-y-10">

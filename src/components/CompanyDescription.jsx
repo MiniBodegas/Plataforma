@@ -10,15 +10,7 @@ export function CompanyDescription({
   rating = 0,
   reviewCount = 0
 }) {
-  
-  // ✅ AGREGAR DEBUG para ver qué datos llegan
-  console.log('🔍 CompanyDescription recibió:', {
-    warehouse,
-    name,
-    description,
-    warehouseDescription: warehouse?.description,
-    warehouseFeatures: warehouse?.features
-  });
+
  
   // Extraer datos del warehouse o usar props directas
   const companyName = warehouse?.name || name;
@@ -27,14 +19,6 @@ export function CompanyDescription({
   const companyFeatures = warehouse?.features || features;
   const companyRating = warehouse?.rating || rating;
   const companyReviewCount = warehouse?.reviewCount || reviewCount;
-
-  // ✅ AGREGAR MÁS DEBUG
-  console.log('📋 Datos procesados:', {
-    companyName,
-    companyDescription,
-    companyFeatures,
-    featuresLength: companyFeatures?.length
-  });
 
   // Obtener ubicación para mostrar
   const location = warehouse?.city && warehouse?.zone 
@@ -97,13 +81,7 @@ export function CompanyDescription({
       {/* Descripción */}
       <div className="bg-[#4B799B] text-white rounded-2xl p-6 mb-8">
         <h3 className="font-semibold text-lg mb-2">Descripción</h3>
-        
-        {/* ✅ MOSTRAR MÁS INFO DE DEBUG */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mb-2 text-xs bg-blue-800 p-2 rounded">
-            <strong>DEBUG:</strong> description="{companyDescription}"
-          </div>
-        )}
+      
         
         <p className="leading-relaxed">
           {companyDescription && companyDescription !== 'Sin descripción disponible' 
@@ -133,13 +111,6 @@ export function CompanyDescription({
         {/* Características */}
         <div className="bg-white rounded-2xl shadow p-6 h-full">
           <h3 className="font-semibold text-lg mb-4 text-gray-800">Características</h3>
-          
-          {/* ✅ MOSTRAR DEBUG DE CARACTERÍSTICAS */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mb-2 text-xs bg-gray-200 p-2 rounded">
-              <strong>DEBUG features:</strong> {JSON.stringify(companyFeatures)}
-            </div>
-          )}
           
           {displayFeatures.length > 0 ? (
             <ul className="list-disc pl-5 space-y-2 text-gray-700">

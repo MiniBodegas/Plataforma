@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { ExtraServices } from "./ExtraServices";
 import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from 'react-router-dom';
+import { useCreateReservation } from '../hooks/useCreateReservation';
 
 export function FormStepper({ onDataChange, reservationData }) {
   const { user, signIn, signUp } = useAuth();
@@ -19,13 +20,13 @@ export function FormStepper({ onDataChange, reservationData }) {
     nombre: '',
     ...reservationData
   });
+  const navigate = useNavigate();
+  const { createReservation, loading: creatingReservation, error } = useCreateReservation();
 
   // Verificar si el usuario ya está logueado al montar el componente
   useEffect(() => {
     if (user) {
-      // Si el usuario está logueado, saltar al paso 2
       setCurrentStep(2);
-      // Pre-llenar con datos del usuario si están disponibles
       setFormData(prev => ({
         ...prev,
         email: user.email || '',
@@ -44,7 +45,6 @@ export function FormStepper({ onDataChange, reservationData }) {
 
   const handleInputChange = (field) => (event) => {
     handleFormChange(field, event.target.value);
-    // Limpiar errores de autenticación al escribir
     if (authError) setAuthError('');
   };
 
@@ -54,18 +54,44 @@ export function FormStepper({ onDataChange, reservationData }) {
   };
 
   const nextStep = () => {
-    if (currentStep < steps.length) setCurrentStep(currentStep + 1);
+    // Validaciones por paso antes de avanzar
+    if (currentStep === 1 && !user) {
+      setAuthError('Debes iniciar sesión o registrarte para continuar');
+      return;
+    }
+    
+    if (currentStep === 2) {
+      if (!formData.tipoDocumento || !formData.numeroDocumento || !formData.numeroCelular) {
+        setAuthError('Por favor completa todos los campos requeridos');
+        return;
+      }
+    }
+
+    if (currentStep === 3) {
+      if (!formData.fechaInicio) {
+        setAuthError('Por favor selecciona una fecha de inicio');
+        return;
+      }
+    }
+
+    if (currentStep < 4) {
+      setCurrentStep(currentStep + 1);
+      setAuthError('');
+    }
   };
 
   const prevStep = () => {
-    if (currentStep > 1) setCurrentStep(currentStep - 1);
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+      setAuthError('');
+    }
   };
 
   const steps = [
     { number: 1, title: showLogin ? "Inicio de sesión" : "Registro", completed: currentStep > 1 },
     { number: 2, title: "Información Personal", completed: currentStep > 2 },
     { number: 3, title: "Fecha de Inicio", completed: currentStep > 3 },
-    { number: 4, title: "Servicios Adicionales", completed: currentStep > 4 },
+    { number: 4, title: "Servicios y Confirmación", completed: currentStep > 4 },
   ];
 
   const tiposDocumento = [
@@ -76,7 +102,7 @@ export function FormStepper({ onDataChange, reservationData }) {
     { value: 'NIT', label: 'NIT (Persona Jurídica)' }
   ];
 
-  // Manejo de login con Supabase
+  // Manejo de login
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     
@@ -96,7 +122,6 @@ export function FormStepper({ onDataChange, reservationData }) {
           ? 'Credenciales incorrectas. Verifica tu email y contraseña.' 
           : error.message);
       } else {
-        // Login exitoso, avanzar al paso 2
         setCurrentStep(2);
       }
     } catch (err) {
@@ -106,7 +131,7 @@ export function FormStepper({ onDataChange, reservationData }) {
     }
   };
 
-  // Manejo de registro con Supabase
+  // Manejo de registro
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     
@@ -132,7 +157,6 @@ export function FormStepper({ onDataChange, reservationData }) {
       if (error) {
         setAuthError(error.message);
       } else {
-        // Registro exitoso, avanzar al paso 2
         setCurrentStep(2);
       }
     } catch (err) {
@@ -142,9 +166,52 @@ export function FormStepper({ onDataChange, reservationData }) {
     }
   };
 
+  const handleConfirmReservation = async () => {
+    // Validar que todos los campos estén completos
+    const requiredFields = ['tipoDocumento', 'numeroDocumento', 'numeroCelular', 'fechaInicio'];
+    const missingFields = requiredFields.filter(field => !formData[field]);
+
+    if (missingFields.length > 0) {
+      setAuthError(`Por favor completa los siguientes campos: ${missingFields.join(', ')}`);
+      return;
+    }
+
+    if (!reservationData?.bodegaSeleccionada) {
+      setAuthError('No hay una bodega seleccionada');
+      return;
+    }
+
+    console.log('🚀 Confirmando reserva con datos:', {
+      ...reservationData,
+      ...formData
+    });
+
+    const dataToSend = {
+      ...reservationData,
+      tipoDocumento: formData.tipoDocumento,
+      numeroDocumento: formData.numeroDocumento,
+      numeroCelular: formData.numeroCelular,
+      fechaInicio: formData.fechaInicio,
+      servicios: formData.servicios
+    };
+
+    const result = await createReservation(dataToSend);
+
+    if (result.success) {
+      navigate('/reserva-confirmada', {
+        state: {
+          reserva: result.reserva,
+          message: result.message
+        }
+      });
+    } else {
+      setAuthError(`Error creando la reserva: ${result.error}`);
+    }
+  };
+
   return (
-    <div className="bg-white dark:bg-white rounded-lg shadow-lg p-6">
-      {/* Progress Steps con títulos */}
+    <div className="bg-white rounded-lg shadow-lg p-6">
+      {/* Progress Steps */}
       <div className="mb-6">
         <div className="flex justify-between items-start mb-4">
           {steps.map((step, index) => (
@@ -153,7 +220,7 @@ export function FormStepper({ onDataChange, reservationData }) {
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                   currentStep >= step.number
                     ? "bg-[#4B799B] text-white"
-                    : "bg-gray-200 dark:bg-gray-200 text-gray-600 dark:text-gray-600"
+                    : "bg-gray-200 text-gray-600"
                 }`}
               >
                 {step.completed ? "✓" : step.number}
@@ -162,7 +229,7 @@ export function FormStepper({ onDataChange, reservationData }) {
                 className={`mt-2 text-xs text-center w-full ${
                   currentStep === step.number 
                     ? "text-[#4B799B] font-medium" 
-                    : "text-gray-500 dark:text-gray-500"
+                    : "text-gray-500"
                 }`}
               >
                 {step.title}
@@ -170,7 +237,7 @@ export function FormStepper({ onDataChange, reservationData }) {
               {index < steps.length - 1 && (
                 <div
                   className={`h-1 w-20 mx-2 self-center ${
-                    currentStep > step.number ? "bg-[#4B799B]" : "bg-gray-200 dark:bg-gray-200"
+                    currentStep > step.number ? "bg-[#4B799B]" : "bg-gray-200"
                   }`}
                 />
               )}
@@ -178,17 +245,24 @@ export function FormStepper({ onDataChange, reservationData }) {
           ))}
         </div>
         <div className="mt-4">
-          <h3 className="text-lg font-semibold text-[#2C3A61] dark:text-[#2C3A61]">
+          <h3 className="text-lg font-semibold text-[#2C3A61]">
             {steps[currentStep - 1]?.title}
           </h3>
         </div>
       </div>
 
+      {/* Mensaje de error/auth */}
+      {authError && (
+        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+          {authError}
+        </div>
+      )}
+
       {/* Step Content */}
       <div className="mb-6">
+        {/* PASO 1: Autenticación */}
         {currentStep === 1 && (
           <div>
-            {/* Mostrar información del usuario si está logueado */}
             {user ? (
               <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                 <div className="flex items-center justify-between">
@@ -208,13 +282,6 @@ export function FormStepper({ onDataChange, reservationData }) {
               </div>
             ) : (
               <>
-                {/* Mensaje de error de autenticación */}
-                {authError && (
-                  <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
-                    {authError}
-                  </div>
-                )}
-
                 {!showLogin ? (
                   <form onSubmit={handleRegisterSubmit} className="bg-gray-50 p-4 rounded-lg shadow w-full">
                     <div className="mb-2">
@@ -331,63 +398,68 @@ export function FormStepper({ onDataChange, reservationData }) {
           </div>
         )}
 
+        {/* PASO 2: Información Personal */}
         {currentStep === 2 && (
           <div>
-            <p className="text-sm text-[#2C3A61] dark:text-[#2C3A61] mb-4">
+            <p className="text-sm text-[#2C3A61] mb-4">
               Completa tu información personal para continuar:
             </p>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2 text-[#2C3A61] dark:text-[#2C3A61]">
-                  Tipo de documento
+                <label className="block text-sm font-medium mb-2 text-[#2C3A61]">
+                  Tipo de documento *
                 </label>
                 <select
                   value={formData.tipoDocumento}
                   onChange={handleInputChange('tipoDocumento')}
-                  className="w-full p-3 border border-gray-300 dark:border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-white text-gray-900 dark:text-gray-900"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                  required
                 >
                   <option value="">Selecciona un tipo de documento</option>
                   {tiposDocumento.map((tipo) => (
-                    <option key={tipo.value} value={tipo.value} className="bg-white dark:bg-white text-gray-900 dark:text-gray-900">
+                    <option key={tipo.value} value={tipo.value}>
                       {tipo.label}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2 text-[#2C3A61] dark:text-[#2C3A61]">
-                  Número de documento
+                <label className="block text-sm font-medium mb-2 text-[#2C3A61]">
+                  Número de documento *
                 </label>
                 <input
                   type="text"
                   value={formData.numeroDocumento}
                   onChange={handleInputChange('numeroDocumento')}
                   placeholder="Ingresa tu número de documento"
-                  className="w-full p-3 border border-gray-300 dark:border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-white text-gray-900 dark:text-gray-900"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                  required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2 text-[#2C3A61] dark:text-[#2C3A61]">
-                  Número de celular
+                <label className="block text-sm font-medium mb-2 text-[#2C3A61]">
+                  Número de celular *
                 </label>
                 <input
                   type="tel"
                   value={formData.numeroCelular}
                   onChange={handleInputChange('numeroCelular')}
                   placeholder="Ej: 3001234567"
-                  className="w-full p-3 border border-gray-300 dark:border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-white text-gray-900 dark:text-gray-900"
+                  className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                  required
                 />
               </div>
             </div>
           </div>
         )}
 
+        {/* PASO 3: Fecha de Inicio */}
         {currentStep === 3 && (
           <div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2 text-[#2C3A61] dark:text-[#2C3A61]">
-                  Selecciona la fecha de inicio:
+                <label className="block text-sm font-medium mb-2 text-[#2C3A61]">
+                  Selecciona la fecha de inicio: *
                 </label>
                 <input
                   type="date"
@@ -396,78 +468,129 @@ export function FormStepper({ onDataChange, reservationData }) {
                   className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                   style={{ colorScheme: 'light' }}
                   min={new Date().toISOString().split('T')[0]}
+                  required
                 />
               </div>
             </div>
           </div>
         )}
 
+        {/* PASO 4: Servicios y Confirmación */}
         {currentStep === 4 && (
-          <div>
-            <label className="block text-sm font-medium mb-2 text-[#2C3A61] dark:text-[#2C3A61]">
-              Selecciona servicios adicionales:
-            </label>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {["Seguro", "Transporte", "Acceso 24/7", "Alarma", "CCTV"].map((servicio) => (
-                <button
-                  key={servicio}
-                  type="button"
-                  className={`px-4 py-2 rounded-full border font-medium transition
-                    ${formData.servicios.includes(servicio)
-                      ? "bg-[#4B799B] text-white border-[#4B799B]"
-                      : "bg-white text-[#2C3A61] border-gray-300 hover:bg-gray-100"}`}
-                  onClick={() => {
-                    const servicios = formData.servicios.includes(servicio)
-                      ? formData.servicios.filter(s => s !== servicio)
-                      : [...formData.servicios, servicio];
-                    handleFormChange("servicios", servicios);
-                  }}
-                >
-                  {servicio}
-                </button>
-              ))}
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium mb-2 text-[#2C3A61]">
+                Selecciona servicios adicionales (opcional):
+              </label>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {["Seguro", "Transporte", "Acceso 24/7", "Alarma", "CCTV"].map((servicio) => (
+                  <button
+                    key={servicio}
+                    type="button"
+                    className={`px-4 py-2 rounded-full border font-medium transition
+                      ${formData.servicios.includes(servicio)
+                        ? "bg-[#4B799B] text-white border-[#4B799B]"
+                        : "bg-white text-[#2C3A61] border-gray-300 hover:bg-gray-100"}`}
+                    onClick={() => {
+                      const servicios = formData.servicios.includes(servicio)
+                        ? formData.servicios.filter(s => s !== servicio)
+                        : [...formData.servicios, servicio];
+                      handleFormChange("servicios", servicios);
+                    }}
+                  >
+                    {servicio}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* Resumen de datos */}
+            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+              <h4 className="font-medium text-gray-800">Resumen de tu reserva:</h4>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-medium text-gray-700">Documento:</span>
+                  <p className="text-gray-600">{formData.tipoDocumento} {formData.numeroDocumento}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">Celular:</span>
+                  <p className="text-gray-600">{formData.numeroCelular}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">Fecha inicio:</span>
+                  <p className="text-gray-600">
+                    {formData.fechaInicio ? new Date(formData.fechaInicio).toLocaleDateString('es-ES') : 'Sin fecha'}
+                  </p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">Servicios:</span>
+                  <p className="text-gray-600">
+                    {formData.servicios?.length > 0 ? formData.servicios.join(', ') : 'Ninguno'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Información importante */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-800 mb-2">ℹ️ Información importante:</h4>
+              <ul className="text-blue-700 text-sm space-y-1">
+                <li>• Tu solicitud será enviada a la empresa para aprobación</li>
+                <li>• Recibirás una notificación cuando sea aceptada o rechazada</li>
+                <li>• El pago se realizará una vez aprobada la reserva</li>
+                <li>• Puedes cancelar la reserva antes de que sea aceptada</li>
+              </ul>
+            </div>
+
+            {/* Error de reserva */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-red-700">❌ {error}</p>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Navigation Buttons */}
+      {/* Navigation Buttons - SOLO UN SET DE BOTONES */}
       <div className="flex justify-between">
         <button
           onClick={prevStep}
           disabled={currentStep === 1}
           className={`px-4 py-2 rounded-md ${
             currentStep === 1
-              ? "bg-gray-200 dark:bg-gray-200 text-gray-400 dark:text-gray-400 cursor-not-allowed"
-              : "bg-gray-300 dark:bg-gray-300 text-gray-700 dark:text-gray-700 hover:bg-gray-400 dark:hover:bg-gray-400"
+              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+              : "bg-gray-300 text-gray-700 hover:bg-gray-400"
           }`}
         >
           Anterior
         </button>
-        <button
-          onClick={nextStep}
-          disabled={currentStep === steps.length}
-          className={`px-4 py-2 rounded-md ${
-            currentStep === steps.length
-              ? "text-white hover:opacity-90 transition-opacity"
-              : "bg-[#4B799B] text-white hover:bg-[#3b5f7a]"
-          }`}
-          style={{
-            backgroundColor: currentStep === steps.length ? "#4B799B" : undefined
-          }}
-          onMouseEnter={(e) => {
-            if (currentStep === steps.length) {
-              e.target.style.backgroundColor = "#1e2a4a";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (currentStep === steps.length) {
-              e.target.style.backgroundColor = "#4B799B";
-            }
-          }}
-        >
-          {currentStep === steps.length ? "Confirmar Reserva" : "Siguiente"}
-        </button>
+
+        {currentStep === 4 ? (
+          <button
+            onClick={handleConfirmReservation}
+            disabled={creatingReservation}
+            className="px-6 py-2 bg-[#2C3A61] text-white rounded-lg hover:bg-[#1e2a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {creatingReservation ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Creando reserva...
+              </>
+            ) : (
+              <>
+                🎉 Confirmar Reserva
+              </>
+            )}
+          </button>
+        ) : (
+          <button
+            onClick={nextStep}
+            className="px-4 py-2 bg-[#4B799B] text-white rounded-md hover:bg-[#3b5f7a] transition"
+          >
+            Siguiente
+          </button>
+        )}
       </div>
     </div>
   );  
