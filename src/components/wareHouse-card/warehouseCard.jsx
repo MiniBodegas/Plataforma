@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom"
 import { Star, MapPin, Ruler, Shield } from "lucide-react"
 
-export function WarehouseCard({ warehouse = {} }) {
+export function WarehouseCard({ warehouse = {}, filtroActivo = null }) {
   const navigate = useNavigate()
 
   const {
@@ -19,6 +19,14 @@ export function WarehouseCard({ warehouse = {} }) {
 
   const canNavigate = typeof id === "number" || typeof id === "string"
 
+  // ✅ DEBUG: Ver qué filtro está llegando
+  console.log('🔍 WarehouseCard - Filtro recibido:', {
+    filtroActivo,
+    ciudad: filtroActivo?.ciudad,
+    zona: filtroActivo?.zona,
+    empresa: filtroActivo?.empresa
+  })
+
   const formatPrice = (price) => {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
@@ -28,25 +36,67 @@ export function WarehouseCard({ warehouse = {} }) {
     }).format(price)
   }
 
+  // ✅ FUNCIÓN PARA GENERAR URL CON FILTROS
+  const generateUrlWithFilters = (basePath) => {
+    let url = basePath
+    
+    if (filtroActivo && (filtroActivo.ciudad || filtroActivo.zona || filtroActivo.empresa)) {
+      const params = new URLSearchParams()
+      
+      if (filtroActivo.ciudad) {
+        params.append('ciudad', filtroActivo.ciudad)
+        console.log('✅ Agregando parámetro ciudad:', filtroActivo.ciudad)
+      }
+      if (filtroActivo.zona) {
+        params.append('zona', filtroActivo.zona)
+        console.log('✅ Agregando parámetro zona:', filtroActivo.zona)
+      }
+      if (filtroActivo.empresa) {
+        params.append('empresa', filtroActivo.empresa)
+        console.log('✅ Agregando parámetro empresa:', filtroActivo.empresa)
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`
+      }
+    }
+    
+    console.log('🔗 URL generada:', url)
+    return url
+  }
+
+  // ✅ BOTÓN RESERVAR - VA A /bodegas/${id} (para reservar)
   const handleReserve = (e) => {
     e.stopPropagation()
     if (!canNavigate) return
-    navigate(`/bodegas/${id}`, { state: { warehouse } })
+    
+    const urlWithFilters = generateUrlWithFilters(`/bodegas/${id}`)
+    console.log('🔗 Navegando a RESERVAR:', urlWithFilters)
+    navigate(urlWithFilters, { state: { warehouse } })
   }
 
+  // ✅ CLICK EN CARD - VA A /perfil-bodegas/${id} (para ver perfil)
   const handleCardClick = () => {
     if (!canNavigate) return
-    navigate(`/bodegas/${id}`, { state: { warehouse } })
+    
+    const urlWithFilters = generateUrlWithFilters(`/bodegas/${id}`)
+    console.log('🔗 Navegando a PERFIL por click de card:', urlWithFilters)
+    navigate(urlWithFilters, { state: { warehouse } })
   }
 
   const handleLinkClick = (e) => {
     e.stopPropagation()
+    console.log('🔗 Click en link del nombre - va al perfil')
   }
+
+  // ✅ GENERAR URL PARA EL LINK DEL PERFIL
+  const perfilUrl = generateUrlWithFilters(`/perfil-bodegas/${id}`)
+  console.log('🔗 URL para Link del perfil:', perfilUrl)
 
   return (
     <div 
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow w-full max-w-[500px] h-[550px] flex flex-col cursor-pointer"
-      onClick={handleCardClick}
+      onClick={handleCardClick} // ✅ CLICK EN CARD = PERFIL
     >
       {/* Imagen */}
       <div className="relative h-40 sm:h-56">
@@ -73,14 +123,19 @@ export function WarehouseCard({ warehouse = {} }) {
       <div className="p-4 sm:p-5 flex flex-col flex-1">
         <div className="mb-2 sm:mb-3">
           <div className="flex items-center justify-between mb-1 sm:mb-2">
-            {/* Nombre con link al perfil de la compañía */}
+            {/* ✅ LINK DEL NOMBRE - VA AL PERFIL */}
             <Link
-              to={`/perfil-bodegas/${id}`}
+              to={perfilUrl}
               className="font-semibold text-base sm:text-lg text-[#2C3A61] line-clamp-1 underline decoration-2 underline-offset-4 hover:text-[#4B799B] transition-colors"
               title="Ir al perfil de la compañía"
               onClick={handleLinkClick}
             >
               {name}
+              {filtroActivo?.ciudad && (
+                <span className="text-sm text-[#4B799B] font-normal ml-2">
+                  en {filtroActivo.ciudad}
+                </span>
+              )}
             </Link>
           </div>
 
@@ -144,7 +199,20 @@ export function WarehouseCard({ warehouse = {} }) {
           </div>
         )}
 
+        {filtroActivo && (filtroActivo.ciudad || filtroActivo.zona) && (
+          <div className="mb-2">
+            <div className="bg-blue-50 border border-blue-200 rounded-md px-2 py-1">
+              <p className="text-xs text-blue-700">
+                📍 Mostrando disponibilidad en{' '}
+                {filtroActivo.ciudad}
+                {filtroActivo.zona && ` - ${filtroActivo.zona}`}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="mt-auto">
+          {/* ✅ BOTÓN RESERVAR - VA A /bodegas/${id} */}
           <button
             type="button"
             aria-label={`Reservar ${name}`}
@@ -154,7 +222,7 @@ export function WarehouseCard({ warehouse = {} }) {
               ${canNavigate ? "bg-[#4B799B] hover:bg-[#3b5f7a] text-white" : "bg-gray-200 text-gray-400 cursor-not-allowed"}
             `}
           >
-            Reservar
+            {filtroActivo?.ciudad ? `Reservar en ${filtroActivo.ciudad}` : 'Reservar'}
           </button>
         </div>
       </div>

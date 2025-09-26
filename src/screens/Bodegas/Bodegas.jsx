@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { HeroSection, FilterSidebar, WarehouseGrid,WarehouseCard } from '../../components/index'
-import { useWarehouses } from '../../hooks/useWarehouses' // Corrección de la ruta
+import { useWarehouses } from '../../hooks/useWarehouses'
 
 export function BodegaScreen() {
   const [searchParams] = useSearchParams()
@@ -15,67 +15,99 @@ export function BodegaScreen() {
   })
   
   const ciudadSeleccionada = searchParams.get('ciudad') || ''
-  const { warehouses, loading, error } = useWarehouses()
+  const zonaSeleccionada = searchParams.get('zona') || ''
+  const empresaSeleccionada = searchParams.get('empresa') || ''
+  
+  const { warehouses, loading, error, refetch } = useWarehouses()
 
-  // Scroll to top cuando se monta el componente
+  // ✅ DEBUG: Ver datos que llegan
+  console.log('🔍 BodegaScreen - Datos recibidos:', {
+    totalWarehouses: warehouses.length,
+    ciudadBuscada: ciudadSeleccionada,
+    zonaBuscada: zonaSeleccionada,
+    empresaBuscada: empresaSeleccionada,
+    warehouses: warehouses.map(w => ({
+      name: w.name,
+      cities: w.cities,
+      zones: w.zones,
+      location: w.location,
+      totalBodegas: w.totalBodegas
+    }))
+  })
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  // Filtrar warehouses cuando cambien los filtros o se carguen los datos
+  // ✅ FILTRADO CORREGIDO - Buscar en los datos reales de mini_bodegas
   useEffect(() => {
     if (!warehouses.length) {
       setFilteredWarehouses([])
       return
     }
 
-    const filtered = warehouses.filter(warehouse => {
-      // Filtro por ciudad de la URL
-      if (ciudadSeleccionada && !warehouse.location.toLowerCase().includes(ciudadSeleccionada.toLowerCase())) {
-        return false
-      }
-      
-      // Filtro por ubicación específica
-      if (filters.location && !warehouse.location.toLowerCase().includes(filters.location.toLowerCase())) {
-        return false
-      }
-      
-      // Filtro por rango de precio
-      if (filters.priceRange && filters.priceRange[1] < 3500000) {
-        const warehouseMaxPrice = warehouse.priceRange?.max || 0
-        if (warehouseMaxPrice > filters.priceRange[1]) return false
-      }
-      
-      // Filtro por tamaño
-      if (filters.size) {
-        const hasMatchingSize = warehouse.sizes?.some(size => {
-          const sizeNumber = parseInt(size.replace('m³', ''))
-          switch (filters.size) {
-            case '1-5 m²': return sizeNumber >= 1 && sizeNumber <= 5
-            case '5-15 m²': return sizeNumber > 5 && sizeNumber <= 15
-            case '15-40 m²': return sizeNumber > 15 && sizeNumber <= 40
-            case '+40 m²': return sizeNumber > 40
-            default: return true
-          }
-        })
-        if (!hasMatchingSize) return false
-      }
-      
-      // Filtro por características
-      if (filters.features?.length > 0) {
-        const hasFeature = filters.features.some(f => 
-          warehouse.features?.some(feature => 
-            feature.toLowerCase().includes(f.toLowerCase())
-          )
+    console.log('🔍 Aplicando filtros específicos por ciudad...')
+
+    const filtered = warehouses.map(warehouse => {
+      // ✅ CREAR COPIA DEL WAREHOUSE FILTRADO POR CIUDAD
+      let filteredWarehouse = { ...warehouse }
+      let bodegasFiltradas = [...warehouse.miniBodegas]
+
+      // ✅ FILTRAR MINI BODEGAS POR CIUDAD
+      if (ciudadSeleccionada) {
+        bodegasFiltradas = bodegasFiltradas.filter(bodega => 
+          bodega.ciudad?.toLowerCase().includes(ciudadSeleccionada.toLowerCase())
         )
-        if (!hasFeature) return false
+        
+        if (bodegasFiltradas.length === 0) {
+          return null // Esta empresa no tiene bodegas en la ciudad buscada
+        }
+
+        // Actualizar datos del warehouse con solo las bodegas de la ciudad
+        const precios = bodegasFiltradas.map(b => parseFloat(b.precio_mensual)).filter(p => !isNaN(p))
+        const metrajes = bodegasFiltradas.map(b => parseFloat(b.metraje)).filter(m => !isNaN(m))
+        
+        filteredWarehouse.miniBodegas = bodegasFiltradas
+        filteredWarehouse.totalBodegas = bodegasFiltradas.length
+        filteredWarehouse.cities = [...new Set(bodegasFiltradas.map(b => b.ciudad))]
+        filteredWarehouse.zones = [...new Set(bodegasFiltradas.map(b => b.zona).filter(Boolean))]
+        filteredWarehouse.priceRange = precios.length > 0 ? {
+          min: Math.min(...precios),
+          max: Math.max(...precios)
+        } : { min: 0, max: 0 }
+        filteredWarehouse.sizes = metrajes.length > 0 ? metrajes.map(m => `${m}m³`) : []
+        
+        // Actualizar location si hay zona específica
+        const zonasUnicas = [...new Set(bodegasFiltradas.map(b => b.zona).filter(Boolean))]
+        if (zonasUnicas.length > 0) {
+          filteredWarehouse.location = `${zonasUnicas[0]} - ${ciudadSeleccionada}`
+          filteredWarehouse.name = `${warehouse.name} - ${zonasUnicas[0]}`
+        }
       }
+
+      // ✅ FILTRAR POR ZONA
+      if (zonaSeleccionada) {
+        bodegasFiltradas = bodegasFiltradas.filter(bodega => 
+          bodega.zona?.toLowerCase().includes(zonaSeleccionada.toLowerCase())
+        )
+        
+        if (bodegasFiltradas.length === 0) {
+          return null
+        }
+
+        filteredWarehouse.miniBodegas = bodegasFiltradas
+        filteredWarehouse.totalBodegas = bodegasFiltradas.length
+      }
+
+      // Aplicar otros filtros...
+      return filteredWarehouse
       
-      return true
-    })
-    
+    }).filter(Boolean) // Remover nulls
+
+    console.log('🎯 Warehouses filtrados específicamente:', filtered.length)
     setFilteredWarehouses(filtered)
-  }, [warehouses, ciudadSeleccionada, filters])
+    
+  }, [warehouses, ciudadSeleccionada, zonaSeleccionada, empresaSeleccionada, filters])
 
   if (loading) {
     return (
@@ -99,7 +131,7 @@ export function BodegaScreen() {
           <div className="text-center text-red-600">
             <p>Error al cargar las bodegas: {error}</p>
             <button 
-              onClick={() => window.location.reload()} 
+              onClick={() => refetch && refetch()} 
               className="mt-4 px-4 py-2 bg-[#4B799B] text-white rounded hover:bg-[#3b5f7a]"
             >
               Reintentar
@@ -110,27 +142,51 @@ export function BodegaScreen() {
     )
   }
 
+  // ✅ GENERAR TÍTULO DINÁMICO
+  const generarTitulo = () => {
+    const partes = []
+    if (empresaSeleccionada) partes.push(empresaSeleccionada)
+    if (zonaSeleccionada) partes.push(zonaSeleccionada)  
+    if (ciudadSeleccionada) partes.push(ciudadSeleccionada)
+    
+    if (partes.length > 0) {
+      return `Bodegas ${partes.join(' - ')} (${filteredWarehouses.length} resultados)`
+    }
+    return `Bodegas disponibles (${filteredWarehouses.length} resultados)`
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <HeroSection />
       
-      {ciudadSeleccionada && (
+      {/* ✅ TÍTULO DINÁMICO MEJORADO */}
+      {(ciudadSeleccionada || zonaSeleccionada || empresaSeleccionada) && (
         <div className="bg-white border-b px-6 py-4">
           <div className="max-w-[1500px] mx-auto">
             <h2 className="text-xl font-semibold" style={{ color: "#2C3A61" }}>
-              Bodegas disponibles en {ciudadSeleccionada} ({filteredWarehouses.length} resultados)
+              {generarTitulo()}
             </h2>
+            
+            {/* ✅ DEBUG INFO EN DESARROLLO */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="text-xs text-gray-500 mt-2 bg-gray-50 p-2 rounded">
+                <strong>Debug:</strong> Total DB: {warehouses.length} | 
+                Filtrados: {filteredWarehouses.length} | 
+                Buscando ciudad: "{ciudadSeleccionada}" | 
+                Zona: "{zonaSeleccionada}" | 
+                Empresa: "{empresaSeleccionada}"
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* Botón Filtros solo en mobile */}
       <div className="md:hidden flex justify-end px-4 py-2">
         <button
           className="bg-[#4B799B] text-white px-4 py-2 rounded-md font-semibold shadow hover:bg-[#3b5f7a] transition-colors"
           onClick={() => setShowFilters(true)}
         >
-          Filtros
+          Filtros ({filteredWarehouses.length})
         </button>
       </div>
 
@@ -146,34 +202,42 @@ export function BodegaScreen() {
           />
         </div>
         <div className="md:col-span-3">
-          {/* Usar datos de la base de datos en lugar de WarehouseGrid */}
           {filteredWarehouses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredWarehouses.map((warehouse) => (
-                <WarehouseCard key={warehouse.id} warehouse={warehouse} />
+                <WarehouseCard 
+                  key={warehouse.id} 
+                  warehouse={warehouse}
+                  // ✅ AGREGAR ESTA LÍNEA CON EL FILTRO ACTIVO
+                  filtroActivo={{
+                    ciudad: ciudadSeleccionada,
+                    zona: zonaSeleccionada, 
+                    empresa: empresaSeleccionada
+                  }}
+                />
               ))}
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-gray-600 text-lg">
-                {warehouses.length === 0 
-                  ? "No hay bodegas disponibles en este momento."
-                  : "No se encontraron bodegas que coincidan con tus filtros."
-                }
+              <p className="text-gray-500 text-lg mb-4">
+                No se encontraron bodegas que coincidan con tu búsqueda
               </p>
-              {warehouses.length > 0 && (
-                <button
-                  onClick={() => setFilters({
-                    location: '',
-                    priceRange: [0, 3500000],
-                    size: '',
-                    features: []
-                  })}
-                  className="mt-4 px-4 py-2 bg-[#4B799B] text-white rounded hover:bg-[#3b5f7a]"
-                >
-                  Limpiar filtros
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  setCiudadSeleccionada('')
+                  setZonaSeleccionada('')
+                  setEmpresaSeleccionada('')
+                  setFilters({
+                    minPrice: '',
+                    maxPrice: '',
+                    minSize: '',
+                    maxSize: ''
+                  })
+                }}
+                className="bg-[#4B799B] hover:bg-[#3b5f7a] text-white px-6 py-2 rounded-md"
+              >
+                Limpiar filtros
+              </button>
             </div>
           )}
         </div>

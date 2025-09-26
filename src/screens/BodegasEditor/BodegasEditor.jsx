@@ -326,11 +326,16 @@ export function BodegaEditorProveedorScreen() {
     return results.filter(url => url !== null);
   };
 
-  // 🚀 FUNCIÓN PRINCIPAL ACTUALIZADA: Guardar todo incluyendo descripción
+  // 🚀 FUNCIÓN PRINCIPAL CORREGIDA con más debug específico
   const handleGuardarTodo = async () => {
     setGuardandoTodo(true);
     
     try {
+      console.log('🚀 INICIANDO PROCESO DE GUARDADO COMPLETO');
+      console.log('👤 Usuario:', usuario?.id);
+      console.log('🏢 Empresa ID:', empresaId);
+      console.log('📦 Total bodegas en estado:', bodegas.length);
+      
       // ✅ VALIDACIONES mejoradas con mensajes específicos
       if (!empresa.trim()) {
         mostrarMensaje('error', '❌ Por favor ingresa el nombre de la empresa');
@@ -342,26 +347,63 @@ export function BodegaEditorProveedorScreen() {
         return;
       }
 
-      const bodegasValidas = bodegas.filter(b => 
-        b.metraje && 
-        b.descripcion && 
-        b.contenido && 
-        b.direccion && 
-        b.ciudad && 
-        b.zona && 
-        b.precioMensual
-      );
+      // ✅ DEBUGGING DETALLADO de bodegas
+      console.log('🔍 ANÁLISIS DETALLADO DE BODEGAS:');
+      bodegas.forEach((b, index) => {
+        console.log(`  Bodega ${index}:`, {
+          id: b.id,
+          metraje: b.metraje,
+          descripcion: b.descripcion?.substring(0, 30) + '...',
+          contenido: b.contenido?.substring(0, 30) + '...',
+          direccion: b.direccion?.substring(0, 30) + '...',
+          ciudad: b.ciudad,
+          zona: b.zona,
+          precioMensual: b.precioMensual,
+          hasId: !!b.id,
+          isComplete: !!(b.metraje && b.descripcion && b.contenido && b.direccion && b.ciudad && b.zona && b.precioMensual)
+        });
+      });
+
+      // ✅ FILTRAR bodegas válidas con debug
+      const bodegasValidas = bodegas.filter(b => {
+        const isValid = b.metraje && 
+                       b.descripcion && 
+                       b.contenido && 
+                       b.direccion && 
+                       b.ciudad && 
+                       b.zona && 
+                       b.precioMensual;
+        
+        if (!isValid) {
+          console.warn('❌ Bodega inválida encontrada:', {
+            metraje: !!b.metraje,
+            descripcion: !!b.descripcion,
+            contenido: !!b.contenido,
+            direccion: !!b.direccion,
+            ciudad: !!b.ciudad,
+            zona: !!b.zona,
+            precioMensual: !!b.precioMensual
+          });
+        }
+        
+        return isValid;
+      });
+
+      console.log('✅ BODEGAS VÁLIDAS:', bodegasValidas.length);
 
       if (bodegasValidas.length === 0) {
         mostrarMensaje('error', '❌ Por favor completa al menos una mini bodega con todos los campos');
         return;
       }
 
-      // Validar precios
-      for (const bodega of bodegasValidas) {
+      // Validar precios con más detalle
+      for (let i = 0; i < bodegasValidas.length; i++) {
+        const bodega = bodegasValidas[i];
         const precio = parseFloat(bodega.precioMensual);
+        console.log(`💰 Validando precio bodega ${i}: "${bodega.precioMensual}" -> ${precio}`);
+        
         if (isNaN(precio) || precio <= 0) {
-          mostrarMensaje('error', `❌ El precio "${bodega.precioMensual}" no es válido. Debe ser un número mayor a 0.`);
+          mostrarMensaje('error', `❌ El precio "${bodega.precioMensual}" en la bodega ${i + 1} no es válido. Debe ser un número mayor a 0.`);
           return;
         }
       }
@@ -369,10 +411,13 @@ export function BodegaEditorProveedorScreen() {
       // ✅ Mostrar progreso
       mostrarMensaje('info', '🔄 Guardando empresa...', 10000);
 
-      // 🏢 PASO 1: Guardar/Actualizar empresa
+      // 🏢 PASO 1: Guardar/Actualizar empresa con debug
       let empresaData;
       
+      console.log('🏢 PASO 1: Procesando empresa...');
+      
       if (empresaId) {
+        console.log('🔄 Actualizando empresa existente:', empresaId);
         const { data, error } = await supabase
           .from('empresas')
           .update({ 
@@ -382,9 +427,15 @@ export function BodegaEditorProveedorScreen() {
           .eq('id', empresaId)
           .select();
         
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Error actualizando empresa:', error);
+          throw error;
+        }
+        
         empresaData = data[0];
+        console.log('✅ Empresa actualizada:', empresaData);
       } else {
+        console.log('➕ Creando nueva empresa...');
         const { data, error } = await supabase
           .from('empresas')
           .insert([{
@@ -394,15 +445,22 @@ export function BodegaEditorProveedorScreen() {
           }])
           .select();
         
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Error creando empresa:', error);
+          throw error;
+        }
+        
         empresaData = data[0];
         setEmpresaId(empresaData.id);
+        console.log('✅ Nueva empresa creada:', empresaData);
       }
 
-      // 🖼️ PASO 2: Subir y guardar imágenes del carrusel
+      // 🖼️ PASO 2: Imágenes del carrusel (mantener igual)
       mostrarMensaje('info', '📸 Subiendo imágenes del carrusel...', 10000);
+      console.log('📸 PASO 2: Procesando carrusel...', imagenesCarrusel.length, 'imágenes');
       
       const urlsCarrusel = await uploadCarruselImages(imagenesCarrusel);
+      console.log('✅ URLs carrusel obtenidas:', urlsCarrusel.length);
       
       await supabase
         .from('carrusel_imagenes')
@@ -421,11 +479,16 @@ export function BodegaEditorProveedorScreen() {
           .from('carrusel_imagenes')
           .insert(carruselData);
 
-        if (carruselError) throw carruselError;
+        if (carruselError) {
+          console.error('❌ Error guardando carrusel:', carruselError);
+          throw carruselError;
+        }
+        console.log('✅ Carrusel guardado correctamente');
       }
 
-      // 📝 PASO 3: Guardar descripción de empresa
+      // 📝 PASO 3: Descripción (mantener igual)
       mostrarMensaje('info', '📝 Guardando descripción...', 10000);
+      console.log('📝 PASO 3: Procesando descripción...');
       
       const urlsDescripcion = await uploadDescripcionImages(imagenesDescripcion);
       
@@ -453,40 +516,72 @@ export function BodegaEditorProveedorScreen() {
           .update(descripcionData)
           .eq('empresa_id', empresaData.id);
 
-        if (descError) throw descError;
+        if (descError) {
+          console.error('❌ Error actualizando descripción:', descError);
+          throw descError;
+        }
       } else {
         const { error: descError } = await supabase
           .from('empresa_descripcion')
           .insert([descripcionData]);
 
-        if (descError) throw descError;
+        if (descError) {
+          console.error('❌ Error insertando descripción:', descError);
+          throw descError;
+        }
+      }
+      console.log('✅ Descripción guardada correctamente');
+
+      // 📦 PASO 4: CORREGIDO - Clasificar bodegas correctamente
+      mostrarMensaje('info', '📦 Guardando mini bodegas...', 10000);
+      console.log('📦 PASO 4: INICIANDO PROCESAMIENTO DE MINI BODEGAS');
+
+      // ✅ OBTENER IDs QUE REALMENTE EXISTEN EN LA DB
+      let idsRealesEnDB = [];
+      try {
+        const { data: bodegasEnDB, error: consultaError } = await supabase
+          .from('mini_bodegas')
+          .select('id')
+          .eq('empresa_id', empresaData.id);
+
+        if (consultaError) {
+          console.error('❌ Error consultando IDs existentes:', consultaError);
+          throw consultaError;
+        }
+
+        idsRealesEnDB = bodegasEnDB.map(b => b.id);
+        console.log('🔍 IDs REALES EN DB:', idsRealesEnDB);
+      } catch (error) {
+        console.error('❌ Error obteniendo IDs de la DB:', error);
+        throw error;
       }
 
-      // 📦 PASO 4: Guardar mini bodegas
-      mostrarMensaje('info', '📦 Guardando mini bodegas...', 10000);
-      
-      await supabase
-        .from('mini_bodegas')
-        .delete()
-        .eq('empresa_id', empresaData.id);
+      // ✅ CLASIFICAR CORRECTAMENTE: solo son "existentes" las que están realmente en la DB
+      const bodegasExistentes = bodegasValidas.filter(b => b.id && idsRealesEnDB.includes(b.id));
+      const bodegasNuevas = bodegasValidas.filter(b => !b.id || !idsRealesEnDB.includes(b.id));
 
-      const bodegasGuardadas = [];
-      for (let i = 0; i < bodegasValidas.length; i++) {
-        const bodega = bodegasValidas[i];
+      console.log('📊 CLASIFICACIÓN CORREGIDA DE BODEGAS:');
+      console.log('  🔄 Existentes (realmente en DB):', bodegasExistentes.length, bodegasExistentes.map(b => ({ id: b.id, metraje: b.metraje })));
+      console.log('  ➕ Nuevas (no en DB):', bodegasNuevas.length, bodegasNuevas.map(b => ({ id: b.id || 'SIN ID', metraje: b.metraje, precio: b.precioMensual })));
+
+      const todasLasBodegasGuardadas = [];
+
+      // ✅ PROCESAR BODEGAS EXISTENTES (las que realmente están en DB)
+      console.log('🔄 PROCESANDO BODEGAS EXISTENTES...');
+      for (let i = 0; i < bodegasExistentes.length; i++) {
+        const bodega = bodegasExistentes[i];
         
-        mostrarMensaje('info', `📦 Procesando mini bodega ${i + 1} de ${bodegasValidas.length}...`, 10000);
+        mostrarMensaje('info', `📦 Actualizando bodega existente ${i + 1}/${bodegasExistentes.length}...`, 10000);
+        console.log(`🔄 Procesando bodega existente ${i + 1}:`, { id: bodega.id, metraje: bodega.metraje });
         
-        let imagenUrl = null;
-        if (bodega.imagen) {
-          if (typeof bodega.imagen === 'string') {
-            imagenUrl = bodega.imagen;
-          } else {
-            imagenUrl = await uploadImage(bodega.imagen);
-          }
+        let imagenUrl = bodega.imagen;
+        if (bodega.imagen && typeof bodega.imagen !== 'string') {
+          console.log('📸 Subiendo nueva imagen para bodega existente...');
+          imagenUrl = await uploadImage(bodega.imagen);
+          console.log('✅ Imagen subida:', imagenUrl);
         }
 
         const bodegaData = {
-          empresa_id: empresaData.id,
           metraje: bodega.metraje.trim(),
           descripcion: bodega.descripcion.trim(),
           contenido: bodega.contenido.trim(),
@@ -496,79 +591,286 @@ export function BodegaEditorProveedorScreen() {
           precio_mensual: parseFloat(bodega.precioMensual),
           imagen_url: imagenUrl,
           disponible: true,
-          orden: i
+          orden: i,
+          updated_at: new Date().toISOString()
         };
 
-        const { data: bodegaInsertada, error: bodegaError } = await supabase
+        console.log(`📝 Datos para actualizar bodega ${bodega.id}:`, bodegaData);
+
+        const { data: bodegaActualizada, error: bodegaError } = await supabase
           .from('mini_bodegas')
-          .insert([bodegaData])
+          .update(bodegaData)
+          .eq('id', bodega.id)
           .select();
 
-        if (bodegaError) throw bodegaError;
+        if (bodegaError) {
+          console.error(`❌ ERROR actualizando bodega ${bodega.id}:`, bodegaError);
+          throw bodegaError;
+        }
         
-        bodegasGuardadas.push(bodegaInsertada[0]);
+        console.log(`✅ Bodega ${bodega.id} actualizada exitosamente:`, bodegaActualizada[0]);
+        todasLasBodegasGuardadas.push(bodegaActualizada[0]);
       }
 
-      // 🔄 PASO 5: RECARGAR DATOS
-      mostrarMensaje('info', '🔄 Actualizando datos...', 10000);
+      // ✅ PROCESAR BODEGAS NUEVAS (incluyendo las que tienen ID falso)
+      console.log('➕ PROCESANDO BODEGAS NUEVAS...');
+      for (let i = 0; i < bodegasNuevas.length; i++) {
+        const bodega = bodegasNuevas[i];
+        
+        mostrarMensaje('info', `📦 Guardando nueva bodega ${i + 1}/${bodegasNuevas.length}...`, 10000);
+        console.log(`➕ Procesando nueva bodega ${i + 1}:`, { 
+          idOriginal: bodega.id || 'SIN ID',
+          metraje: bodega.metraje, 
+          precio: bodega.precioMensual,
+          ciudad: bodega.ciudad,
+          zona: bodega.zona 
+        });
+        
+        // ✅ VALIDACIÓN EXTRA POR BODEGA
+        console.log(`🔍 VALIDACIÓN DETALLADA BODEGA ${i + 1}:`, {
+          metraje: { valor: bodega.metraje, valido: !!bodega.metraje?.trim() },
+          descripcion: { valor: bodega.descripcion?.substring(0, 30) + '...', valido: !!bodega.descripcion?.trim() },
+          contenido: { valor: bodega.contenido?.substring(0, 30) + '...', valido: !!bodega.contenido?.trim() },
+          direccion: { valor: bodega.direccion?.substring(0, 30) + '...', valido: !!bodega.direccion?.trim() },
+          ciudad: { valor: bodega.ciudad, valido: !!bodega.ciudad?.trim() },
+          zona: { valor: bodega.zona, valido: !!bodega.zona },
+          precioMensual: { 
+            valor: bodega.precioMensual, 
+            parseado: parseFloat(bodega.precioMensual),
+            valido: !isNaN(parseFloat(bodega.precioMensual)) && parseFloat(bodega.precioMensual) > 0
+          }
+        });
+        
+        let imagenUrl = null;
+        if (bodega.imagen) {
+          if (typeof bodega.imagen === 'string') {
+            imagenUrl = bodega.imagen;
+            console.log('📸 Usando imagen existente (URL):', imagenUrl);
+          } else {
+            console.log('📸 Subiendo nueva imagen...');
+            try {
+              imagenUrl = await uploadImage(bodega.imagen);
+              console.log('✅ Nueva imagen subida:', imagenUrl);
+            } catch (imageError) {
+              console.error(`❌ Error subiendo imagen bodega ${i + 1}:`, imageError);
+              imagenUrl = null;
+            }
+          }
+        } else {
+          console.log('⚠️ Bodega sin imagen');
+        }
+
+        // ✅ LIMPIAR EL ID FALSO - no incluirlo en el insert
+        const bodegaData = {
+          empresa_id: empresaData.id,
+          metraje: bodega.metraje?.trim() || '',
+          descripcion: bodega.descripcion?.trim() || '',
+          contenido: bodega.contenido?.trim() || '',
+          direccion: bodega.direccion?.trim() || '',
+          ciudad: bodega.ciudad?.trim() || '',
+          zona: bodega.zona || '',
+          precio_mensual: parseFloat(bodega.precioMensual),
+          imagen_url: imagenUrl,
+          disponible: true,
+          orden: bodegasExistentes.length + i
+          // ✅ NO incluir 'id' aquí - dejar que la DB genere uno nuevo
+        };
+
+        // ✅ VALIDACIÓN FINAL DE DATOS ANTES DE INSERTAR
+        console.log(`📝 DATOS FINALES PARA INSERTAR nueva bodega ${i + 1}:`, bodegaData);
+        
+        // Validar campos críticos
+        const camposFaltantes = [];
+        if (!bodegaData.empresa_id) camposFaltantes.push('empresa_id');
+        if (!bodegaData.metraje) camposFaltantes.push('metraje');
+        if (!bodegaData.descripcion) camposFaltantes.push('descripcion');
+        if (!bodegaData.contenido) camposFaltantes.push('contenido');
+        if (!bodegaData.direccion) camposFaltantes.push('direccion');
+        if (!bodegaData.ciudad) camposFaltantes.push('ciudad');
+        if (!bodegaData.zona) camposFaltantes.push('zona');
+        if (isNaN(bodegaData.precio_mensual) || bodegaData.precio_mensual <= 0) camposFaltantes.push('precio_mensual');
+
+        if (camposFaltantes.length > 0) {
+          console.error(`❌ CAMPOS FALTANTES EN BODEGA ${i + 1}:`, camposFaltantes);
+          throw new Error(`Bodega ${i + 1} tiene campos faltantes: ${camposFaltantes.join(', ')}`);
+        }
+
+        console.log(`🚀 EJECUTANDO INSERT para bodega ${i + 1}...`);
+
+        try {
+          // ✅ AGREGAR UN DELAY PEQUEÑO ENTRE INSERTS PARA EVITAR CONFLICTOS
+          if (i > 0) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+
+          const { data: bodegaInsertada, error: bodegaError } = await supabase
+            .from('mini_bodegas')
+            .insert([bodegaData])
+            .select();
+
+          if (bodegaError) {
+            console.error(`❌ ERROR ESPECÍFICO insertando bodega ${i + 1}:`, {
+              error: bodegaError,
+              code: bodegaError.code,
+              message: bodegaError.message,
+              details: bodegaError.details,
+              hint: bodegaError.hint,
+              datos: bodegaData
+            });
+            
+            // Intentar identificar el problema específico
+            if (bodegaError.code === '23505') {
+              throw new Error(`Bodega ${i + 1}: Violación de clave única - posiblemente datos duplicados`);
+            } else if (bodegaError.code === '23503') {
+              throw new Error(`Bodega ${i + 1}: Violación de clave foránea - empresa_id no válido`);
+            } else if (bodegaError.code === '23514') {
+              throw new Error(`Bodega ${i + 1}: Violación de restricción de check - datos no válidos`);
+            } else if (bodegaError.message.includes('null value')) {
+              throw new Error(`Bodega ${i + 1}: Campo obligatorio faltante`);
+            } else {
+              throw new Error(`Bodega ${i + 1}: ${bodegaError.message}`);
+            }
+          }
+          
+          if (!bodegaInsertada || bodegaInsertada.length === 0) {
+            console.error(`❌ INSERT EXITOSO pero sin datos retornados para bodega ${i + 1}`);
+            throw new Error(`Bodega ${i + 1}: Insert exitoso pero sin datos retornados`);
+          }
+
+          console.log(`🎉 NUEVA BODEGA ${i + 1} INSERTADA EXITOSAMENTE:`, bodegaInsertada[0]);
+          todasLasBodegasGuardadas.push(bodegaInsertada[0]);
+
+        } catch (insertError) {
+          console.error(`💥 ERROR CAPTURADO insertando bodega ${i + 1}:`, insertError);
+          throw insertError;
+        }
+      }
+
+      // ✅ VERIFICACIÓN INMEDIATA después del bucle de bodegas nuevas
+      console.log('🔍 VERIFICACIÓN INMEDIATA EN LA DB...');
+      try {
+        const { data: verificacionDB, error: verError } = await supabase
+          .from('mini_bodegas')
+          .select('*')
+          .eq('empresa_id', empresaData.id)
+          .order('created_at');
+
+        if (verError) {
+          console.error('❌ Error verificando DB:', verError);
+        } else {
+          console.log('📊 VERIFICACIÓN INMEDIATA - Total en DB:', verificacionDB.length);
+          verificacionDB.forEach((b, i) => {
+            console.log(`  DB ${i + 1}: ID=${b.id}, Metraje=${b.metraje}, Precio=${b.precio_mensual}`);
+          });
+        }
+      } catch (verError) {
+        console.error('❌ Error en verificación:', verError);
+      }
+
+      console.log('📊 RESUMEN DE BODEGAS GUARDADAS:');
+      console.log('  🔄 Actualizadas:', bodegasExistentes.length);
+      console.log('  ➕ Insertadas:', bodegasNuevas.length);
+      console.log('  📦 Total guardadas:', todasLasBodegasGuardadas.length);
+
+      // ✅ LIMPIAR bodegas obsoletas (solo eliminar las que realmente existían antes)
+      if (idsRealesEnDB.length > 0) {
+        const idsQueSeMantienenActualizados = bodegasExistentes.map(b => b.id);
+        const idsAEliminar = idsRealesEnDB.filter(id => !idsQueSeMantienenActualizados.includes(id));
+        
+        if (idsAEliminar.length > 0) {
+          console.log('🗑️ Eliminando bodegas obsoletas con IDs:', idsAEliminar);
+          
+          const { error: deleteError } = await supabase
+            .from('mini_bodegas')
+            .delete()
+            .eq('empresa_id', empresaData.id)
+            .in('id', idsAEliminar);
+          
+          if (deleteError) {
+            console.error('❌ Error eliminando bodegas obsoletas:', deleteError);
+          } else {
+            console.log('✅ Bodegas obsoletas eliminadas');
+          }
+        }
+      }
+
+      // 🔄 PASO 5: ACTUALIZAR ESTADO LOCAL
+      mostrarMensaje('info', '🔄 Finalizando...', 10000);
+      console.log('🔄 PASO 5: ACTUALIZANDO ESTADO LOCAL');
       
-      // Recargar las bodegas guardadas con todos los campos
-      const { data: bodegasFinales } = await supabase
-        .from('mini_bodegas')
-        .select('*')
-        .eq('empresa_id', empresaData.id)
-        .order('orden');
+      // ✅ ORDENAR por campo 'orden'
+      const bodegasFinalesOrdenadas = todasLasBodegasGuardadas.sort((a, b) => (a.orden || 0) - (b.orden || 0));
+      
+      console.log('📋 ESTADO FINAL:');
+      console.log('  Total final:', bodegasFinalesOrdenadas.length);
+      bodegasFinalesOrdenadas.forEach((b, i) => {
+        console.log(`  ${i + 1}. ID: ${b.id}, Metraje: ${b.metraje}, Precio: ${b.precio_mensual}`);
+      });
 
-      if (bodegasFinales && bodegasFinales.length > 0) {
-        // ✅ MAPEO CORREGIDO - incluir todos los campos
-        setBodegas(bodegasFinales.map(b => ({
-          id: b.id,
-          metraje: b.metraje || "",
-          descripcion: b.descripcion || "",
-          contenido: b.contenido || "",
-          imagen: b.imagen_url,
-          direccion: b.direccion || "",
-          ciudad: b.ciudad || "", // ✅ AGREGADO
-          zona: b.zona || "", // ✅ AGREGADO
-          precioMensual: b.precio_mensual ? b.precio_mensual.toString() : "" // ✅ AGREGADO
-        })));
-      }
+      // ✅ ACTUALIZAR ESTADO LOCAL con TODAS las bodegas guardadas
+      const nuevoBodegasEstado = bodegasFinalesOrdenadas.map(b => ({
+        id: b.id, // ✅ CRÍTICO: incluir ID de las nuevas bodegas
+        metraje: b.metraje || "",
+        descripcion: b.descripcion || "",
+        contenido: b.contenido || "",
+        imagen: b.imagen_url,
+        direccion: b.direccion || "",
+        ciudad: b.ciudad || "",
+        zona: b.zona || "",
+        precioMensual: b.precio_mensual ? b.precio_mensual.toString() : ""
+      }));
 
-      // ✅ ÉXITO - Mensaje discreto y profesional
+      console.log('🎯 NUEVO ESTADO DE BODEGAS:', nuevoBodegasEstado.length, 'bodegas');
+      setBodegas(nuevoBodegasEstado);
+
+      // ✅ ÉXITO
       setPerfilCompleto(true);
-      mostrarMensaje('success', `✅ Perfil guardado correctamente (${bodegasFinales.length} mini bodegas)`);
+      mostrarMensaje('success', `🎉 ¡PERFIL GUARDADO EXITOSAMENTE! ${bodegasFinalesOrdenadas.length} mini bodegas guardadas`);
+      
+      console.log('🎉 PROCESO COMPLETADO EXITOSAMENTE');
 
     } catch (error) {
-      console.error('❌ Error guardando perfil completo:', error);
+      console.error('💥 ERROR CRÍTICO EN PROCESO DE GUARDADO:', error);
+      console.error('Stack trace:', error.stack);
       
-      // ✅ Manejo de errores específicos
       let mensajeError = 'Error desconocido';
       
       if (error.message.includes('violates foreign key constraint')) {
-        mensajeError = 'Error de relación en la base de datos';
+        mensajeError = 'Error de relación en la base de datos - verificar empresa_id';
       } else if (error.message.includes('duplicate key')) {
         mensajeError = 'Ya existe un registro con esos datos';
       } else if (error.message.includes('network')) {
         mensajeError = 'Error de conexión. Verifica tu internet';
       } else if (error.message.includes('storage')) {
         mensajeError = 'Error subiendo imágenes';
+      } else if (error.message.includes('null value')) {
+        mensajeError = 'Faltan campos obligatorios en la base de datos';
       } else {
         mensajeError = error.message;
       }
       
-      mostrarMensaje('error', `❌ ${mensajeError}`, 8000);
+      mostrarMensaje('error', `❌ ${mensajeError}`, 10000);
     } finally {
       setGuardandoTodo(false);
     }
   };
 
-  // Función recargarDatos actualizada
+  // ✅ ELIMINAR la función recargarDatos o usarla solo cuando sea necesario
   const recargarDatos = async () => {
     if (!empresaId) return;
     
+    // ✅ MOSTRAR ADVERTENCIA antes de recargar
+    const confirmar = window.confirm(
+      '⚠️ ¿Estás seguro de que quieres recargar los datos?\n\n' +
+      'Se perderán todos los cambios no guardados.\n' +
+      'Solo usa esta opción si hay problemas con los datos mostrados.'
+    );
+    
+    if (!confirmar) return;
+    
     setCargando(true);
     try {
-      // Recargar mini bodegas
+      // Recargar mini bodegas desde DB
       const { data: bodegasActualizadas } = await supabase
         .from('mini_bodegas')
         .select('*')
@@ -576,7 +878,6 @@ export function BodegaEditorProveedorScreen() {
         .order('orden');
       
       if (bodegasActualizadas && bodegasActualizadas.length > 0) {
-        // ✅ MAPEO CORREGIDO - incluir todos los campos
         setBodegas(bodegasActualizadas.map(b => ({
           id: b.id,
           metraje: b.metraje || "",
@@ -584,19 +885,19 @@ export function BodegaEditorProveedorScreen() {
           contenido: b.contenido || "",
           imagen: b.imagen_url,
           direccion: b.direccion || "",
-          ciudad: b.ciudad || "", // ✅ AGREGADO
-          zona: b.zona || "", // ✅ AGREGADO
-          precioMensual: b.precio_mensual ? b.precio_mensual.toString() : "" // ✅ AGREGADO y convertido a string
+          ciudad: b.ciudad || "",
+          zona: b.zona || "",
+          precioMensual: b.precio_mensual ? b.precio_mensual.toString() : ""
         })));
       } else {
-        // Si no hay bodegas, mantener la estructura por defecto
+        // Si no hay bodegas, mantener estructura básica
         setBodegas([
           { metraje: "", descripcion: "", contenido: "", imagen: null, direccion: "", ciudad: "", zona: "", precioMensual: "" },
           { metraje: "", descripcion: "", contenido: "", imagen: null, direccion: "", ciudad: "", zona: "", precioMensual: "" }
         ]);
       }
 
-      // Recargar carrusel
+      // Recargar otros datos...
       const { data: carruselActualizado } = await supabase
         .from('carrusel_imagenes')
         .select('imagen_url, orden')
@@ -607,7 +908,6 @@ export function BodegaEditorProveedorScreen() {
         setImagenesCarrusel(carruselActualizado.map(img => img.imagen_url));
       }
 
-      // Recargar descripción
       const { data: descripcionActualizada } = await supabase
         .from('empresa_descripcion')
         .select('*')
@@ -625,11 +925,49 @@ export function BodegaEditorProveedorScreen() {
         setImagenesDescripcion(descripcionActualizada.imagenes_urls || []);
       }
       
+      mostrarMensaje('success', '✅ Datos recargados desde la base de datos');
+      
     } catch (error) {
       console.error('Error recargando datos:', error);
       mostrarMensaje('error', `❌ Error recargando datos: ${error.message}`, 5000);
     } finally {
       setCargando(false);
+    }
+  };
+
+  // Función para verificar las bodegas en la DB (temporal para debug)
+  const verificarBodegasEnDB = async () => {
+    if (!empresaId) {
+      console.log('❌ No hay empresa ID para verificar');
+      return;
+    }
+
+    try {
+      const { data: bodegasDB, error } = await supabase
+        .from('mini_bodegas')
+        .select('*')
+        .eq('empresa_id', empresaId)
+        .order('orden');
+
+      if (error) {
+        console.error('❌ Error consultando bodegas:', error);
+        return;
+      }
+
+      console.log('🔍 VERIFICACIÓN DE BODEGAS EN DB:');
+      console.log('  Total en DB:', bodegasDB.length);
+      console.log('  Total en estado local:', bodegas.length);
+      
+      bodegasDB.forEach((b, i) => {
+        console.log(`  DB ${i + 1}: ID=${b.id}, Metraje=${b.metraje}, Precio=${b.precio_mensual}, Empresa=${b.empresa_id}`);
+      });
+
+      bodegas.forEach((b, i) => {
+        console.log(`  Estado ${i + 1}: ID=${b.id || 'SIN ID'}, Metraje=${b.metraje}, Precio=${b.precioMensual}`);
+      });
+
+    } catch (error) {
+      console.error('❌ Error en verificación:', error);
     }
   };
 
@@ -836,6 +1174,18 @@ export function BodegaEditorProveedorScreen() {
                 <span className="mr-2">🔄</span>
               )}
               Recargar datos
+            </button>
+          </div>
+        )}
+
+        {/* Agregar este botón temporal en el JSX para debug */}
+        {process.env.NODE_ENV === 'development' && empresaId && (
+          <div className="text-center mt-4">
+            <button
+              onClick={verificarBodegasEnDB}
+              className="bg-blue-500 text-white px-4 py-2 rounded text-sm"
+            >
+              🔍 Verificar Bodegas en DB (Debug)
             </button>
           </div>
         )}
