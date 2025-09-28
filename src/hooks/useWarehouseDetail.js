@@ -20,6 +20,8 @@ export function useWarehouseDetail(id) {
       setLoading(true)
       setError(null)
 
+      console.log('🔍 useWarehouseDetail - Consultando empresa ID:', id)
+
       const { data: empresa, error: empresaError } = await supabase
         .from('empresas')
         .select(`
@@ -31,27 +33,64 @@ export function useWarehouseDetail(id) {
             caracteristicas,
             imagenes_urls
           ),
-          mini_bodegas(*)
+          mini_bodegas!inner(*)
         `)
         .eq('id', id)
+        // ✅ FILTRAR SOLO DISPONIBLES (si la columna existe)
+        .eq('mini_bodegas.disponible', true)
         .single()
 
       if (empresaError) {
+        console.error('❌ Error consultando empresa:', empresaError)
         throw empresaError
       }
 
+      console.log('✅ DATOS CRUDOS (solo disponibles):', {
+        empresa: empresa?.nombre,
+        totalMiniBodegas: empresa?.mini_bodegas?.length || 0,
+        miniBodegasDetalle: empresa?.mini_bodegas?.map(b => ({
+          id: b.id,
+          ciudad: b.ciudad,
+          zona: b.zona,
+          metraje: b.metraje,
+          precio: b.precio_mensual,
+          disponible: b.disponible
+        })) || []
+      })
+
       if (!empresa) {
+        console.log('⚠️ No se encontró empresa con ID:', id)
         setWarehouse(null)
         return
       }
 
       const descripcion = empresa.empresa_descripcion
 
-      // Transformar datos (SIN FILTRAR NADA AÚN)
-      const carruselImagenes = empresa.carrusel_imagenes?.sort((a, b) => a.orden - b.orden) || []
+      // ✅ SOLO MINI BODEGAS DISPONIBLES (ya vienen filtradas)
       const miniBodegas = empresa.mini_bodegas || []
+      
+      console.log('📦 Mini bodegas disponibles:', {
+        total: miniBodegas.length,
+        todas: miniBodegas.map(b => ({
+          id: b.id,
+          ciudad: b.ciudad,
+          disponible: b.disponible
+        }))
+      })
 
-      // Calcular datos agregados de TODAS las mini bodegas (sin filtrar)
+      // Si no hay bodegas disponibles, devolver empresa sin bodegas
+      if (miniBodegas.length === 0) {
+        console.log('⚠️ No hay mini bodegas disponibles para esta empresa')
+        setWarehouse({
+          id: empresa.id,
+          name: empresa.nombre,
+          miniBodegas: [],
+          totalBodegas: 0
+        })
+        return
+      }
+
+      // Calcular datos agregados solo de bodegas DISPONIBLES
       const precios = miniBodegas.map(b => parseFloat(b.precio_mensual)).filter(p => !isNaN(p))
       const metrajes = miniBodegas.map(b => parseFloat(b.metraje)).filter(m => !isNaN(m))
       
@@ -70,6 +109,12 @@ export function useWarehouseDetail(id) {
       const ciudades = [...new Set(miniBodegas.map(b => b.ciudad).filter(Boolean))]
       const zonas = [...new Set(miniBodegas.map(b => b.zona).filter(Boolean))]
 
+      console.log('🌍 UBICACIONES PROCESADAS (disponibles):', {
+        ciudadesUnicas: ciudades,
+        zonasUnicas: zonas,
+        totalUbicaciones: ubicaciones.length
+      })
+
       // Características
       const features = descripcion?.caracteristicas || [
         "Vigilancia 24/7",
@@ -78,7 +123,8 @@ export function useWarehouseDetail(id) {
         "Fácil acceso vehicular"
       ]
 
-      // Imágenes
+      // Imágenes del carrusel
+      const carruselImagenes = empresa.carrusel_imagenes?.sort((a, b) => a.orden - b.orden) || []
       const imagenesCarrusel = carruselImagenes
         .filter(img => img.imagen_url)
         .map(img => img.imagen_url)
@@ -86,7 +132,7 @@ export function useWarehouseDetail(id) {
       // Limitar a máximo 3 imágenes
       let imagenesPrincipal = imagenesCarrusel.slice(0, 3)
 
-      // Si no hay suficientes, completar con imágenes de mini bodegas (máximo 3 total)
+      // Si no hay suficientes, completar con imágenes de mini bodegas
       if (imagenesPrincipal.length < 3) {
         const imagenesMiniBodegas = miniBodegas
           .filter(b => b.imagen_url)
@@ -132,12 +178,20 @@ export function useWarehouseDetail(id) {
         companyImage: companyImage,
         rating: 4.5,
         reviewCount: Math.floor(Math.random() * 50) + 10,
-        miniBodegas: miniBodegas,
+        miniBodegas: miniBodegas, // ✅ SOLO BODEGAS DISPONIBLES
         empresa: empresa,
         totalBodegas: miniBodegas.length,
-        disponible: miniBodegas.some(b => b.disponible !== false),
+        disponible: miniBodegas.length > 0, // ✅ TRUE si hay al menos una disponible
         created_at: empresa.created_at
       }
+
+      console.log('✅ WAREHOUSE FINAL (solo disponibles):', {
+        id: warehouse.id,
+        name: warehouse.name,
+        totalMiniBodegas: warehouse.miniBodegas.length,
+        cities: warehouse.cities,
+        disponible: warehouse.disponible
+      })
 
       setWarehouse(warehouse)
 
@@ -149,5 +203,14 @@ export function useWarehouseDetail(id) {
     }
   }
 
-  return { warehouse, loading, error, refetch: fetchWarehouseDetail }
+  const refetchWarehouseDetail = async () => {
+    await fetchWarehouseDetail();
+  };
+
+  return { 
+    warehouse, 
+    loading, 
+    error, 
+    refetch: refetchWarehouseDetail 
+  }
 }

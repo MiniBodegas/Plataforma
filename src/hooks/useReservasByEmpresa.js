@@ -1,197 +1,143 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { actualizarDisponibilidadBodega } from '../services/bodegasService';
 
 export function useReservasByEmpresa() {
   const [reservas, setReservas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { user } = useAuth();
+
+  useEffect(() => {
+    fetchReservas();
+  }, []);
 
   const fetchReservas = async () => {
     try {
       setLoading(true);
       setError(null);
+      
+      console.log('🔍 Obteniendo todas las reservas...');
 
-      if (!user?.id) {
-        console.log('❌ No hay usuario logueado');
-        setReservas([]);
-        return;
-      }
-
-      console.log('🔍 Obteniendo reservas para empresa del usuario:', user.id);
-
-      // 1. Obtener la empresa del usuario
-      const { data: empresa, error: empresaError } = await supabase
-        .from('empresas')
-        .select('id, nombre')
-        .eq('user_id', user.id)
-        .single();
-
-      if (empresaError || !empresa) {
-        console.error('❌ No se encontró empresa:', empresaError);
-        throw new Error('No se encontró la empresa asociada al usuario');
-      }
-
-      console.log('✅ Empresa encontrada:', empresa);
-
-      // 2. Obtener reservas de las mini bodegas de la empresa
-      const { data: reservasData, error: reservasError } = await supabase
+      // ✅ CONSULTA SIMPLE: Obtener todas las reservas con sus bodegas
+      const { data: reservas, error } = await supabase
         .from('reservas')
         .select(`
           *,
-          mini_bodegas!inner(
+          mini_bodegas(
             id,
             metraje,
-            direccion,
             ciudad,
             zona,
             precio_mensual,
-            empresa_id
+            imagen_url
           )
         `)
-        .eq('mini_bodegas.empresa_id', empresa.id)
         .order('created_at', { ascending: false });
 
-      if (reservasError) {
-        console.error('❌ Error obteniendo reservas:', reservasError);
-        throw reservasError;
+      if (error) {
+        console.error('❌ Error obteniendo reservas:', error);
+        throw error;
       }
 
-      console.log('📦 Reservas encontradas:', reservasData?.length || 0, reservasData);
+      console.log('✅ Reservas obtenidas:', {
+        total: reservas?.length || 0,
+        reservas: reservas
+      });
 
-      // 3. Enriquecer datos de reservas
-      const reservasEnriquecidas = await Promise.all(
-        (reservasData || []).map(async (reserva) => {
-          // Obtener datos del usuario que hizo la reserva
-          const { data: userData } = await supabase
-            .from('auth.users')
-            .select('email')
-            .eq('id', reserva.user_id)
-            .single();
-
-          return {
-            ...reserva,
-            usuarioEmail: userData?.email || 'Email no disponible',
-            // Formatear fechas
-            fechaInicioFormateada: new Date(reserva.fecha_inicio).toLocaleDateString('es-ES'),
-            fechaFinFormateada: new Date(reserva.fecha_fin).toLocaleDateString('es-ES'),
-            fechaCreacionFormateada: new Date(reserva.created_at).toLocaleDateString('es-ES'),
-            // Información de la bodega
-            infoBodega: {
-              titulo: `Mini bodega de ${reserva.mini_bodegas.metraje || 'N/A'}`,
-              ubicacion: `${reserva.mini_bodegas.zona || ''} - ${reserva.mini_bodegas.ciudad || ''}`.trim(),
-              direccion: reserva.mini_bodegas.direccion || 'Sin dirección'
-            }
-          };
-        })
-      );
-
-      setReservas(reservasEnriquecidas);
+      setReservas(reservas || []);
 
     } catch (err) {
-      console.error('❌ Error en useReservasByEmpresa:', err);
+      console.error('❌ Error en fetchReservas:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const actualizarEstadoReserva = async (reservaId, nuevoEstado, motivo = '') => {
+  const actualizarEstadoReserva = async (reservaId, nuevoEstado, motivoRechazo = null) => {
     try {
-      console.log('🔄 Actualizando reserva:', reservaId, 'a estado:', nuevoEstado);
+      console.log('🔄 Actualizando estado de reserva:', { reservaId, nuevoEstado, motivoRechazo });
 
-      const updateData = {
+      const updateData = { 
         estado: nuevoEstado,
         updated_at: new Date().toISOString()
       };
 
-      // Agregar campos específicos según el estado
       if (nuevoEstado === 'aceptada') {
         updateData.fecha_aceptacion = new Date().toISOString();
       } else if (nuevoEstado === 'rechazada') {
         updateData.fecha_rechazo = new Date().toISOString();
-        if (motivo) {
-          updateData.motivo_rechazo = motivo;
+        if (motivoRechazo && motivoRechazo.trim()) {
+          updateData.motivo_rechazo = motivoRechazo.trim();
         }
       }
 
-      const { error } = await supabase
+      const { data: reservaActualizada, error } = await supabase
         .from('reservas')
         .update(updateData)
-        .eq('id', reservaId);
+        .eq('id', reservaId)
+        .select(`
+          *,
+          mini_bodegas(id, metraje, ciudad, zona, precio_mensual)
+        `)
+        .single();
 
       if (error) {
         console.error('❌ Error actualizando reserva:', error);
         throw error;
       }
 
-      console.log('✅ Reserva actualizada correctamente');
+      console.log('✅ Reserva actualizada:', reservaActualizada);
 
-      // Crear notificación para el usuario
-      await notificarUsuario(reservaId, nuevoEstado);
-
-      // Recargar reservas para reflejar el cambio
-      await fetchReservas();
-
-      return { success: true };
-    } catch (err) {
-      console.error('❌ Error actualizando reserva:', err);
-      return { success: false, error: err.message };
-    }
-  };
-
-  // Función para notificar al usuario
-  const notificarUsuario = async (reservaId, nuevoEstado) => {
-    try {
-      // Obtener datos de la reserva para la notificación
-      const { data: reserva } = await supabase
-        .from('reservas')
-        .select('user_id, mini_bodega_id')
-        .eq('id', reservaId)
-        .single();
-
-      if (!reserva) return;
-
-      let titulo, mensaje;
-      if (nuevoEstado === 'aceptada') {
-        titulo = '¡Reserva aceptada!';
-        mensaje = 'Tu solicitud de reserva ha sido aceptada. Ya puedes proceder con el pago.';
-      } else if (nuevoEstado === 'rechazada') {
-        titulo = 'Reserva rechazada';
-        mensaje = 'Lamentablemente tu solicitud de reserva ha sido rechazada. Puedes intentar con otra mini bodega.';
+      // ✅ CAMBIAR DISPONIBILIDAD DE BODEGA SEGÚN ESTADO
+      if (nuevoEstado === 'aceptada' && reservaActualizada.mini_bodega_id) {
+        try {
+          await actualizarDisponibilidadBodega(
+            reservaActualizada.mini_bodega_id,
+            false,
+            `Reservada - Cliente: ${reservaActualizada.numero_documento}`
+          );
+          console.log('✅ Bodega marcada como no disponible');
+        } catch (errorBodega) {
+          console.error('⚠️ Error actualizando disponibilidad:', errorBodega);
+        }
       }
 
-      // Insertar notificación
-      const { error: notifError } = await supabase
-        .from('notificaciones')
-        .insert([{
-          user_id: reserva.user_id,
-          tipo: `reserva_${nuevoEstado}`,
-          titulo: titulo,
-          mensaje: mensaje,
-          reserva_id: reservaId,
-          leida: false,
-          created_at: new Date().toISOString()
-        }]);
-
-      if (notifError) {
-        console.warn('⚠️ Error creando notificación:', notifError);
+      if (nuevoEstado === 'rechazada' && reservaActualizada.mini_bodega_id) {
+        try {
+          await actualizarDisponibilidadBodega(
+            reservaActualizada.mini_bodega_id,
+            true,
+            null
+          );
+          console.log('✅ Bodega liberada');
+        } catch (errorBodega) {
+          console.error('⚠️ Error liberando bodega:', errorBodega);
+        }
       }
-    } catch (err) {
-      console.warn('⚠️ Error en notificación:', err);
+
+      // Actualizar estado local
+      setReservas(prevReservas => 
+        prevReservas.map(reserva => 
+          reserva.id === reservaId 
+            ? { ...reserva, ...updateData }
+            : reserva
+        )
+      );
+
+      return { success: true, data: reservaActualizada };
+
+    } catch (error) {
+      console.error('❌ Error en actualizarEstadoReserva:', error);
+      return { success: false, error: error.message };
     }
   };
-
-  useEffect(() => {
-    fetchReservas();
-  }, [user?.id]);
 
   return {
     reservas,
     loading,
     error,
-    refetch: fetchReservas,
-    actualizarEstadoReserva
+    actualizarEstadoReserva,
+    refetch: fetchReservas
   };
 }

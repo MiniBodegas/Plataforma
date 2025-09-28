@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { CompanyDescription, FormStepper, ReservationCard } from "../../components/index";
+import { marcarBodegaComoReservada, crearReserva } from "../../services/bodegasService";
 
 export function Reservation() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Estado compartido para los datos del formulario
   const [reservationData, setReservationData] = useState({
@@ -12,15 +14,11 @@ export function Reservation() {
     numeroCelular: '',
     fechaInicio: '',
     servicios: [],
-    // Datos de la bodega seleccionada
     bodegaSeleccionada: null,
   });
 
-  // ✅ DEBUG: Ver qué datos llegan de la navegación
-  console.log('🔍 Reservation - Datos de navegación:', {
-    locationState: location.state,
-    bodegaSeleccionada: location.state?.bodegaSeleccionada
-  });
+  // ✅ NUEVO: Estado para manejar el proceso de reserva
+  const [reservaEnProceso, setReservaEnProceso] = useState(false);
 
   // Obtener datos de la bodega desde la navegación
   useEffect(() => {
@@ -31,6 +29,31 @@ export function Reservation() {
       }));
     }
   }, [location.state]);
+
+  // ✅ FUNCIÓN PARA MANEJAR EL ÉXITO DE LA RESERVA
+  const handleReservationSuccess = async (bodegaReservada) => {
+    try {
+      setReservaEnProceso(true);
+      
+      console.log('🎉 Reserva exitosa, redirigiendo a confirmación:', bodegaReservada);
+      
+      // ✅ LA ACTUALIZACIÓN DE DISPONIBILIDAD YA SE HIZO EN FormStepper
+      // Solo redirigir a confirmación
+      navigate('/confirmacion-reserva', {
+        state: {
+          reservaConfirmada: true,
+          bodegaReservada: bodegaReservada,
+          datosReserva: reservationData
+        }
+      });
+      
+    } catch (error) {
+      console.error('❌ Error procesando reserva exitosa:', error);
+      alert('Error al confirmar la reserva. Por favor contacta soporte.');
+    } finally {
+      setReservaEnProceso(false);
+    }
+  };
 
   // Función para actualizar los datos desde FormStepper
   const handleFormDataChange = (field, value) => {
@@ -113,6 +136,19 @@ export function Reservation() {
       )}
       
       <section className="max-w-[1400px] mx-auto px-6 py-8">
+        {/* ✅ MOSTRAR ESTADO SI ESTÁ PROCESANDO */}
+        {reservaEnProceso && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
+              <div className="text-center">
+                <div className="w-8 h-8 border-4 border-[#4B799B] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-gray-700">Confirmando reserva...</p>
+                <p className="text-sm text-gray-500 mt-2">Por favor espera</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ✅ TÍTULO DINÁMICO CON DATOS REALES */}
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold mb-2" style={{ color: "#2C3A61" }}>
@@ -132,6 +168,9 @@ export function Reservation() {
             <FormStepper 
               onDataChange={handleFormDataChange} 
               reservationData={reservationData} 
+              // ✅ PASAR LA FUNCIÓN DE ÉXITO
+              onReservationSuccess={handleReservationSuccess}
+              disabled={reservaEnProceso}
             />
           </div>
         </div>
