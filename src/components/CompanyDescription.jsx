@@ -29,7 +29,6 @@ export function CompanyDescription({
   const mainImage = warehouse?.companyImage || 
                    "https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop";
 
-
   // Características por defecto si no hay ninguna
   const defaultFeatures = [
     "Vigilancia 24/7 con cámaras de seguridad",

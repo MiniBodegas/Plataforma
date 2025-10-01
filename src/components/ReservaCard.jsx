@@ -1,31 +1,81 @@
 import { useState } from 'react';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+// ✅ AGREGAR ESTAS IMPORTACIONES QUE FALTAN
+import { User, MapPin, Calendar, Check, X, Clock, CheckCircle, XCircle } from 'lucide-react';
 
 export function ReservaCard({ reserva, onAceptar, onRechazar, disabled }) {
+  // ✅ USAR CAMPOS REALES DE LA ESTRUCTURA
+  const cliente = {
+    documento: reserva.numero_documento,
+    celular: reserva.numero_celular,
+    tipoDocumento: reserva.tipo_documento
+  };
+
+  const bodega = reserva.mini_bodegas || {};
+  const fechaInicio = reserva.fecha_inicio;
+  const fechaFin = reserva.fecha_fin;
+  const servicios = reserva.servicios_adicionales || [];
+  const precioTotal = reserva.precio_total;
+
   const [mostrarModalRechazo, setMostrarModalRechazo] = useState(false);
   const [motivoRechazo, setMotivoRechazo] = useState('');
+
+  // ✅ AGREGAR FUNCIÓN getIcon QUE FALTABA
+  const getIcon = () => {
+    switch (reserva.estado) {
+      case 'pendiente':
+        return '⏳';
+      case 'aceptada':
+        return '✅';
+      case 'rechazada':
+        return '❌';
+      case 'cancelada':
+        return '🚫';
+      default:
+        return '📋';
+    }
+  };
+
+  // ✅ AGREGAR FUNCIÓN getBadgeColor QUE FALTABA
+  const getBadgeColor = () => {
+    switch (reserva.estado) {
+      case 'pendiente':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'aceptada':
+        return 'bg-green-100 text-green-800';
+      case 'rechazada':
+        return 'bg-red-100 text-red-800';
+      case 'cancelada':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   const getEstadoColor = (estado) => {
     switch (estado) {
       case 'pendiente':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'border-yellow-200';
       case 'aceptada':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'border-green-200';
       case 'rechazada':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'border-red-200';
       case 'cancelada':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'border-gray-200';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'border-gray-200';
     }
   };
 
-  const getEstadoTexto = (estado) => {
-    switch (estado) {
+  // ✅ AGREGAR FUNCIÓN getEstadoTexto QUE FALTABA
+  const getEstadoTexto = () => {
+    switch (reserva.estado) {
       case 'pendiente': return 'Pendiente';
       case 'aceptada': return 'Aceptada';
       case 'rechazada': return 'Rechazada';
       case 'cancelada': return 'Cancelada';
-      default: return estado;
+      default: return reserva.estado;
     }
   };
 
@@ -36,115 +86,146 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled }) {
   };
 
   return (
-    <>
-      <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-          
-          {/* Información principal */}
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3">
-              <h4 className="font-semibold text-lg text-[#2C3A61]">
-                {reserva.infoBodega.titulo}
-              </h4>
-              <span className={`text-xs px-3 py-1 rounded-full font-medium border ${getEstadoColor(reserva.estado)}`}>
-                {getEstadoTexto(reserva.estado)}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-700">
-              <div>
-                <span className="font-medium">📍 Ubicación:</span>
-                <p className="text-gray-600">{reserva.infoBodega.ubicacion}</p>
-              </div>
-              <div>
-                <span className="font-medium">📅 Fecha inicio:</span>
-                <p className="text-gray-600">{reserva.fechaInicioFormateada}</p>
-              </div>
-              <div>
-                <span className="font-medium">👤 Cliente:</span>
-                <p className="text-gray-600">{reserva.usuarioEmail}</p>
-              </div>
-              <div>
-                <span className="font-medium">📞 Celular:</span>
-                <p className="text-gray-600">{reserva.numero_celular}</p>
-              </div>
-              <div>
-                <span className="font-medium">🆔 Documento:</span>
-                <p className="text-gray-600">{reserva.tipo_documento} {reserva.numero_documento}</p>
-              </div>
-              <div>
-                <span className="font-medium">💰 Total:</span>
-                <p className="text-gray-600 font-semibold">${reserva.precio_total?.toLocaleString()}</p>
-              </div>
-            </div>
-
-            {/* Servicios adicionales */}
-            {reserva.servicios_adicionales && reserva.servicios_adicionales.length > 0 && (
-              <div className="mt-3">
-                <span className="font-medium text-sm text-gray-700">🔧 Servicios adicionales:</span>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {reserva.servicios_adicionales.map((servicio, index) => (
-                    <span key={index} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                      {servicio}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Motivo de rechazo si existe */}
-            {reserva.estado === 'rechazada' && reserva.motivo_rechazo && (
-              <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3">
-                <span className="font-medium text-sm text-red-700">Motivo del rechazo:</span>
-                <p className="text-red-600 text-sm mt-1">{reserva.motivo_rechazo}</p>
-              </div>
-            )}
+    <div className={`bg-white rounded-xl shadow-sm border-2 ${getEstadoColor(reserva.estado)} p-6 transition-all duration-300`}>
+      {/* Header con estado */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">{getIcon()}</span>
+          <div>
+            <h3 className="font-bold text-lg text-gray-800">
+              Reserva #{reserva.id.slice(0, 8)}
+            </h3>
+            <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getBadgeColor()}`}>
+              {getEstadoTexto()}
+            </span>
           </div>
-
-          {/* Acciones */}
-          {reserva.estado === 'pendiente' && (
-            <div className="flex flex-col gap-3 lg:flex-shrink-0">
-              <button
-                onClick={() => onAceptar(reserva.id)}
-                disabled={disabled}
-                className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                ✅ Aceptar
-              </button>
-              
-              <button
-                onClick={() => setMostrarModalRechazo(true)}
-                disabled={disabled}
-                className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                ❌ Rechazar
-              </button>
-            </div>
-          )}
-
-          {/* Información de fecha para reservas no pendientes */}
-          {reserva.estado !== 'pendiente' && (
-            <div className="lg:flex-shrink-0 text-right">
-              <div className="text-sm text-gray-500">
-                {reserva.estado === 'aceptada' && reserva.fecha_aceptacion && (
-                  <p>Aceptada: {new Date(reserva.fecha_aceptacion).toLocaleDateString('es-ES')}</p>
-                )}
-                {reserva.estado === 'rechazada' && reserva.fecha_rechazo && (
-                  <p>Rechazada: {new Date(reserva.fecha_rechazo).toLocaleDateString('es-ES')}</p>
-                )}
-              </div>
-            </div>
-          )}
         </div>
-
-        {/* Información adicional expandible */}
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <div className="flex justify-between items-center text-sm text-gray-500">
-            <span>Solicitud creada: {reserva.fechaCreacionFormateada}</span>
-            <span>ID: #{reserva.id.slice(0, 8)}</span>
-          </div>
+        
+        {/* Fechas importantes */}
+        <div className="text-right text-sm text-gray-500">
+          <p>Creada: {format(new Date(reserva.created_at), 'dd/MM/yyyy')}</p>
+          {reserva.fecha_aceptacion && (
+            <p className="text-green-600">Aceptada: {format(new Date(reserva.fecha_aceptacion), 'dd/MM/yyyy')}</p>
+          )}
+          {reserva.fecha_rechazo && (
+            <p className="text-red-600">Rechazada: {format(new Date(reserva.fecha_rechazo), 'dd/MM/yyyy')}</p>
+          )}
         </div>
       </div>
+
+      {/* Info del cliente */}
+      <div className="bg-gray-50 rounded-lg p-4 mb-4">
+        <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+          <User className="h-4 w-4" />
+          Información del Cliente
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+          <p><span className="font-medium">Documento:</span> {cliente.tipoDocumento} {cliente.documento}</p>
+          <p><span className="font-medium">Celular:</span> {cliente.celular}</p>
+        </div>
+      </div>
+
+      {/* Info de la bodega */}
+      <div className="bg-blue-50 rounded-lg p-4 mb-4">
+        <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+          <MapPin className="h-4 w-4" />
+          Detalles de la Mini Bodega
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+          <p><span className="font-medium">Tamaño:</span> {bodega.metraje || 'N/A'}m³</p>
+          <p><span className="font-medium">Ubicación:</span> {bodega.ciudad || 'N/A'} - {bodega.zona || 'N/A'}</p>
+          <p><span className="font-medium">Precio:</span> ${Number(bodega.precio_mensual || 0).toLocaleString()}/mes</p>
+          <p><span className="font-medium">Total:</span> ${Number(precioTotal || 0).toLocaleString()}</p>
+        </div>
+      </div>
+
+      {/* Período de reserva */}
+      <div className="bg-green-50 rounded-lg p-4 mb-4">
+        <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+          <Calendar className="h-4 w-4" />
+          Período de Reserva
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+          <p><span className="font-medium">Inicio:</span> {fechaInicio}</p>
+          <p><span className="font-medium">Fin:</span> {fechaFin}</p>
+        </div>
+      </div>
+
+      {/* Servicios adicionales */}
+      {servicios && servicios.length > 0 && (
+        <div className="bg-purple-50 rounded-lg p-4 mb-4">
+          <h4 className="font-semibold text-gray-700 mb-2">Servicios Adicionales</h4>
+          <div className="flex flex-wrap gap-2">
+            {servicios.map((servicio, index) => (
+              <span 
+                key={index}
+                className="bg-purple-200 text-purple-800 px-2 py-1 rounded text-sm"
+              >
+                {servicio}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Botones de acción para reservas pendientes */}
+      {reserva.estado === 'pendiente' && (
+        <div className="flex gap-3 pt-4 border-t">
+          <button
+            onClick={() => onAceptar(reserva.id)}
+            disabled={disabled}
+            className="flex-1 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            {disabled ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Procesando...
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4" />
+                Aceptar Reserva
+              </>
+            )}
+          </button>
+          
+          <button
+            onClick={() => setMostrarModalRechazo(true)}
+            disabled={disabled}
+            className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            {disabled ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Procesando...
+              </>
+            ) : (
+              <>
+                <X className="h-4 w-4" />
+                Rechazar Reserva
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Mostrar motivo de rechazo si existe */}
+      {reserva.estado === 'rechazada' && reserva.motivo_rechazo && (
+        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-700 text-sm">
+            <span className="font-medium">Motivo de rechazo:</span> {reserva.motivo_rechazo}
+          </p>
+        </div>
+      )}
+
+      {/* Mostrar notas de la empresa si existen */}
+      {reserva.notas_empresa && (
+        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-blue-700 text-sm">
+            <span className="font-medium">Notas:</span> {reserva.notas_empresa}
+          </p>
+        </div>
+      )}
 
       {/* Modal para motivo de rechazo */}
       {mostrarModalRechazo && (
@@ -186,6 +267,6 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled }) {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

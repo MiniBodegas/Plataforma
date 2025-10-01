@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from 'react-router-dom';
 import { useCreateReservation } from '../hooks/useCreateReservation';
+import { marcarBodegaComoReservada, crearReserva } from '../services/bodegasService';
 
-export function FormStepper({ onDataChange, reservationData }) {
+export function FormStepper({ onDataChange, reservationData, onReservationSuccess }) {
   const { user, signIn, signUp } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [showLogin, setShowLogin] = useState(false);
@@ -21,7 +22,7 @@ export function FormStepper({ onDataChange, reservationData }) {
     ...reservationData
   });
   const navigate = useNavigate();
-  const { createReservation, loading: creatingReservation, error } = useCreateReservation();
+  const { createReservation, loading: creatingReservation, error, actualizarDisponibilidadBodega } = useCreateReservation();
 
   // Verificar si el usuario ya está logueado al montar el componente
   useEffect(() => {
@@ -198,14 +199,70 @@ export function FormStepper({ onDataChange, reservationData }) {
     const result = await createReservation(dataToSend);
 
     if (result.success) {
-      navigate('/reserva-confirmada', {
-        state: {
-          reserva: result.reserva,
-          message: result.message
+      // ✅ DESPUÉS DE CONFIRMAR LA RESERVA, ACTUALIZAR DISPONIBILIDAD
+      if (reservationData.bodegaSeleccionada?.id) {
+        await actualizarDisponibilidadBodega(reservationData.bodegaSeleccionada.id, false);
+      }
+      
+      // Notificar éxito al componente padre
+      if (onReservationSuccess) {
+        onReservationSuccess(reservationData.bodegaSeleccionada);
+      }
+      
+      // Redirigir o mostrar confirmación
+      navigate('/confirmacion-reserva', { 
+        state: { 
+          reservaConfirmada: true,
+          bodegaReservada: reservationData.bodegaSeleccionada
         }
       });
     } else {
       setAuthError(`Error creando la reserva: ${result.error}`);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!currentStep === steps.length - 1) return;
+    
+    setIsLoading(true);
+    setError('');
+
+    try {
+      console.log('📝 Enviando reserva:', reservationData);
+
+      // ✅ 1. CREAR LA RESERVA PRIMERO
+      const reservaCreada = await crearReserva({
+        bodegaId: reservationData.bodegaSeleccionada?.id,
+        empresaId: reservationData.bodegaSeleccionada?.empresaId,
+        numeroDocumento: reservationData.numeroDocumento,
+        numeroCelular: reservationData.numeroCelular,
+        fechaInicio: reservationData.fechaInicio,
+        servicios: reservationData.servicios || []
+      });
+
+      console.log('✅ Reserva creada exitosamente:', reservaCreada);
+
+      // ✅ 2. MARCAR BODEGA COMO NO DISPONIBLE AUTOMÁTICAMENTE
+      if (reservationData.bodegaSeleccionada?.id) {
+        await marcarBodegaComoReservada(reservationData.bodegaSeleccionada.id);
+        console.log('✅ Bodega marcada como reservada automáticamente');
+      }
+
+      // ✅ 3. NOTIFICAR ÉXITO AL COMPONENTE PADRE
+      if (onReservationSuccess) {
+        onReservationSuccess(reservationData.bodegaSeleccionada);
+      }
+
+      alert('🎉 ¡Reserva confirmada exitosamente!');
+
+    } catch (error) {
+      console.error('❌ Error procesando reserva:', error);
+      setError('Error al procesar la reserva: ' + error.message);
+      alert('Error al procesar la reserva: ' + error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 

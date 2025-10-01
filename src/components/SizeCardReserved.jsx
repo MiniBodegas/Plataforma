@@ -10,7 +10,36 @@ export function SizeCardReserved({
   // ✅ USAR DIRECTAMENTE LAS MINI BODEGAS YA FILTRADAS
   const miniBodegasFiltradas = warehouse.miniBodegas || [];
 
-  // ✅ CREAR CARDS SOLO CON LAS BODEGAS FILTRADAS (NO usar datos estáticos)
+  // ✅ OBTENER UBICACIÓN REAL DE LAS BODEGAS FILTRADAS
+  const ubicacionesFiltradas = miniBodegasFiltradas.map(b => ({
+    ciudad: b.ciudad,
+    zona: b.zona
+  }));
+
+  // ✅ OBTENER CIUDAD Y ZONA DE LAS BODEGAS FILTRADAS (NO del warehouse general)
+  const ciudadesUnicas = [...new Set(ubicacionesFiltradas.map(u => u.ciudad).filter(Boolean))];
+  const zonasUnicas = [...new Set(ubicacionesFiltradas.map(u => u.zona).filter(Boolean))];
+
+  // ✅ CREAR UBICACIÓN BASADA EN LAS BODEGAS FILTRADAS
+  const ubicacionReal = ciudadesUnicas.length > 0 
+    ? `${ciudadesUnicas.join(', ')}${zonasUnicas.length > 0 ? ` - ${zonasUnicas.join(', ')}` : ''}`
+    : 'Ubicación no especificada';
+
+  console.log('🔍 SizeCardReserved - Ubicación DEBUG:', {
+    bodegasFiltradas: miniBodegasFiltradas.length,
+    ciudadesUnicas,
+    zonasUnicas,
+    ubicacionReal,
+    warehouseLocation: warehouse?.location, // Para comparar
+    primerasBodegas: miniBodegasFiltradas.slice(0, 3).map(b => ({
+      ciudad: b.ciudad,
+      zona: b.zona,
+      id: b.id,
+      disponible: b.disponible
+    }))
+  });
+
+  // ✅ CREAR CARDS CON TODAS LAS BODEGAS (disponibles y ocupadas)
   const sizeGuides = miniBodegasFiltradas.map(bodega => ({
     id: bodega.id,
     title: `${bodega.metraje}m³`,
@@ -22,7 +51,7 @@ export function SizeCardReserved({
     city: bodega.ciudad,
     zone: bodega.zona,
     content: bodega.contenido_permitido || 'Almacenamiento general',
-    available: bodega.disponible !== false,
+    available: true, // ✅ SIEMPRE TRUE - IGNORAR ESTADO DE DISPONIBILIDAD
     // Datos adicionales
     empresaId: bodega.empresa_id,
     dimensiones: bodega.dimensiones,
@@ -37,9 +66,9 @@ export function SizeCardReserved({
         bodegaSeleccionada: {
           // Datos de la empresa
           name: warehouse?.name || companyName,
-          location: warehouse?.location || `${warehouse?.city || 'Ciudad'}, ${warehouse?.zone || 'Zona'}`,
-          city: warehouse?.city || guia.city || 'Ciudad no disponible',
-          zone: warehouse?.zone || guia.zone || 'Zona no disponible',
+          location: `${guia.city || 'Ciudad'}, ${guia.zone || 'Zona'}`, // ✅ USAR UBICACIÓN DE LA BODEGA ESPECÍFICA
+          city: guia.city || 'Ciudad no disponible',
+          zone: guia.zone || 'Zona no disponible',
           
           // Datos específicos de la mini bodega
           id: guia.id || null,
@@ -49,7 +78,7 @@ export function SizeCardReserved({
           image: guia.image,
           address: guia.address || warehouse?.address,
           content: guia.content || 'Contenido general',
-          available: guia.available !== undefined ? guia.available : true,
+          available: true, // ✅ SIEMPRE TRUE
           
           // Datos adicionales de la empresa
           features: warehouse?.features || [],
@@ -67,10 +96,9 @@ export function SizeCardReserved({
     });
   };
 
-  // Datos seguros para mostrar
+  // ✅ DATOS SEGUROS PARA MOSTRAR - USAR UBICACIÓN REAL
   const displayName = warehouse?.name || companyName;
-  const displayLocation = warehouse?.location || 
-                          `${warehouse?.city || 'Ciudad'}, ${warehouse?.zone || 'Zona'}`;
+  const displayLocation = ubicacionReal; // ✅ USAR UBICACIÓN DE BODEGAS FILTRADAS
 
   return (
     <section className="py-16 bg-gray-50">
@@ -82,11 +110,6 @@ export function SizeCardReserved({
           <p className="text-lg text-gray-600">
             En {displayName} - {displayLocation}
           </p>
-          
-          {/* ✅ MOSTRAR INFO DE FILTRADO */}
-          <p className="text-sm text-blue-600 mt-2">
-            📍 Mostrando {sizeGuides.length} bodega{sizeGuides.length !== 1 ? 's' : ''} disponible{sizeGuides.length !== 1 ? 's' : ''} en esta ubicación
-          </p>
         </div>
         
         {/* ✅ SI NO HAY BODEGAS FILTRADAS, MOSTRAR MENSAJE */}
@@ -94,10 +117,10 @@ export function SizeCardReserved({
           <div className="text-center py-12">
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 max-w-md mx-auto">
               <p className="text-yellow-700 text-lg mb-2">
-                ⚠️ No hay bodegas disponibles en esta ubicación
+                ⚠️ No hay bodegas en esta ubicación
               </p>
               <p className="text-sm text-yellow-600">
-                Esta empresa no tiene mini bodegas registradas en la ciudad buscada.
+                Esta empresa no tiene mini bodegas registradas en la ciudad/zona buscada.
               </p>
             </div>
           </div>
@@ -117,18 +140,11 @@ export function SizeCardReserved({
                   }}
                 />
                 <div className="p-6">
-                  <div className="flex justify-between items-start mb-3">
+                  {/* ✅ QUITAR COMPLETAMENTE LA ETIQUETA DE DISPONIBILIDAD */}
+                  <div className="mb-3">
                     <h3 className="text-xl font-semibold" style={{ color: "#2C3A61" }}>
                       {guide.title}
                     </h3>
-                    {/* ✅ BADGE DE DISPONIBILIDAD */}
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      guide.available 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-red-100 text-red-700'
-                    }`}>
-                      {guide.available ? 'Disponible' : 'Ocupada'}
-                    </span>
                   </div>
                   
                   <p className="text-gray-600 mb-4 text-sm">
@@ -136,7 +152,7 @@ export function SizeCardReserved({
                   </p>
                   
                   {/* ✅ INFORMACIÓN ADICIONAL DE LA BODEGA REAL */}
-                  {guide.address && (
+                  {guide.address && guide.address !== 'Dirección disponible al reservar' && (
                     <div className="mb-3">
                       <p className="text-xs text-gray-500">
                         <span className="font-medium">📍 Ubicación:</span> {guide.address}
@@ -152,7 +168,7 @@ export function SizeCardReserved({
                     </div>
                   )}
                   
-                  {guide.content && guide.content !== 'Contenido general' && (
+                  {guide.content && guide.content !== 'Almacenamiento general' && (
                     <div className="mb-3">
                       <p className="text-xs text-gray-500">
                         <span className="font-medium">📦 Permitido:</span> {guide.content}
@@ -167,32 +183,16 @@ export function SizeCardReserved({
                     <span className="text-sm text-gray-500">por mes</span>
                   </div>
                   
+                  {/* ✅ BOTÓN SIEMPRE ACTIVO - SIN CONDICIONALES */}
                   <button 
                     onClick={() => handleReservar(guide)}
-                    disabled={!guide.available}
-                    className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
-                      !guide.available 
-                        ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
-                        : 'bg-[#4B799B] hover:bg-[#3b5f7a] text-white'
-                    }`}
+                    className="w-full py-3 px-4 rounded-md font-medium transition-colors bg-[#4B799B] hover:bg-[#3b5f7a] text-white"
                   >
-                    {guide.available ? 'Reservar ahora' : 'No disponible'}
+                    Reservar ahora
                   </button>
                 </div>
               </div>
             ))}
-          </div>
-        )}
-        
-        {/* ✅ MENSAJE CUANDO TODAS ESTÁN OCUPADAS */}
-        {sizeGuides.length > 0 && sizeGuides.every(g => !g.available) && (
-          <div className="text-center mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <p className="text-yellow-700">
-              ⚠️ Todas las bodegas en esta ubicación están actualmente ocupadas.
-            </p>
-            <p className="text-sm text-yellow-600 mt-2">
-              Te recomendamos contactar directamente para conocer próximas disponibilidades.
-            </p>
           </div>
         )}
       </div>
