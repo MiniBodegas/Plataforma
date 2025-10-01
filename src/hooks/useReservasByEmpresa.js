@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { actualizarDisponibilidadBodega } from '../services/bodegasService';
 
 export function useReservasByEmpresa() {
   const [reservas, setReservas] = useState([]);
@@ -89,32 +88,8 @@ export function useReservasByEmpresa() {
 
       console.log('✅ Reserva actualizada:', reservaActualizada);
 
-      // ✅ CAMBIAR DISPONIBILIDAD DE BODEGA SEGÚN ESTADO
-      if (nuevoEstado === 'aceptada' && reservaActualizada.mini_bodega_id) {
-        try {
-          await actualizarDisponibilidadBodega(
-            reservaActualizada.mini_bodega_id,
-            false,
-            `Reservada - Cliente: ${reservaActualizada.numero_documento}`
-          );
-          console.log('✅ Bodega marcada como no disponible');
-        } catch (errorBodega) {
-          console.error('⚠️ Error actualizando disponibilidad:', errorBodega);
-        }
-      }
-
-      if (nuevoEstado === 'rechazada' && reservaActualizada.mini_bodega_id) {
-        try {
-          await actualizarDisponibilidadBodega(
-            reservaActualizada.mini_bodega_id,
-            true,
-            null
-          );
-          console.log('✅ Bodega liberada');
-        } catch (errorBodega) {
-          console.error('⚠️ Error liberando bodega:', errorBodega);
-        }
-      }
+      // ✅ QUITAR TODA LA LÓGICA DE CAMBIO DE DISPONIBILIDAD DE BODEGAS
+      // Ya no cambiamos disponibilidad automáticamente
 
       // Actualizar estado local
       setReservas(prevReservas => 

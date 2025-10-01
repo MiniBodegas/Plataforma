@@ -22,6 +22,7 @@ export function useWarehouseDetail(id) {
 
       console.log('🔍 useWarehouseDetail - Consultando empresa ID:', id)
 
+      // ✅ QUITAR FILTRO DE DISPONIBILIDAD - OBTENER TODAS LAS BODEGAS
       const { data: empresa, error: empresaError } = await supabase
         .from('empresas')
         .select(`
@@ -36,8 +37,7 @@ export function useWarehouseDetail(id) {
           mini_bodegas!inner(*)
         `)
         .eq('id', id)
-        // ✅ FILTRAR SOLO DISPONIBLES (si la columna existe)
-        .eq('mini_bodegas.disponible', true)
+        // ✅ QUITAR ESTA LÍNEA: .eq('mini_bodegas.disponible', true)
         .single()
 
       if (empresaError) {
@@ -45,7 +45,7 @@ export function useWarehouseDetail(id) {
         throw empresaError
       }
 
-      console.log('✅ DATOS CRUDOS (solo disponibles):', {
+      console.log('✅ DATOS CRUDOS (TODAS las bodegas):', {
         empresa: empresa?.nombre,
         totalMiniBodegas: empresa?.mini_bodegas?.length || 0,
         miniBodegasDetalle: empresa?.mini_bodegas?.map(b => ({
@@ -66,21 +66,30 @@ export function useWarehouseDetail(id) {
 
       const descripcion = empresa.empresa_descripcion
 
-      // ✅ SOLO MINI BODEGAS DISPONIBLES (ya vienen filtradas)
-      const miniBodegas = empresa.mini_bodegas || []
+      // ✅ OBTENER TODAS LAS MINI BODEGAS (disponibles y no disponibles)
+      const todasLasBodegas = empresa.mini_bodegas || []
       
-      console.log('📦 Mini bodegas disponibles:', {
-        total: miniBodegas.length,
-        todas: miniBodegas.map(b => ({
+      // ✅ AQUÍ APLICAR FILTROS DE CIUDAD/ZONA SI VIENEN EN LA URL
+      // (Esto se puede hacer desde BodegasDisponibles.jsx usando searchParams)
+      
+      console.log('📦 TODAS las mini bodegas:', {
+        total: todasLasBodegas.length,
+        disponibles: todasLasBodegas.filter(b => b.disponible).length,
+        noDisponibles: todasLasBodegas.filter(b => !b.disponible).length,
+        todas: todasLasBodegas.map(b => ({
           id: b.id,
           ciudad: b.ciudad,
+          zona: b.zona,
           disponible: b.disponible
         }))
       })
 
-      // Si no hay bodegas disponibles, devolver empresa sin bodegas
+      // ✅ USAR TODAS LAS BODEGAS (no filtrar por disponibilidad)
+      const miniBodegas = todasLasBodegas
+
+      // Si no hay bodegas, devolver empresa sin bodegas
       if (miniBodegas.length === 0) {
-        console.log('⚠️ No hay mini bodegas disponibles para esta empresa')
+        console.log('⚠️ No hay mini bodegas para esta empresa')
         setWarehouse({
           id: empresa.id,
           name: empresa.nombre,
@@ -90,7 +99,7 @@ export function useWarehouseDetail(id) {
         return
       }
 
-      // Calcular datos agregados solo de bodegas DISPONIBLES
+      // Calcular datos agregados de TODAS las bodegas
       const precios = miniBodegas.map(b => parseFloat(b.precio_mensual)).filter(p => !isNaN(p))
       const metrajes = miniBodegas.map(b => parseFloat(b.metraje)).filter(m => !isNaN(m))
       
@@ -109,7 +118,7 @@ export function useWarehouseDetail(id) {
       const ciudades = [...new Set(miniBodegas.map(b => b.ciudad).filter(Boolean))]
       const zonas = [...new Set(miniBodegas.map(b => b.zona).filter(Boolean))]
 
-      console.log('🌍 UBICACIONES PROCESADAS (disponibles):', {
+      console.log('🌍 UBICACIONES PROCESADAS (todas):', {
         ciudadesUnicas: ciudades,
         zonasUnicas: zonas,
         totalUbicaciones: ubicaciones.length
@@ -178,19 +187,20 @@ export function useWarehouseDetail(id) {
         companyImage: companyImage,
         rating: 4.5,
         reviewCount: Math.floor(Math.random() * 50) + 10,
-        miniBodegas: miniBodegas, // ✅ SOLO BODEGAS DISPONIBLES
+        miniBodegas: miniBodegas, // ✅ TODAS LAS BODEGAS (disponibles y no disponibles)
         empresa: empresa,
         totalBodegas: miniBodegas.length,
-        disponible: miniBodegas.length > 0, // ✅ TRUE si hay al menos una disponible
+        disponible: true, // ✅ SIEMPRE TRUE porque mostramos todas
         created_at: empresa.created_at
       }
 
-      console.log('✅ WAREHOUSE FINAL (solo disponibles):', {
+      console.log('✅ WAREHOUSE FINAL (todas las bodegas):', {
         id: warehouse.id,
         name: warehouse.name,
         totalMiniBodegas: warehouse.miniBodegas.length,
-        cities: warehouse.cities,
-        disponible: warehouse.disponible
+        disponibles: warehouse.miniBodegas.filter(b => b.disponible).length,
+        noDisponibles: warehouse.miniBodegas.filter(b => !b.disponible).length,
+        cities: warehouse.cities
       })
 
       setWarehouse(warehouse)

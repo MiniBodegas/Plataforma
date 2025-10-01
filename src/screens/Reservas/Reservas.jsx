@@ -17,19 +17,19 @@ export function Reservas() {
     actualizarEstadoReserva 
   } = useReservasByEmpresa();
 
-  // ✅ NUEVO: Hook para gestionar disponibilidad de bodegas
+  // ✅ Hook para gestionar disponibilidad de bodegas
   const { 
     bodegas, 
     loading: loadingBodegas, 
     error: errorBodegas, 
     actualizarDisponibilidad,
     empresaId
-  } = useProveedorDashboard(); // ✅ Sin parámetros, obtiene empresa del usuario logueado
+  } = useProveedorDashboard();
 
   const [procesando, setProcesando] = useState(false);
   const [vistaActual, setVistaActual] = useState('reservas'); // 'reservas' o 'disponibilidad'
 
-  // ✅ NUEVO: Estados para gestión de disponibilidad
+  // ✅ Estados para gestión de disponibilidad
   const [editando, setEditando] = useState(null);
   const [motivo, setMotivo] = useState('');
   const [procesandoBodega, setProcesandoBodega] = useState(null);
@@ -45,9 +45,9 @@ export function Reservas() {
       if (!resultado.success) {
         alert(`Error al aceptar la reserva: ${resultado.error}`);
       } else {
-        // ✅ MOSTRAR MENSAJE DE ÉXITO CON INFORMACIÓN
-        alert('✅ Reserva aceptada exitosamente.\n🔒 La bodega ha sido marcada como no disponible automáticamente.');
-        console.log('✅ Reserva aceptada y bodega actualizada');
+        // ✅ MENSAJE SIMPLIFICADO - SIN MENCIÓN DE CAMBIO DE DISPONIBILIDAD
+        alert('✅ Reserva aceptada exitosamente.');
+        console.log('✅ Reserva aceptada');
       }
     } catch (error) {
       console.error('❌ Error aceptando reserva:', error);
@@ -68,8 +68,9 @@ export function Reservas() {
       if (!resultado.success) {
         alert(`Error al rechazar la reserva: ${resultado.error}`);
       } else {
-        alert('❌ Reserva rechazada exitosamente.\n🔓 La bodega ha sido liberada y está disponible nuevamente.');
-        console.log('✅ Reserva rechazada y bodega liberada');
+        // ✅ MENSAJE SIMPLIFICADO - SIN MENCIÓN DE CAMBIO DE DISPONIBILIDAD
+        alert('❌ Reserva rechazada exitosamente.');
+        console.log('✅ Reserva rechazada');
       }
     } catch (error) {
       console.error('❌ Error rechazando reserva:', error);
@@ -79,13 +80,11 @@ export function Reservas() {
     }
   };
 
-  // ✅ CORREGIR: Función para cambiar disponibilidad de bodegas
+  // ✅ Función para cambiar disponibilidad de bodegas MANUALMENTE
   const handleCambiarDisponibilidad = async (bodegaId, nuevoEstado) => {
     try {
       setProcesandoBodega(bodegaId);
       
-      // ✅ PERMITIR CAMBIO SIN MOTIVO OBLIGATORIO
-      // Solo requerir motivo si se está deshabilitando Y el usuario quiere agregar uno
       const motivoFinal = nuevoEstado ? null : (motivo.trim() || null);
       
       await actualizarDisponibilidad(bodegaId, nuevoEstado, motivoFinal);
@@ -271,7 +270,7 @@ export function Reservas() {
           </div>
         </div>
 
-        {/* ✅ VISTA DE RESERVAS (EXISTENTE) */}
+        {/* ✅ VISTA DE RESERVAS */}
         {vistaActual === 'reservas' && (
           <>
             {/* Resumen simplificado */}
@@ -290,7 +289,7 @@ export function Reservas() {
               </div>
             </div>
 
-            {/* Mensaje si no hay mini bodegas */}
+            {/* Mensaje si no hay reservas */}
             {reservas.length === 0 && (
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-8 text-center mb-8">
                 <div className="text-blue-600 text-4xl mb-3">🏢</div>
@@ -332,10 +331,17 @@ export function Reservas() {
           </>
         )}
 
-        {/* ✅ NUEVA VISTA DE GESTIÓN DE DISPONIBILIDAD */}
+        {/* ✅ VISTA DE GESTIÓN DE DISPONIBILIDAD - SOLO CAMBIOS MANUALES */}
         {vistaActual === 'disponibilidad' && (
           <div className="mt-8">
             <h3 className="text-2xl font-bold mb-6 text-[#2C3A61]">Gestión de Disponibilidad</h3>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <p className="text-blue-800 text-sm">
+                <strong>ℹ️ Nota:</strong> Aquí puedes habilitar/deshabilitar manualmente tus bodegas. 
+                Los cambios en las reservas NO afectan automáticamente la disponibilidad.
+              </p>
+            </div>
             
             {/* Estadísticas de disponibilidad */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -357,7 +363,7 @@ export function Reservas() {
               </div>
             </div>
 
-            {/* Lista de bodegas */}
+            {/* Lista de bodegas - SIEMPRE VISIBLE */}
             <div className="space-y-4">
               {bodegas.map(bodega => (
                 <div key={bodega.id} className="bg-white border rounded-lg p-4 shadow-sm">
@@ -391,10 +397,9 @@ export function Reservas() {
                     <div className="flex items-center gap-2">
                       {editando === bodega.id ? (
                         <div className="flex items-center gap-2">
-                          {/* ✅ MOSTRAR INPUT SIEMPRE, NO SOLO CUANDO NO ESTÉ DISPONIBLE */}
                           <input
                             type="text"
-                            placeholder={bodega.disponible ? "Motivo (opcional)" : "Motivo de no disponibilidad (opcional)"}
+                            placeholder="Motivo (opcional)"
                             value={motivo}
                             onChange={(e) => setMotivo(e.target.value)}
                             className="px-2 py-1 border rounded text-sm w-48"
