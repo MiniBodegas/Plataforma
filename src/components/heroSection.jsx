@@ -10,9 +10,41 @@ export function HeroSection() {
   const [showOverlay, setShowOverlay] = useState(false)
   const [availableCities, setAvailableCities] = useState([])
   const [loadingCities, setLoadingCities] = useState(true)
+  const [suggestions, setSuggestions] = useState([])
+  const [lastSearchedCity, setLastSearchedCity] = useState("")
   const navigate = useNavigate()
 
-  // ✅ CARGAR CIUDADES DINÁMICAMENTE desde la DB
+  // Función para normalizar texto (quitar acentos, convertir a minúsculas)
+  const normalizarTexto = (texto) => {
+    if (!texto) return ''
+    return texto
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+  }
+
+  // Función para calcular similaridad entre strings
+  const calcularSimilaridad = (str1, str2) => {
+    const s1 = normalizarTexto(str1)
+    const s2 = normalizarTexto(str2)
+    
+    if (!s1 || !s2) return 0
+    
+    if (s1 === s2) return 100
+    if (s2.includes(s1)) return 80
+    if (s1.includes(s2)) return 70
+    
+    let matches = 0
+    const minLength = Math.min(s1.length, s2.length)
+    
+    for (let i = 0; i < minLength; i++) {
+      if (s1[i] === s2[i]) matches++
+    }
+    
+    return (matches / Math.max(s1.length, s2.length)) * 60
+  }
+
   useEffect(() => {
     fetchAvailableCities()
   }, [])
@@ -20,64 +52,108 @@ export function HeroSection() {
   const fetchAvailableCities = async () => {
     try {
       setLoadingCities(true)
-      console.log('🔍 Consultando ciudades disponibles desde la DB...')
 
-      // Consultar todas las ciudades únicas de mini_bodegas
       const { data: miniBodegas, error } = await supabase
         .from('mini_bodegas')
         .select('ciudad')
+        .eq('disponible', true)
         .not('ciudad', 'is', null)
         .not('ciudad', 'eq', '')
 
       if (error) {
-        console.error('❌ Error consultando ciudades:', error)
-        // Fallback a ciudades por defecto si hay error
-        setAvailableCities([
-          "Bogotá", "Medellín", "Cali", "Cartagena", 
-          "Barranquilla", "Bucaramanga", "Pereira", "Manizales"
-        ])
+        setAvailableCities([])
         return
       }
 
-      // Extraer ciudades únicas y ordenarlas
-      const ciudadesUnicas = [...new Set(miniBodegas.map(b => b.ciudad))]
-        .filter(ciudad => ciudad && ciudad.trim()) // Filtrar valores vacíos
-        .sort() // Ordenar alfabéticamente
-
-      console.log('✅ Ciudades encontradas en DB:', ciudadesUnicas)
-
-      if (ciudadesUnicas.length > 0) {
-        setAvailableCities(ciudadesUnicas)
-      } else {
-        // Si no hay ciudades en la DB, usar fallback
-        console.log('⚠️ No se encontraron ciudades en la DB, usando fallback')
-        setAvailableCities([
-          "Bogotá", "Medellín", "Cali", "Cartagena", 
-          "Barranquilla", "Bucaramanga", "Pereira", "Manizales"
-        ])
+      if (!miniBodegas || miniBodegas.length === 0) {
+        setAvailableCities([])
+        return
       }
 
+      const ciudadesMap = new Map()
+      
+      miniBodegas.forEach(bodega => {
+        const ciudadOriginal = bodega.ciudad?.trim()
+        if (!ciudadOriginal) return
+
+        const ciudadNormalizada = normalizarTexto(ciudadOriginal)
+        
+        const ciudadFormateada = ciudadOriginal
+          .toLowerCase()
+          .split(' ')
+          .map(palabra => palabra.charAt(0).toUpperCase() + palabra.slice(1))
+          .join(' ')
+
+        if (!ciudadesMap.has(ciudadNormalizada)) {
+          ciudadesMap.set(ciudadNormalizada, {
+            original: ciudadOriginal,
+            normalizada: ciudadNormalizada,
+            formateada: ciudadFormateada,
+            displayName: ciudadFormateada
+          })
+        }
+      })
+
+      const ciudadesUnicas = Array.from(ciudadesMap.values())
+        .map(ciudad => ciudad.formateada)
+        .sort()
+      
+      setAvailableCities(ciudadesUnicas)
+
     } catch (error) {
-      console.error('❌ Error fetching cities:', error)
-      // Fallback en caso de error
-      setAvailableCities([
-        "Bogotá", "Medellín", "Cali", "Cartagena", 
-        "Barranquilla", "Bucaramanga", "Pereira", "Manizales"
-      ])
+      setAvailableCities([])
     } finally {
       setLoadingCities(false)
     }
   }
 
-  // Filtrar ciudades basado en la búsqueda
-  const filteredCities = availableCities.filter(city =>
-    city.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const generarSugerencias = (query) => {
+    if (!query || query.length < 2) {
+      setSuggestions([])
+      return
+    }
 
-  const handleCitySelect = (city) => {
-    setSearchQuery(city)
+    if (availableCities.length === 0) {
+      setSuggestions([])
+      return
+    }
+
+    const sugerenciasConScore = availableCities
+      .map(ciudad => ({
+        ciudad: ciudad,
+        ciudadNormalizada: normalizarTexto(ciudad),
+        score: calcularSimilaridad(query, ciudad),
+        displayName: ciudad
+      }))
+      .filter(item => item.score > 30)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
+
+    setSuggestions(sugerenciasConScore)
+  }
+
+  const handleInputChange = (e) => {
+    const valor = e.target.value
+    setSearchQuery(valor)
+    
+    // ✅ NO LIMPIAR lastSearchedCity cuando el usuario esté escribiendo
+    // Solo generar sugerencias
+    
+    if (valor.length >= 2) {
+      setShowSuggestions(true)
+      generarSugerencias(valor)
+    } else {
+      setShowSuggestions(false)
+      setSuggestions([])
+    }
+  }
+
+  const handleSuggestionSelect = (sugerencia) => {
+    const ciudadSeleccionada = sugerencia.displayName
+    setSearchQuery(ciudadSeleccionada)
     setShowSuggestions(false)
-    handleSearch(city)
+    setSuggestions([])
+    handleSearch(ciudadSeleccionada)
   }
 
   const handleSearch = async (customQuery) => {
@@ -88,58 +164,72 @@ export function HeroSection() {
     }
 
     setLoading(true)
+    setShowSuggestions(false)
     
     try {
-      console.log('🔍 Buscando bodegas en:', query)
+      const queryNormalizado = normalizarTexto(query)
 
-      // ✅ VERIFICAR SI HAY BODEGAS EN ESA CIUDAD
-      const { data: bodegasEnCiudad, error } = await supabase
-        .from('mini_bodegas')
-        .select('id, ciudad, empresa_id')
-        .ilike('ciudad', `%${query}%`) // Búsqueda case-insensitive
-        .limit(1) // Solo necesitamos saber si existe al menos una
+      const ciudadEncontrada = availableCities.find(ciudad => {
+        const ciudadNormalizada = normalizarTexto(ciudad)
+        const similitud = calcularSimilaridad(queryNormalizado, ciudadNormalizada)
+        return similitud > 70
+      })
 
-      if (error) {
-        console.error('❌ Error verificando ciudad:', error)
-        alert("Error al verificar la ciudad. Intenta de nuevo.")
+      if (!ciudadEncontrada) {
+        const ciudadMasCercana = availableCities
+          .map(ciudad => ({
+            ciudad,
+            score: calcularSimilaridad(queryNormalizado, normalizarTexto(ciudad))
+          }))
+          .sort((a, b) => b.score - a.score)[0]
+
+        if (ciudadMasCercana && ciudadMasCercana.score > 30) {
+          const confirmar = window.confirm(
+            `Buscaste "${query}" pero no encontramos bodegas exactas.\n\n¿Quieres buscar en "${ciudadMasCercana.ciudad}" en su lugar?`
+          )
+          
+          if (confirmar) {
+            // ✅ ACTUALIZAR CIUDAD BUSCADA
+            setLastSearchedCity(ciudadMasCercana.ciudad)
+            setSearchQuery(ciudadMasCercana.ciudad)
+            handleSearch(ciudadMasCercana.ciudad)
+            return
+          }
+        } else {
+          alert(`Buscaste "${query}" pero no se encontraron bodegas disponibles en esa ciudad.\n\nIntenta con otra ciudad.`)
+        }
         return
       }
 
-      console.log('📊 Bodegas encontradas:', bodegasEnCiudad?.length || 0)
-
-      if (!bodegasEnCiudad || bodegasEnCiudad.length === 0) {
-        alert(`No se encontraron bodegas disponibles en "${query}". Intenta con otra ciudad.`)
-        return
-      }
-
-      // ✅ HAY BODEGAS, PROCEDER CON LA NAVEGACIÓN
+      // ✅ GUARDAR LA CIUDAD QUE SE ESTÁ BUSCANDO
+      setLastSearchedCity(ciudadEncontrada)
+      setSearchQuery(ciudadEncontrada)
       setShowOverlay(true)
-      setShowSuggestions(false)
-      setSearchQuery(query)
       
       setTimeout(() => {
         setShowOverlay(false)
-        navigate(`/bodegas?ciudad=${encodeURIComponent(query)}`)
-      }, 1000)
+        navigate(`/bodegas?ciudad=${encodeURIComponent(ciudadEncontrada)}`)
+      }, 1500)
 
     } catch (error) {
-      console.error('❌ Error en búsqueda:', error)
       alert("Error al realizar la búsqueda. Intenta de nuevo.")
     } finally {
       setLoading(false)
     }
   }
 
-  // Manejar Enter en el input
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
-      handleSearch()
+      e.preventDefault()
+      if (suggestions.length > 0) {
+        handleSuggestionSelect(suggestions[0])
+      } else {
+        handleSearch()
+      }
     }
   }
 
-  // ✅ MANEJAR CLICK FUERA PARA CERRAR SUGERENCIAS
   const handleInputBlur = (e) => {
-    // Delay para permitir click en sugerencias
     setTimeout(() => {
       setShowSuggestions(false)
     }, 200)
@@ -149,13 +239,18 @@ export function HeroSection() {
     <>
       {showOverlay && (
         <div className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
-          <span className="text-[#2C3A61] text-xl font-semibold mb-4">Buscando bodegas...</span>
-          <svg className="animate-spin h-8 w-8 text-[#2C3A61]" viewBox="0 0 24 24">
+          <span className="text-[#2C3A61] text-xl font-semibold mb-4">
+            Buscando bodegas...
+          </span>
+          <svg className="animate-spin h-8 w-8 text-[#2C3A61] mb-4" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="10" stroke="#2C3A61" strokeWidth="4" fill="none" />
             <path d="M22 12a10 10 0 0 1-10 10" stroke="#4B799B" strokeWidth="4" fill="none" />
           </svg>
-          <p className="text-sm text-gray-600 mt-2">
-            Buscando en {searchQuery}...
+          <p className="text-lg text-gray-700 font-medium mb-2">
+            Buscaste: "<span className="text-[#4B799B] font-bold">{lastSearchedCity}</span>"
+          </p>
+          <p className="text-sm text-gray-600">
+            Encontrando las mejores opciones para ti...
           </p>
         </div>
       )}
@@ -177,46 +272,66 @@ export function HeroSection() {
                   Busca y alquila tu mini bodega
                 </p>
 
+                {/* ✅ MOSTRAR BÚSQUEDA ANTERIOR - SIEMPRE QUE EXISTA */}
+                {lastSearchedCity && !showOverlay && (
+                  <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-base text-gray-700 mb-2">
+                      <span className="font-medium">Última búsqueda:</span>"<span className="font-semibold" style={{ color: "#2C3A61" }}>{lastSearchedCity}</span>"
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex flex-col sm:flex-row gap-2 relative">
                   <div className="relative flex-1">
                     <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                     <input
                       type="text"
-                      placeholder={loadingCities ? "Cargando ciudades..." : "Ingresa tu ciudad"}
+                      placeholder={loadingCities ? "Cargando..." : "¿En qué ciudad buscas?"}
                       value={searchQuery}
-                      onChange={(e) => {
-                        setSearchQuery(e.target.value)
-                        setShowSuggestions(true)
+                      onChange={handleInputChange}
+                      onFocus={() => {
+                        if (searchQuery.length >= 2) {
+                          setShowSuggestions(true)
+                        }
                       }}
-                      onFocus={() => setShowSuggestions(true)}
                       onBlur={handleInputBlur}
                       onKeyPress={handleKeyPress}
                       className="pl-10 py-2 border rounded-[10px] w-full bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       disabled={loading || showOverlay || loadingCities}
                     />
                     
-                    {/* Lista de sugerencias */}
-                    {showSuggestions && searchQuery && !loading && !showOverlay && !loadingCities && (
+                    {/* Sugerencias inteligentes */}
+                    {showSuggestions && suggestions.length > 0 && !loading && !showOverlay && (
                       <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-[10px] shadow-lg mt-1 z-10 max-h-48 overflow-y-auto">
-                        {filteredCities.length > 0 ? (
-                          filteredCities.map((city, index) => (
-                            <div
-                              key={index}
-                              onClick={() => handleCitySelect(city)}
-                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer transition-colors"
-                              style={{ color: "#2C3A61" }}
-                            >
+                        {suggestions.map((sugerencia, index) => (
+                          <div
+                            key={index}
+                            onClick={() => handleSuggestionSelect(sugerencia)}
+                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
+                          >
+                            <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2">
                                 <MapPin className="h-4 w-4 text-gray-400" />
-                                {city}
+                                <span style={{ color: "#2C3A61" }}>
+                                  {sugerencia.displayName}
+                                </span>
                               </div>
                             </div>
-                          ))
-                        ) : (
-                          <div className="px-4 py-2 text-gray-500 text-sm">
-                            No se encontraron ciudades que coincidan
                           </div>
-                        )}
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Mensaje cuando no hay sugerencias */}
+                    {showSuggestions && searchQuery.length >= 2 && suggestions.length === 0 && !loading && !loadingCities && (
+                      <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-[10px] shadow-lg mt-1 z-10">
+                        <div className="px-4 py-3 text-gray-500 text-sm text-center">
+                          <div className="flex items-center justify-center gap-2 mb-2">
+                            <span>🔍</span>
+                            <span>No encontramos esa ciudad</span>
+                          </div>
+                          <p className="text-xs">Intenta con otra ciudad o presiona Enter para buscar de todas formas</p>
+                        </div>
                       </div>
                     )}
                     
@@ -232,7 +347,7 @@ export function HeroSection() {
                   </div>
                   
                   <button 
-                    onClick={handleSearch}
+                    onClick={() => handleSearch()}
                     className="bg-[#4B799B] hover:bg-[#3b5f7a] text-white px-4 py-2 rounded-[10px] transition-colors w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={loading || showOverlay || loadingCities}
                   >
@@ -246,29 +361,6 @@ export function HeroSection() {
                     )}
                   </button>
                 </div>
-
-                {/* ✅ MOSTRAR CIUDADES DISPONIBLES */}
-                {!loadingCities && availableCities.length > 0 && (
-                  <div className="mt-4">
-                    <p className="text-sm text-gray-600 mb-2">Ciudades disponibles:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {availableCities.slice(0, 6).map((city, index) => (
-                        <button
-                          key={index}
-                          onClick={() => handleCitySelect(city)}
-                          className="text-xs bg-white border border-gray-200 hover:border-[#4B799B] hover:text-[#4B799B] text-gray-600 px-3 py-1 rounded-full transition-colors"
-                        >
-                          {city}
-                        </button>
-                      ))}
-                      {availableCities.length > 6 && (
-                        <span className="text-xs text-gray-500 px-3 py-1">
-                          +{availableCities.length - 6} más
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Columna de imagen */}
@@ -285,4 +377,97 @@ export function HeroSection() {
       </section>
     </>
   )
+}
+
+// En useBodegasDisponibles.js o donde hagas la consulta de bodegas filtradas
+
+const fetchBodegasDisponibles = async () => {
+  try {
+    setLoading(true)
+    setError(null)
+
+    console.log('🔍 Obteniendo bodegas disponibles con filtros:', filtros)
+
+    // Construir query base - SOLO BODEGAS DISPONIBLES
+    let query = supabase
+      .from('mini_bodegas')
+      .select(`
+        *,
+        empresas!inner(
+          id,
+          nombre,
+          ciudad as empresa_ciudad,
+          descripcion as empresa_descripcion
+        )
+      `)
+      .eq('disponible', true)
+
+    // ✅ APLICAR FILTRO DE CIUDAD CON NORMALIZACIÓN
+    if (filtros.ciudad) {
+      const ciudadNormalizada = normalizarTexto(filtros.ciudad)
+      
+      // Obtener todas las bodegas primero y filtrar en el cliente
+      // para manejar las diferentes variantes de escritura
+      const { data: todasLasBodegas, error: bodegasError } = await query
+
+      if (bodegasError) {
+        throw bodegasError
+      }
+
+      // Filtrar por ciudad con normalización
+      const bodegasFiltradas = todasLasBodegas?.filter(bodega => {
+        const ciudadBodega = normalizarTexto(bodega.ciudad || '')
+        return calcularSimilaridad(ciudadNormalizada, ciudadBodega) > 80
+      }) || []
+
+      // Procesar las bodegas filtradas...
+      const bodegasConEstado = await Promise.all(
+        bodegasFiltradas.map(async (bodega) => {
+          // ... resto de la lógica de procesamiento
+        })
+      )
+
+      setBodegas(bodegasConEstado.filter(bodega => bodega.available))
+      
+    } else {
+      // Si no hay filtro de ciudad, proceder normalmente
+      const { data: bodegasData, error: bodegasError } = await query
+
+      // ... resto de la lógica normal
+    }
+
+  } catch (err) {
+    console.error('❌ Error en useBodegasDisponibles:', err)
+    setError(err.message)
+  } finally {
+    setLoading(false)
+  }
+}
+
+// Función auxiliar para normalizar
+const normalizarTexto = (texto) => {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+}
+
+// Función auxiliar para calcular similaridad
+const calcularSimilaridad = (str1, str2) => {
+  const s1 = str1
+  const s2 = str2
+  
+  if (s1 === s2) return 100
+  if (s2.includes(s1)) return 80
+  if (s1.includes(s2)) return 70
+  
+  let matches = 0
+  const minLength = Math.min(s1.length, s2.length)
+  
+  for (let i = 0; i < minLength; i++) {
+    if (s1[i] === s2[i]) matches++
+  }
+  
+  return (matches / Math.max(s1.length, s2.length)) * 60
 }

@@ -129,7 +129,7 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, 
           <div className="bg-white border rounded-lg p-4">
             <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Tamaño</h3>
             <div className="space-y-2">
-              {['1-5 m²', '5-15 m²', '15-40 m²', '+40 m²'].map((size) => (
+              {['1-5 m³', '5-15 m³', '15-40 m³', '+40 m³'].map((size) => (
                 <label key={size} className="flex items-center space-x-2">
                   <input
                     type="radio"

@@ -1,21 +1,37 @@
 export function SizeGuideSection() {
   const sizeGuides = [
     {
-      title: "Desde 1 m² hasta 15 m²",
+      title: "Desde 1 m³ hasta 15 m³",
       description:
-        "Ideales para objetos de uso casual, grandes, de temporada o con finalidad de almacenamiento. Perfectos para guardar objetos de un apartamento.",
+      [
+        "Trasteo de apartaestudio",
+         "Cajas y maletas", 
+         "Equipo deportivo, Archivo"
+      ]
+        ,
       image: "https://images.unsplash.com/photo-1611967164521-abae8fba4668?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", 
     },
     {
-      title: "Desde 15 m² hasta 40 m²",
+      title: "Desde 15 m³ hasta 40 m³",
       description:
-        "Ideales para el contenido de una habitación completa o una casa pequeña. Perfectos para mudanzas o almacenamiento de muebles de un apartamento de 2-3 habitaciones.",
+        [
+          "Mudanza 2-3 habitaciones", 
+          "electrodomésticos", 
+          "Stock de e-commerce", 
+          "archivo empresarial",
+
+        ],
       image: "https://images.unsplash.com/photo-1618220179428-22790b461013?q=80&w=627&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     },
     {
-      title: "Más de 42 m²",
+      title: "Más de 42 m³",
       description:
-        "Ideales para el contenido de una casa completa o una gran oficina. Perfectos para empresas que necesitan almacenar inventario.",
+      ["Importaciones",
+       "inventario",
+       "mobiliario oficina",
+       "Estantería/Estibas",
+       "Materiales y equipos"
+      ],
       image: "https://images.unsplash.com/photo-1535957998253-26ae1ef29506?q=80&w=736&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     },
   ]
