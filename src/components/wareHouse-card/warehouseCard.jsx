@@ -96,7 +96,7 @@ export function WarehouseCard({ warehouse = {}, filtroActivo = null }) {
                 : `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
               }
             </div>
-            <div className="text-xs text-gray-600">por mes</div>
+            <div className="text-xs text-gray-600">COP /mes</div>
           </div>
         )}
       </div>
@@ -113,11 +113,6 @@ export function WarehouseCard({ warehouse = {}, filtroActivo = null }) {
               onClick={handleLinkClick}
             >
               {name}
-              {filtroActivo?.ciudad && (
-                <span className="text-sm text-[#4B799B] font-normal ml-2">
-                  en {filtroActivo.ciudad}
-                </span>
-              )}
             </Link>
           </div>
 
@@ -191,7 +186,7 @@ export function WarehouseCard({ warehouse = {}, filtroActivo = null }) {
               ${canNavigate ? "bg-[#4B799B] hover:bg-[#3b5f7a] text-white" : "bg-gray-200 text-gray-400 cursor-not-allowed"}
             `}
           >
-            {filtroActivo?.ciudad ? `Reservar en ${filtroActivo.ciudad}` : 'Reservar'}
+            Reservar ahora
           </button>
         </div>
       </div>

@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { CompanyDescription, FormStepper, ReservationCard } from "../../components/index";
-import { marcarBodegaComoReservada, crearReserva } from "../../services/bodegasService";
 
 export function Reservation() {
   const location = useLocation();
-  const navigate = useNavigate();
 
   // Estado compartido para los datos del formulario
   const [reservationData, setReservationData] = useState({
@@ -14,11 +12,15 @@ export function Reservation() {
     numeroCelular: '',
     fechaInicio: '',
     servicios: [],
+    // Datos de la bodega seleccionada
     bodegaSeleccionada: null,
   });
 
-  // ✅ NUEVO: Estado para manejar el proceso de reserva
-  const [reservaEnProceso, setReservaEnProceso] = useState(false);
+  // ✅ DEBUG: Ver qué datos llegan de la navegación
+  console.log('🔍 Reservation - Datos de navegación:', {
+    locationState: location.state,
+    bodegaSeleccionada: location.state?.bodegaSeleccionada
+  });
 
   // Obtener datos de la bodega desde la navegación
   useEffect(() => {
@@ -29,31 +31,6 @@ export function Reservation() {
       }));
     }
   }, [location.state]);
-
-  // ✅ FUNCIÓN PARA MANEJAR EL ÉXITO DE LA RESERVA
-  const handleReservationSuccess = async (bodegaReservada) => {
-    try {
-      setReservaEnProceso(true);
-      
-      console.log('🎉 Reserva exitosa, redirigiendo a confirmación:', bodegaReservada);
-      
-      // ✅ LA ACTUALIZACIÓN DE DISPONIBILIDAD YA SE HIZO EN FormStepper
-      // Solo redirigir a confirmación
-      navigate('/confirmacion-reserva', {
-        state: {
-          reservaConfirmada: true,
-          bodegaReservada: bodegaReservada,
-          datosReserva: reservationData
-        }
-      });
-      
-    } catch (error) {
-      console.error('❌ Error procesando reserva exitosa:', error);
-      alert('Error al confirmar la reserva. Por favor contacta soporte.');
-    } finally {
-      setReservaEnProceso(false);
-    }
-  };
 
   // Función para actualizar los datos desde FormStepper
   const handleFormDataChange = (field, value) => {
@@ -67,7 +44,7 @@ export function Reservation() {
   const bodegaInfo = reservationData.bodegaSeleccionada;
 
   // ✅ CREAR WAREHOUSE PARA COMPANYDESCRIPTION (IGUAL QUE EN BODEGAS DISPONIBLES)
-  const safeWarehouse = bodegaInfo ? {
+  const warehouse = bodegaInfo ? {
     id: bodegaInfo.empresaId || bodegaInfo.id,
     name: bodegaInfo.name || "Empresa sin nombre",
     city: bodegaInfo.city || "Ciudad no disponible",
@@ -104,74 +81,52 @@ export function Reservation() {
     }] : []
   } : null;
 
-  // ✅ TÍTULO DINÁMICO IGUAL QUE EN BODEGAS DISPONIBLES
-  const tituloEmpresa = bodegaInfo ? 
-    `${bodegaInfo.name}${bodegaInfo.city ? ` - ${bodegaInfo.city}` : ''}` : 
-    "Empresa sin nombre";
-
   console.log('✅ Reservation - Warehouse creado:', {
-    safeWarehouse: safeWarehouse ? {
-      name: safeWarehouse.name,
-      city: safeWarehouse.city,
-      zone: safeWarehouse.zone,
-      totalBodegas: safeWarehouse.totalBodegas,
-      priceRange: safeWarehouse.priceRange
-    } : null,
-    tituloEmpresa
+    warehouse: warehouse ? {
+      name: warehouse.name,
+      city: warehouse.city,
+      zone: warehouse.zone,
+      totalBodegas: warehouse.totalBodegas,
+      priceRange: warehouse.priceRange
+    } : null
   });
 
   return (
     <>
       {/* ✅ MISMO COMPANYDESCRIPTION QUE EN BODEGAS DISPONIBLES */}
-      {safeWarehouse && (
+      {warehouse && (
         <CompanyDescription 
-          warehouse={safeWarehouse}         // ✅ Datos de la bodega seleccionada
-          name={tituloEmpresa}             // ✅ "Rentabox - Medellín" 
-          description={safeWarehouse.description}
-          address={safeWarehouse.address}
-          features={safeWarehouse.features}
-          rating={safeWarehouse.rating}
-          reviewCount={safeWarehouse.reviewCount}
+          warehouse={warehouse}
+          name={warehouse.name}
+          description={warehouse.description}
+          address={warehouse.address}
+          features={warehouse.features}
+          rating={warehouse.rating}
+          reviewCount={warehouse.reviewCount}
         />
       )}
       
       <section className="max-w-[1400px] mx-auto px-6 py-8">
-        {/* ✅ MOSTRAR ESTADO SI ESTÁ PROCESANDO */}
-        {reservaEnProceso && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
-              <div className="text-center">
-                <div className="w-8 h-8 border-4 border-[#4B799B] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-700">Confirmando reserva...</p>
-                <p className="text-sm text-gray-500 mt-2">Por favor espera</p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* ✅ TÍTULO DINÁMICO CON DATOS REALES */}
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold mb-2" style={{ color: "#2C3A61" }}>
-            {tituloEmpresa}
+            {warehouse?.name || "Empresa sin nombre"}
           </h2>
         </div>
 
-        {/* Layout de dos columnas con espacio adecuado */}
+        {/* ✅ LAYOUT DE DOS COLUMNAS - POSICIONES CAMBIADAS */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 xl:gap-12">
-          {/* Columna izquierda - ReservationCard */}
-          <div className="order-2 lg:order-1">
-            <ReservationCard reservationData={reservationData} />
-          </div>
-
-          {/* Columna derecha - FormStepper */}
-          <div className="order-1 lg:order-2">
+          {/* ✅ Columna izquierda - FormStepper (antes derecha) */}
+          <div className="order-1 lg:order-1">
             <FormStepper 
               onDataChange={handleFormDataChange} 
               reservationData={reservationData} 
-              // ✅ PASAR LA FUNCIÓN DE ÉXITO
-              onReservationSuccess={handleReservationSuccess}
-              disabled={reservaEnProceso}
             />
+          </div>
+
+          {/* ✅ Columna derecha - ReservationCard (antes izquierda) */}
+          <div className="order-2 lg:order-2">
+            <ReservationCard reservationData={reservationData} />
           </div>
         </div>
 

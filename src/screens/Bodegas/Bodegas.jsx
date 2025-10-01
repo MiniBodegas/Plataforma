@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { HeroSection, FilterSidebar, WarehouseGrid,WarehouseCard } from '../../components/index'
+import { HeroSection, FilterSidebar, WarehouseGrid, WarehouseCard } from '../../components/index'
 import { useWarehouses } from '../../hooks/useWarehouses'
 
 export function BodegaScreen() {
   const [searchParams] = useSearchParams()
   const [filteredWarehouses, setFilteredWarehouses] = useState([])
   const [showFilters, setShowFilters] = useState(false)
+  
+  // ✅ ESTADO DE FILTROS ACTUALIZADO
   const [filters, setFilters] = useState({
-    location: '',
+    locations: [], // ✅ Cambio: location -> locations (array)
     priceRange: [0, 3500000],
     size: '',
-    features: []
+    features: [],
+    rating: 0 // ✅ Nuevo: filtro de calificación
   })
   
   const ciudadSeleccionada = searchParams.get('ciudad') || ''
@@ -24,19 +27,87 @@ export function BodegaScreen() {
     window.scrollTo(0, 0);
   }, []);
 
-  // ✅ FILTRADO CORREGIDO - Buscar en los datos reales de mini_bodegas
+  // ✅ FUNCIÓN PARA APLICAR FILTROS
+  const aplicarFiltros = (warehouse) => {
+    // Filtro por zonas (locations)
+    if (filters.locations && filters.locations.length > 0) {
+      const tieneZonaSeleccionada = warehouse.miniBodegas.some(bodega => 
+        filters.locations.some(zona => 
+          bodega.zona?.toLowerCase().includes(zona.toLowerCase())
+        )
+      )
+      if (!tieneZonaSeleccionada) return false
+    }
+
+    // Filtro por precio
+    if (filters.priceRange) {
+      const precios = warehouse.miniBodegas.map(b => parseFloat(b.precio_mensual)).filter(p => !isNaN(p))
+      if (precios.length > 0) {
+        const precioMin = Math.min(...precios)
+        const precioMax = Math.max(...precios)
+        
+        // Si el rango de precios del warehouse no intersecta con el filtro
+        if (precioMax < filters.priceRange[0] || precioMin > filters.priceRange[1]) {
+          return false
+        }
+      }
+    }
+
+    // Filtro por tamaño
+    if (filters.size) {
+      const tieneMetraje = warehouse.miniBodegas.some(bodega => {
+        const metraje = parseFloat(bodega.metraje)
+        if (isNaN(metraje)) return false
+        
+        switch (filters.size) {
+          case '1-15 m³':
+            return metraje >= 1 && metraje <= 15
+          case '15-40 m³':
+            return metraje > 15 && metraje <= 40
+          case '+42 m³':
+            return metraje > 42
+          default:
+            return true
+        }
+      })
+      if (!tieneMetraje) return false
+    }
+
+    // Filtro por características/features
+    if (filters.features && filters.features.length > 0) {
+      const tieneCaracteristicas = filters.features.every(feature => 
+        warehouse.features?.some(wFeature => 
+          wFeature.toLowerCase().includes(feature.toLowerCase())
+        ) || 
+        warehouse.miniBodegas.some(bodega => 
+          bodega.caracteristicas?.toLowerCase().includes(feature.toLowerCase())
+        )
+      )
+      if (!tieneCaracteristicas) return false
+    }
+
+    // Filtro por calificación
+    if (filters.rating > 0) {
+      const rating = parseFloat(warehouse.rating) || 0
+      if (rating < filters.rating) return false
+    }
+
+    return true
+  }
+
+  // ✅ FILTRADO CORREGIDO - Aplicar filtros de URL y del sidebar
   useEffect(() => {
     if (!warehouses.length) {
       setFilteredWarehouses([])
       return
     }
 
-    const filtered = warehouses.map(warehouse => {
+    let filtered = warehouses.map(warehouse => {
       // ✅ CREAR COPIA DEL WAREHOUSE FILTRADO POR CIUDAD
       let filteredWarehouse = { ...warehouse }
       let bodegasFiltradas = [...warehouse.miniBodegas]
 
-      // ✅ FILTRAR MINI BODEGAS POR CIUDAD
+      // ✅ FILTRAR MINI BODEGAS POR CIUDAD (URL params)
       if (ciudadSeleccionada) {
         bodegasFiltradas = bodegasFiltradas.filter(bodega => 
           bodega.ciudad?.toLowerCase().includes(ciudadSeleccionada.toLowerCase())
@@ -68,7 +139,7 @@ export function BodegaScreen() {
         }
       }
 
-      // ✅ FILTRAR POR ZONA
+      // ✅ FILTRAR POR ZONA (URL params)
       if (zonaSeleccionada) {
         bodegasFiltradas = bodegasFiltradas.filter(bodega => 
           bodega.zona?.toLowerCase().includes(zonaSeleccionada.toLowerCase())
@@ -82,14 +153,38 @@ export function BodegaScreen() {
         filteredWarehouse.totalBodegas = bodegasFiltradas.length
       }
 
-      // Aplicar otros filtros...
+      // ✅ FILTRAR POR EMPRESA (URL params)
+      if (empresaSeleccionada) {
+        if (!warehouse.name.toLowerCase().includes(empresaSeleccionada.toLowerCase())) {
+          return null
+        }
+      }
+
       return filteredWarehouse
       
     }).filter(Boolean) // Remover nulls
 
+    // ✅ APLICAR FILTROS DEL SIDEBAR
+    filtered = filtered.filter(aplicarFiltros)
+
     setFilteredWarehouses(filtered)
     
   }, [warehouses, ciudadSeleccionada, zonaSeleccionada, empresaSeleccionada, filters])
+
+  // ✅ FUNCIÓN PARA LIMPIAR TODOS LOS FILTROS
+  const limpiarTodosLosFiltros = () => {
+    // Limpiar filtros del sidebar
+    setFilters({
+      locations: [],
+      priceRange: [0, 3500000],
+      size: '',
+      features: [],
+      rating: 0
+    })
+    
+    // Limpiar URL params (opcional - puedes mantener esto o comentarlo)
+    // window.location.href = '/bodegas'
+  }
 
   if (loading) {
     return (
@@ -142,12 +237,36 @@ export function BodegaScreen() {
       <HeroSection />
       
       {/* ✅ TÍTULO DINÁMICO MEJORADO */}
-      {(ciudadSeleccionada || zonaSeleccionada || empresaSeleccionada) && (
+      {(ciudadSeleccionada || zonaSeleccionada || empresaSeleccionada || 
+        filters.locations.length > 0 || filters.size || filters.features.length > 0 || filters.rating > 0) && (
         <div className="bg-white border-b px-6 py-4">
           <div className="max-w-[1500px] mx-auto">
             <h2 className="text-xl font-semibold" style={{ color: "#2C3A61" }}>
               {generarTitulo()}
             </h2>
+            {/* ✅ MOSTRAR FILTROS ACTIVOS */}
+            <div className="mt-2 flex flex-wrap gap-2 text-sm text-gray-600">
+              {filters.locations.length > 0 && (
+                <span className="bg-blue-100 px-2 py-1 rounded">
+                  Zonas: {filters.locations.join(', ')}
+                </span>
+              )}
+              {filters.size && (
+                <span className="bg-green-100 px-2 py-1 rounded">
+                  Tamaño: {filters.size}
+                </span>
+              )}
+              {filters.rating > 0 && (
+                <span className="bg-yellow-100 px-2 py-1 rounded">
+                  ⭐ {filters.rating}+
+                </span>
+              )}
+              {filters.features.length > 0 && (
+                <span className="bg-purple-100 px-2 py-1 rounded">
+                  +{filters.features.length} características
+                </span>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -167,7 +286,7 @@ export function BodegaScreen() {
             isOpen={showFilters}
             onClose={() => setShowFilters(false)}
             filters={filters}
-            onFiltersChange={setFilters}
+            onFiltersChange={setFilters} // ✅ Esto ya estaba conectado correctamente
             ciudadSeleccionada={ciudadSeleccionada}
             hideMapOnMobile={true}
           />
@@ -179,7 +298,6 @@ export function BodegaScreen() {
                 <WarehouseCard 
                   key={warehouse.id} 
                   warehouse={warehouse}
-                  // ✅ AGREGAR ESTA LÍNEA CON EL FILTRO ACTIVO
                   filtroActivo={{
                     ciudad: ciudadSeleccionada,
                     zona: zonaSeleccionada, 
@@ -194,17 +312,7 @@ export function BodegaScreen() {
                 No se encontraron bodegas que coincidan con tu búsqueda
               </p>
               <button
-                onClick={() => {
-                  setCiudadSeleccionada('')
-                  setZonaSeleccionada('')
-                  setEmpresaSeleccionada('')
-                  setFilters({
-                    minPrice: '',
-                    maxPrice: '',
-                    minSize: '',
-                    maxSize: ''
-                  })
-                }}
+                onClick={limpiarTodosLosFiltros} // ✅ Usar la nueva función
                 className="bg-[#4B799B] hover:bg-[#3b5f7a] text-white px-6 py-2 rounded-md"
               >
                 Limpiar filtros
