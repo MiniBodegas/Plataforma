@@ -89,6 +89,44 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, 
             </div>
           ) : null}
 
+           {/* Ubicación */}
+          <div className="bg-white border rounded-lg p-4">
+            <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Zona de la ciudad</h3>
+            <select
+              value={localFilters.location || ''}
+              onChange={(e) => handleFilterChange('location', e.target.value)}
+              className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-[#2C3A61]"
+            >
+              <option value="">Todas las zonas</option>
+              <option value="Norte">Norte</option>
+              <option value="Sur">Sur</option>
+              <option value="Este">Este</option>
+              <option value="Oeste">Oeste</option>
+            </select>
+          </div>
+
+
+          {/* Tamaño */}
+          <div className="bg-white border rounded-lg p-4">
+            <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Tamaño</h3>
+            <div className="space-y-2">
+              {['1-15 m³', '15-40 m³', '+42 m³'].map((size) => (
+                <label key={size} className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    name="size"
+                    value={size}
+                    checked={localFilters.size === size}
+                    onChange={(e) => handleFilterChange('size', e.target.value)}
+                    className="text-blue-600"
+                  />
+                  <span className="text-sm" style={{ color: "#2C3A61" }}>{size}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+
           {/* Rango de precio */}
           <div className="bg-white border rounded-lg p-4">
             <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Precio por mes</h3>
@@ -106,42 +144,6 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, 
                 onChange={(e) => handleFilterChange('priceRange', [0, parseInt(e.target.value)])}
                 className="w-full"
               />
-            </div>
-          </div>
-
-          {/* Ubicación */}
-          <div className="bg-white border rounded-lg p-4">
-            <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Zona de la ciudad</h3>
-            <select
-              value={localFilters.location || ''}
-              onChange={(e) => handleFilterChange('location', e.target.value)}
-              className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-[#2C3A61]"
-            >
-              <option value="">Todas las zonas</option>
-              <option value="Norte">Norte</option>
-              <option value="Sur">Sur</option>
-              <option value="Este">Este</option>
-              <option value="Oeste">Oeste</option>
-            </select>
-          </div>
-
-          {/* Tamaño */}
-          <div className="bg-white border rounded-lg p-4">
-            <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Tamaño</h3>
-            <div className="space-y-2">
-              {['1-5 m³', '5-15 m³', '15-40 m³', '+40 m³'].map((size) => (
-                <label key={size} className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    name="size"
-                    value={size}
-                    checked={localFilters.size === size}
-                    onChange={(e) => handleFilterChange('size', e.target.value)}
-                    className="text-blue-600"
-                  />
-                  <span className="text-sm" style={{ color: "#2C3A61" }}>{size}</span>
-                </label>
-              ))}
             </div>
           </div>
 
