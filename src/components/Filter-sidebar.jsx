@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Filter, X } from 'lucide-react'
+import { Filter, X, Star } from 'lucide-react'
 import { MapaBodegas } from './index'
 
 const bodegas = [
@@ -13,11 +13,12 @@ const bodegas = [
 export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, ciudadSeleccionada, hideMapOnMobile }) {
   // Valores por defecto para evitar errores
   const defaultFilters = {
-    location: '',
+    locations: [],
     priceRange: [0, 3500000],
     size: '',
     features: [],
-    ...filters // Combina con los filtros recibidos
+    rating: 0,
+    ...filters
   }
 
   const [localFilters, setLocalFilters] = useState(defaultFilters)
@@ -37,15 +38,45 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, 
 
   const clearFilters = () => {
     const clearedFilters = {
-      location: '',
+      locations: [],
       priceRange: [0, 3500000],
       size: '',
-      features: []
+      features: [],
+      rating: 0
     }
     setLocalFilters(clearedFilters)
     if (onFiltersChange) {
       onFiltersChange(clearedFilters)
     }
+  }
+
+  // ✅ COMPONENTE DE ESTRELLAS PARA CALIFICACIÓN
+  const StarRating = ({ rating, onRatingChange, interactive = true }) => {
+    const [hoverRating, setHoverRating] = useState(0)
+
+    return (
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            disabled={!interactive}
+            className={`${interactive ? 'cursor-pointer hover:scale-110' : 'cursor-default'} transition-transform`}
+            onMouseEnter={() => interactive && setHoverRating(star)}
+            onMouseLeave={() => interactive && setHoverRating(0)}
+            onClick={() => interactive && onRatingChange(star)}
+          >
+            <Star
+              className={`h-5 w-5 ${
+                star <= (hoverRating || rating)
+                  ? 'fill-yellow-400 text-yellow-400'
+                  : 'text-gray-300'
+              }`}
+            />
+          </button>
+        ))}
+      </div>
+    )
   }
 
   return (
@@ -67,71 +98,125 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, 
         flex flex-col
       `}>
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b">
-          <h2 className="text-lg sm:text-xl font-semibold" style={{ color: "#2C3A61" }}>
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b bg-white">
+          <h2 className="text-lg sm:text-xl font-semibold text-[#2C3A61]">
             Filtros
           </h2>
           <button
             onClick={onClose}
-            className="lg:hidden p-2 hover:bg-gray-100 rounded-full"
+            className="lg:hidden p-2 hover:bg-gray-100 rounded-full text-gray-600"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Filtros */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 bg-white">
           {/* Mapa */}
           {!hideMapOnMobile || (hideMapOnMobile && window.innerWidth >= 768) ? (
-            <div className="bg-white border rounded-lg p-4">
-              <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Ubicación en mapa</h3>
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <h3 className="font-medium mb-3 text-[#2C3A61]">Ubicación en mapa</h3>
               <MapaBodegas city={ciudadSeleccionada || "Cali"} bodegas={bodegas} />
             </div>
           ) : null}
 
-           {/* Ubicación */}
-          <div className="bg-white border rounded-lg p-4">
-            <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Zona de la ciudad</h3>
-            <select
-              value={localFilters.location || ''}
-              onChange={(e) => handleFilterChange('location', e.target.value)}
-              className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-[#2C3A61]"
-            >
-              <option value="">Todas las zonas</option>
-              <option value="Norte">Norte</option>
-              <option value="Sur">Sur</option>
-              <option value="Este">Este</option>
-              <option value="Oeste">Oeste</option>
-            </select>
+          {/* ✅ ZONAS DE LA CIUDAD CON TAILWIND FORZADO */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium mb-3 text-[#2C3A61]">Zonas de la ciudad</h3>
+            <div className="space-y-2">
+              {['Norte', 'Sur', 'Este', 'Oeste', 'Centro'].map((location) => (
+                <label key={location} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    value={location}
+                    checked={localFilters.locations?.includes(location) || false}
+                    onChange={(e) => {
+                      const currentLocations = localFilters.locations || []
+                      const locations = e.target.checked
+                        ? [...currentLocations, location]
+                        : currentLocations.filter(l => l !== location)
+                      handleFilterChange('locations', locations)
+                    }}
+                    className="
+                      w-4 h-4 
+                      bg-white 
+                      border-2 border-gray-300 
+                      rounded 
+                      checked:bg-[#4B799B] 
+                      checked:border-[#4B799B] 
+                      focus:ring-2 focus:ring-[#4B799B] focus:ring-opacity-50
+                      text-white
+                      cursor-pointer
+                      appearance-none
+                      relative
+                      checked:after:content-['✓']
+                      checked:after:absolute
+                      checked:after:top-0
+                      checked:after:left-0.5
+                      checked:after:text-white
+                      checked:after:text-xs
+                      checked:after:font-bold
+                    "
+                  />
+                  <span className="text-sm text-[#2C3A61] select-none">{location}</span>
+                </label>
+              ))}
+            </div>
+            {/* Contador de zonas seleccionadas */}
+            {localFilters.locations && localFilters.locations.length > 0 && (
+              <div className="mt-2 text-xs text-gray-500 bg-white">
+                {localFilters.locations.length} zona{localFilters.locations.length !== 1 ? 's' : ''} seleccionada{localFilters.locations.length !== 1 ? 's' : ''}
+              </div>
+            )}
           </div>
 
-
-          {/* Tamaño */}
-          <div className="bg-white border rounded-lg p-4">
-            <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Tamaño</h3>
+          {/* ✅ TAMAÑO CON TAILWIND FORZADO */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium mb-3 text-[#2C3A61]">Tamaño</h3>
             <div className="space-y-2">
               {['1-15 m³', '15-40 m³', '+42 m³'].map((size) => (
-                <label key={size} className="flex items-center space-x-2">
+                <label key={size} className="flex items-center space-x-2 cursor-pointer">
                   <input
                     type="radio"
                     name="size"
                     value={size}
                     checked={localFilters.size === size}
                     onChange={(e) => handleFilterChange('size', e.target.value)}
-                    className="text-blue-600"
+                    className="
+                      w-4 h-4 
+                      bg-white 
+                      border-2 border-gray-300 
+                      rounded-full 
+                      checked:bg-[#4B799B] 
+                      checked:border-[#4B799B] 
+                      focus:ring-2 focus:ring-[#4B799B] focus:ring-opacity-50
+                      cursor-pointer
+                      appearance-none
+                      relative
+                      checked:after:content-['']
+                      checked:after:absolute
+                      checked:after:top-1/2
+                      checked:after:left-1/2
+                      checked:after:transform
+                      checked:after:-translate-x-1/2
+                      checked:after:-translate-y-1/2
+                      checked:after:w-1.5
+                      checked:after:h-1.5
+                      checked:after:bg-white
+                      checked:after:rounded-full
+                    "
                   />
-                  <span className="text-sm" style={{ color: "#2C3A61" }}>{size}</span>
+                  <span className="text-sm text-[#2C3A61] select-none">{size}</span>
                 </label>
               ))}
             </div>
           </div>
 
-
           {/* Rango de precio */}
-          <div className="bg-white border rounded-lg p-4">
-            <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Precio por mes</h3>
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium mb-3 text-[#2C3A61]">Precio por mes</h3>
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-sm text-[#2C3A61]">
                 <span>${(localFilters.priceRange?.[0] || 0).toLocaleString()}</span>
                 <span>${(localFilters.priceRange?.[1] || 3500000).toLocaleString()}</span>
               </div>
@@ -142,17 +227,33 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, 
                 step="100000"
                 value={localFilters.priceRange?.[1] || 3500000}
                 onChange={(e) => handleFilterChange('priceRange', [0, parseInt(e.target.value)])}
-                className="w-full"
+                className="
+                  w-full h-2 
+                  bg-gray-200 
+                  rounded-lg 
+                  appearance-none 
+                  cursor-pointer
+                  slider:bg-[#4B799B]
+                  slider:h-2
+                  slider:rounded-lg
+                  slider:border-0
+                  thumb:appearance-none
+                  thumb:h-4
+                  thumb:w-4
+                  thumb:rounded-full
+                  thumb:bg-[#4B799B]
+                  thumb:cursor-pointer
+                "
               />
             </div>
           </div>
 
-          {/* Características */}
-          <div className="bg-white border rounded-lg p-4">
-            <h3 className="font-medium mb-3" style={{ color: "#2C3A61" }}>Tipos de acceso</h3>
+          {/* ✅ TIPOS DE ACCESO CON TAILWIND FORZADO */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium mb-3 text-[#2C3A61]">Tipos de acceso</h3>
             <div className="space-y-2">
               {['Directo en vehiculo', 'Acceso en primer piso', 'Sin escaleras', 'Acceso con montacarga', 'Ascensor'].map((feature) => (
-                <label key={feature} className="flex items-center space-x-2">
+                <label key={feature} className="flex items-center space-x-2 cursor-pointer">
                   <input
                     type="checkbox"
                     value={feature}
@@ -164,21 +265,56 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, 
                         : currentFeatures.filter(f => f !== feature)
                       handleFilterChange('features', features)
                     }}
-                    className="text-blue-600"
+                    className="
+                      w-4 h-4 
+                      bg-white 
+                      border-2 border-gray-300 
+                      rounded 
+                      checked:bg-[#4B799B] 
+                      checked:border-[#4B799B] 
+                      focus:ring-2 focus:ring-[#4B799B] focus:ring-opacity-50
+                      text-white
+                      cursor-pointer
+                      appearance-none
+                      relative
+                      checked:after:content-['✓']
+                      checked:after:absolute
+                      checked:after:top-0
+                      checked:after:left-0.5
+                      checked:after:text-white
+                      checked:after:text-xs
+                      checked:after:font-bold
+                    "
                   />
-                  <span className="text-sm" style={{ color: "#2C3A61" }}>{feature}</span>
+                  <span className="text-sm text-[#2C3A61] select-none">{feature}</span>
                 </label>
               ))}
+            </div>
+          </div>
+
+          {/* ✅ CALIFICACIÓN MÍNIMA - AL FINAL */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium mb-3 text-[#2C3A61]">Calificación mínima</h3>
+            <div className="space-y-3">
+              <StarRating 
+                rating={localFilters.rating || 0}
+                onRatingChange={(rating) => {
+                  const newRating = localFilters.rating === rating ? 0 : rating
+                  handleFilterChange('rating', newRating)
+                }}
+              />
+              <div className="text-xs text-gray-500 bg-white">
+                Haz clic en una estrella para filtrar por calificación mínima
+              </div>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-4 sm:p-6 border-t">
+        <div className="p-4 sm:p-6 border-t bg-white">
           <button
             onClick={clearFilters}
-            className="w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-            style={{ color: "#2C3A61" }}
+            className="w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors text-[#2C3A61] font-medium"
           >
             Limpiar filtros
           </button>
