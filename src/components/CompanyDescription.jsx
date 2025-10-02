@@ -22,7 +22,7 @@ export function CompanyDescription({
 
   // Obtener ubicación para mostrar
   const location = warehouse?.city && warehouse?.zone 
-    ? `${warehouse.zone} - ${warehouse.city}`
+    ? `${warehouse.city} - ${warehouse.zone} `
     : companyAddress;
 
   // USAR LA IMAGEN ESPECÍFICA PARA COMPANY DESCRIPTION

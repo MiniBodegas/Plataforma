@@ -108,7 +108,7 @@ export function SizeCardReserved({
             Elige el tamaño perfecto para ti
           </h2>
           <p className="text-lg text-gray-600">
-            En {displayName} - {displayLocation}
+            En {displayName}
           </p>
         </div>
         
