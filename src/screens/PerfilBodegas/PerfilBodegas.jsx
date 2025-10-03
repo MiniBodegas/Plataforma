@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { Carrousel, PerfilCard, MapaBodegas, TestimonialsSection, CompanyDescriptionPerfil } from "../../components";
+import { Carrousel, PerfilCard, MapaBodegas, TestimonialsSection, CompanyDescripcionPerfil } from "../../components";
 import { useWarehouseDetail } from "../../hooks/useWarehouseDetail";
 
 export function PerfilBodegas() {
@@ -143,7 +143,7 @@ export function PerfilBodegas() {
       />
       
       {/* Descripción del perfil con datos reales */}
-      <CompanyDescriptionPerfil 
+      <CompanyDescripcionPerfil 
         warehouse={safeWarehouse}
         name={safeWarehouse.name}
         description={safeWarehouse.description}

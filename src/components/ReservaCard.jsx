@@ -85,6 +85,9 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled }) {
     setMotivoRechazo('');
   };
 
+  // Solo mostrar datos personales si la reserva está aceptada
+  const mostrarDatosPersonales = reserva.estado === 'aceptada';
+
   return (
     <div className={`bg-white rounded-xl shadow-sm border-2 ${getEstadoColor(reserva.estado)} p-6 transition-all duration-300`}>
       {/* Header con estado */}
@@ -113,19 +116,21 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled }) {
         </div>
       </div>
 
-      {/* Info del cliente */}
-      <div className="bg-gray-50 rounded-lg p-4 mb-4">
-        <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
-          <User className="h-4 w-4" />
-          Información del Cliente
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-          <p><span className="font-medium">Documento:</span> {cliente.tipoDocumento} {cliente.documento}</p>
-          <p><span className="font-medium">Celular:</span> {cliente.celular}</p>
+      {/* Info del cliente SOLO si la reserva está aceptada */}
+      {mostrarDatosPersonales && (
+        <div className="bg-gray-50 rounded-lg p-4 mb-4">
+          <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Información del Cliente
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+            <p><span className="font-medium">Documento:</span> {cliente.tipoDocumento} {cliente.documento}</p>
+            <p><span className="font-medium">Celular:</span> {cliente.celular}</p>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Info de la bodega */}
+      {/* Info de la bodega (siempre visible) */}
       <div className="bg-blue-50 rounded-lg p-4 mb-4">
         <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
           <MapPin className="h-4 w-4" />
@@ -139,7 +144,7 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled }) {
         </div>
       </div>
 
-      {/* Período de reserva */}
+      {/* Período de reserva (siempre visible) */}
       <div className="bg-green-50 rounded-lg p-4 mb-4">
         <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
           <Calendar className="h-4 w-4" />
@@ -151,7 +156,7 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled }) {
         </div>
       </div>
 
-      {/* Servicios adicionales */}
+      {/* Servicios adicionales (siempre visible) */}
       {servicios && servicios.length > 0 && (
         <div className="bg-purple-50 rounded-lg p-4 mb-4">
           <h4 className="font-semibold text-gray-700 mb-2">Servicios Adicionales</h4>
