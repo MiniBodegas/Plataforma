@@ -1,45 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, MapPin, Search } from 'lucide-react';
+import { X, MapPin } from 'lucide-react';
 
 export function SizeGuideSection() {
   const navigate = useNavigate();
   
-  // ✅ NUEVOS ESTADOS PARA EL POPUP
+  // Estados simplificados
   const [showCityPopup, setShowCityPopup] = useState(false);
   const [selectedGuide, setSelectedGuide] = useState(null);
-  const [citySearch, setCitySearch] = useState('');
-  const [filteredCities, setFilteredCities] = useState([]);
-  
-  // ✅ LISTA DE CIUDADES DISPONIBLES
-  const availableCities = [
-    "Bogotá",
-    "Medellín",
-    "Cali",
-    "Barranquilla",
-    "Cartagena",
-    "Bucaramanga",
-    "Pereira",
-    "Manizales",
-    "Armenia",
-    "Neiva",
-    "Villavicencio",
-    "Ibagué",
-    "Pasto"
-  ];
-  
-  // ✅ FILTRAR CIUDADES BASADO EN BÚSQUEDA
-  useEffect(() => {
-    if (citySearch.trim() === '') {
-      setFilteredCities(availableCities);
-    } else {
-      const normalized = citySearch.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      const filtered = availableCities.filter(city => 
-        city.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(normalized)
-      );
-      setFilteredCities(filtered);
-    }
-  }, [citySearch]);
+  const [cityInput, setCityInput] = useState('');
+  const [error, setError] = useState('');
   
   const sizeGuides = [
     {
@@ -69,7 +39,7 @@ export function SizeGuideSection() {
     {
       title: "Más de 42 m³",
       minMetraje: 42,
-      maxMetraje: null, // sin límite superior
+      maxMetraje: null,
       description: [
         "Importaciones",
         "Inventario",
@@ -79,23 +49,34 @@ export function SizeGuideSection() {
       ],
       image: "https://images.unsplash.com/photo-1535957998253-26ae1ef29506?q=80&w=736&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     },
-  ]
+  ];
 
-  // ✅ MODIFICADO: Mostrar popup en lugar de navegar directamente
+  // Mostrar popup en lugar de navegar directamente
   const handleVerBodegas = (guide) => {
     console.log('🔍 Abriendo popup para:', guide.title);
     setSelectedGuide(guide);
     setShowCityPopup(true);
-    setCitySearch('');
-    setFilteredCities(availableCities);
+    setCityInput('');
+    setError('');
   };
 
-  // ✅ NUEVA FUNCIÓN: Navegar después de seleccionar ciudad
-  const handleCitySelect = (city) => {
+  // Manejar envío del formulario
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (!cityInput.trim()) {
+      setError('Por favor ingresa una ciudad');
+      return;
+    }
+    
+    handleSearch(cityInput.trim());
+  };
+
+  // Navegar a búsqueda con la ciudad ingresada
+  const handleSearch = (city) => {
     if (!selectedGuide) return;
     
-    console.log('🔍 Ciudad seleccionada:', city);
-    console.log('🔍 Guía seleccionada:', selectedGuide);
+    console.log('🔍 Ciudad ingresada:', city);
     
     // Construir URL con los parámetros de búsqueda
     const searchParams = new URLSearchParams();
@@ -114,6 +95,7 @@ export function SizeGuideSection() {
     // Cerrar el popup y resetear estados
     setShowCityPopup(false);
     setSelectedGuide(null);
+    setCityInput('');
     
     // Navegar a la página de búsqueda con los filtros
     navigate(`/bodegas?${searchParams.toString()}`);
@@ -121,7 +103,7 @@ export function SizeGuideSection() {
 
   return (
     <>
-      {/* ✅ NUEVO: POPUP DE SELECCIÓN DE CIUDAD */}
+      {/* POPUP DE ENTRADA DE CIUDAD */}
       {showCityPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
@@ -139,57 +121,74 @@ export function SizeGuideSection() {
             </div>
             
             {/* Contenido */}
-            <div className="p-4">
-              <p className="text-gray-600 mb-4">
-                Selecciona la ciudad donde quieres buscar mini bodegas{' '}
-                <span className="font-medium">{selectedGuide?.title}</span>
-              </p>
-              
-              {/* Campo de búsqueda */}
-              <div className="relative mb-4">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Buscar ciudad..."
-                  value={citySearch}
-                  onChange={(e) => setCitySearch(e.target.value)}
-                  className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  autoFocus
-                />
-              </div>
-              
-              {/* Lista de ciudades */}
-              <div className="max-h-64 overflow-y-auto border border-gray-100 rounded-lg">
-                {filteredCities.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">
-                    No se encontraron ciudades
+            <form onSubmit={handleSubmit}>
+              <div className="p-4">
+                <p className="text-gray-600 mb-4">
+                  Ingresa la ciudad donde quieres buscar mini bodegas{' '}
+                  <span className="font-medium">{selectedGuide?.title}</span>
+                </p>
+                
+                {/* Campo de entrada */}
+                <div className="relative mb-2">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MapPin className="h-5 w-5 text-gray-400" />
                   </div>
-                ) : (
-                  filteredCities.map((city, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleCitySelect(city)}
-                      className="w-full text-left px-4 py-3 hover:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0 flex items-center"
-                    >
-                      <MapPin className="h-4 w-4 text-gray-500 mr-2" />
-                      <span>{city}</span>
-                    </button>
-                  ))
+                  <input
+                    type="text"
+                    placeholder="Ej: Bogotá, Medellín, Cali..."
+                    value={cityInput}
+                    onChange={(e) => {
+                      setCityInput(e.target.value);
+                      setError('');
+                    }}
+                    className={`pl-10 w-full p-3 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                    autoFocus
+                  />
+                </div>
+                
+                {/* Mensaje de error */}
+                {error && (
+                  <p className="text-red-500 text-sm mb-4">{error}</p>
                 )}
+                
+                {/* Sugerencias populares */}
+                <div className="mb-4">
+                  <p className="text-xs text-gray-500 mb-2">Ciudades populares:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["Bogotá", "Medellín", "Cali"].map((city) => (
+                      <button
+                        key={city}
+                        type="button"
+                        onClick={() => {
+                          setCityInput(city);
+                          setError('');
+                        }}
+                        className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs text-gray-700 transition-colors"
+                      >
+                        {city}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-            
-            {/* Footer */}
-            <div className="border-t p-4 flex justify-end">
-              <button
-                onClick={() => setShowCityPopup(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
-              >
-                Cancelar
-              </button>
-            </div>
+              
+              {/* Footer */}
+              <div className="border-t p-4 flex justify-between">
+                <button
+                  type="button"
+                  onClick={() => setShowCityPopup(false)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#4B799B] hover:bg-[#3b5f7a] text-white rounded-md transition-colors"
+                >
+                  Buscar
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
