@@ -9,49 +9,76 @@ export function CompletarPerfil() {
   const [foto, setFoto] = useState(null);
   const [preview, setPreview] = useState(null);
   const [showWelcome, setShowWelcome] = useState(true);
-  const [error, setError] = useState(""); // Nuevo estado para errores
+  const [error, setError] = useState("");
+  const [status, setStatus] = useState("");
+
+  const BUCKET = "Avatars"; // <-- verifica el nombre exacto de tu bucket
 
   const handleFotoChange = (e) => {
     const file = e.target.files[0];
-    setFoto(file);
-    setPreview(URL.createObjectURL(file));
+    setFoto(file || null);
+    setPreview(file ? URL.createObjectURL(file) : null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); // Limpia errores previos
+    setError("");
+    setStatus("");
+
+    if (!user?.id) {
+      setError("No hay usuario autenticado.");
+      return;
+    }
+
     let fotoUrl = null;
 
-    if (foto) {
-      const extension = foto.name.split('.').pop();
-      const filePath = `avatars-${user.id}.${extension}`;
-      const { data, error } = await supabase.storage
-        .from("Avatars")
-        .upload(filePath, foto, { upsert: true });
-      if (error) {
-        setError("No se pudo subir la imagen: " + error.message);
-        return;
-      }
-      if (!error && data) {
-        fotoUrl = supabase.storage.from("Avatars").getPublicUrl(data.path).publicUrl;
-        // Mensaje visual para depuración
-        setError("Imagen subida correctamente: " + fotoUrl);
-      }
-    } else {
-      setError("Debes seleccionar una imagen para probar el flujo.");
-      return;
-    }
+    try {
+      // 1) Subir la imagen (si el usuario eligió una)
+      if (foto) {
+        const extension = (foto.name?.split(".").pop() || "jpg").toLowerCase();
+        // Puedes usar carpetas para evitar colisiones: `${user.id}/avatar.${extension}`
+        const filePath = `Avatars/${user.id}.${extension}`;
 
-    // Actualiza la tabla usuarios
-    const { data: upsertData, error: upsertError } = await supabase.from("usuarios").upsert([
-      { id: user.id, nombre, foto_url: fotoUrl }
-    ]);
-    if (upsertError) {
-      setError("No se pudo guardar el perfil: " + upsertError.message);
-      return;
+        const { error: uploadError } = await supabase.storage
+          .from(BUCKET)
+          .upload(filePath, foto, {
+            upsert: true,
+            contentType: foto.type || "image/*",
+          });
+
+        if (uploadError) throw uploadError;
+
+        // 2) Obtener URL pública o firmada según el tipo de bucket
+        // ---- PÚBLICO ----
+        const { data: publicData } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
+        fotoUrl = publicData?.publicUrl || null;
+
+        // ---- PRIVADO (opcional) ----
+        // Si tu bucket es privado, comenta lo anterior y usa esto:
+        // const { data: signedData, error: signedErr } = await supabase.storage
+        //   .from(BUCKET)
+        //   .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 7 días
+        // if (signedErr) throw signedErr;
+        // fotoUrl = signedData?.signedUrl || null;
+      }
+
+      // 3) Guardar nombre y (si existe) fotoUrl en la tabla
+      //    Si la foto es opcional y no se cargó, no mandes foto_url para no sobreescribir con null
+      const payload = { id: user.id, nombre };
+      if (fotoUrl) payload.foto_url = fotoUrl;
+
+      const { error: upsertError } = await supabase
+        .from("usuarios")
+        .upsert(payload, { onConflict: "id" }); // onConflict asegura que choque por id
+
+      if (upsertError) throw upsertError;
+
+      setStatus("Perfil guardado correctamente.");
+      // Redirigir (opcional)
+      setTimeout(() => (window.location.href = "/"), 1200);
+    } catch (err) {
+      setError("Ocurrió un error: " + (err?.message || "desconocido"));
     }
-    setError("Perfil guardado correctamente.");
-    setTimeout(() => window.location.href = "/", 1500);
   };
 
   return (
@@ -76,22 +103,27 @@ export function CompletarPerfil() {
         </div>
       )}
 
-      {/* Formulario de completar perfil */}
+      {/* Formulario */}
       {!showWelcome && (
         <form
           onSubmit={handleSubmit}
           className="max-w-md mx-auto mt-12 p-8 bg-white rounded-2xl shadow flex flex-col items-center"
         >
           <h2 className="text-xl font-bold mb-6 text-center">Completa tu perfil</h2>
-          
-          {/* Mensaje de error */}
+
+          {/* Mensajes */}
           {error && (
             <div className="mb-4 w-full bg-red-100 border border-red-400 text-red-700 rounded-lg px-4 py-2 text-center">
               {error}
             </div>
           )}
+          {status && (
+            <div className="mb-4 w-full bg-green-100 border border-green-400 text-green-700 rounded-lg px-4 py-2 text-center">
+              {status}
+            </div>
+          )}
 
-          {/* Foto de perfil */}
+          {/* Foto */}
           <div className="mb-6 flex flex-col items-center">
             <label htmlFor="foto" className="block mb-2 font-medium text-gray-700">
               Foto de perfil (opcional)
@@ -129,7 +161,7 @@ export function CompletarPerfil() {
               id="nombre"
               type="text"
               value={nombre}
-              onChange={e => setNombre(e.target.value)}
+              onChange={(e) => setNombre(e.target.value)}
               required
               className="w-full h-12 rounded-2xl border border-gray-300 px-4 bg-white text-gray-900 
                 focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none
