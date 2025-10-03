@@ -59,3 +59,5 @@ export * from './CardBodegas/CardBodegas'
 export * from './AgregarMiniBodegaBtn'
 
 export * from './CompanyDescripcionPerfil'
+export * from './CompanyRating'
+export * from './CompletarPerfil'

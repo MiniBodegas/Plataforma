@@ -1,24 +1,80 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { supabase } from "../lib/supabase";
 
 export function PerfilForm() {
-  const [nombre, setNombre] = useState("Juan Esteban Ramirez Perdomo");
-  const [email, setEmail] = useState("juan.ramirez@email.com");
-  const [telefono, setTelefono] = useState("3001234567");
+  const { user } = useAuth();
+  const [nombre, setNombre] = useState("");
+  const [email, setEmail] = useState("");
+  const [telefono, setTelefono] = useState("");
   const [imagen, setImagen] = useState(null);
+  const [preview, setPreview] = useState(null);
   const navigate = useNavigate();
+
+  // Cargar datos del usuario al montar
+  useEffect(() => {
+    async function fetchPerfil() {
+      if (user) {
+        // Trae datos de la tabla usuarios
+        const { data, error } = await supabase
+          .from("usuarios")
+          .select("nombre, foto_url, telefono")
+          .eq("id", user.id)
+          .single();
+
+        if (data) {
+          setNombre(data.nombre || "");
+          setTelefono(data.telefono || "");
+          setImagen(data.foto_url || null);
+          setPreview(data.foto_url || null);
+        } else {
+          // Si no existe la fila, la crea con los datos básicos
+          await supabase.from("usuarios").upsert([
+            { id: user.id, nombre: "", telefono: "", foto_url: null }
+          ]);
+          setNombre("");
+          setTelefono("");
+          setImagen(null);
+          setPreview(null);
+        }
+        // Trae email de auth
+        setEmail(user.email || "");
+      }
+    }
+    fetchPerfil();
+  }, [user]);
 
   const handleImagenChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setImagen(URL.createObjectURL(file));
+      setPreview(URL.createObjectURL(file));
+      setImagen(file);
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Aquí iría la lógica para guardar los datos
+    let fotoUrl = preview;
+    // Si el usuario subió una nueva imagen, súbela al storage
+    if (imagen && typeof imagen !== "string") {
+      const { data, error } = await supabase.storage
+        .from("avatars")
+        .upload(`avatar-${user.id}`, imagen, { upsert: true });
+      if (!error) {
+        fotoUrl = supabase.storage.from("avatars").getPublicUrl(data.path).publicUrl;
+      }
+    }
+    // Actualiza los datos en la tabla usuarios
+    await supabase.from("usuarios").upsert([
+      {
+        id: user.id,
+        nombre,
+        telefono,
+        foto_url: fotoUrl,
+      },
+    ]);
     alert("Datos actualizados correctamente");
   };
 
@@ -49,8 +105,8 @@ export function PerfilForm() {
           <div className="flex flex-col items-center mb-6">
             <label htmlFor="imagen" className="cursor-pointer">
               <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mb-2">
-                {imagen ? (
-                  <img src={imagen} alt="Perfil" className="w-full h-full object-cover" />
+                {preview ? (
+                  <img src={preview} alt="Perfil" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-gray-400">Imagen</span>
                 )}
@@ -79,8 +135,8 @@ export function PerfilForm() {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#2C3A61] bg-white"
+              disabled
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
             />
           </div>
           <div className="mb-6">

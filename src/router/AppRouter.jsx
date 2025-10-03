@@ -1,5 +1,5 @@
 import { Routes, Route, Outlet } from 'react-router-dom';
-import { Header, Footer } from '../components/index';
+import { Header, Footer,CompletarPerfil } from '../components/index';
 import {
   HomeScreen,
   BodegaScreen,
@@ -75,6 +75,7 @@ export const AppRouter = () => {
         <Route path="/perfil-user" element={<PerfilUser />} />
         <Route path="/perfil-form" element={<PerfilFormScreen />} />
         <Route path="/reserva-confirmada" element={<ReservaConfirmada />} />
+        <Route path="/completar-perfil" element={<CompletarPerfil />} />
         
       </Route>
       {/* Rutas de proveedores */}

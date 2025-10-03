@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ChevronRight } from "lucide-react";
+import { useRequireProfile } from "../hooks/useRequireProfile";
 
 const opciones = [
   {
@@ -34,6 +35,7 @@ const opciones = [
 ];
 
 export function Perfil() {
+  useRequireProfile(); // Esto fuerza completar perfil antes de mostrar este componente
   const [open, setOpen] = useState(null);
   const navigate = useNavigate();
 

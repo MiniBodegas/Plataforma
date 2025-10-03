@@ -1,8 +1,8 @@
-
 import { useState } from "react"
 import { Eye, EyeOff } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
+import { supabase } from "../lib/supabase"
 
 export function RegistrationForm() {
   const [showPassword, setShowPassword] = useState(false)
@@ -10,7 +10,6 @@ export function RegistrationForm() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [formData, setFormData] = useState({
-    name: "",
     email: "",
     password: "",
   })
@@ -22,7 +21,7 @@ export function RegistrationForm() {
     e.preventDefault()
     
     // Validaciones
-    if (!formData.name || !formData.email || !formData.password) {
+    if (!formData.email || !formData.password) {
       setError('Por favor completa todos los campos')
       return
     }
@@ -37,15 +36,24 @@ export function RegistrationForm() {
     setMessage('')
 
     try {
-      const { data, error } = await signUp(formData.email, formData.password, {
-        full_name: formData.name
-      })
+      const { data, error } = await signUp(formData.email, formData.password)
 
       if (error) {
         setError(error.message)
       } else {
+        // Guarda el perfil en la tabla usuarios/profiles sin nombre
+        const userId = data?.user?.id || data?.id
+        if (userId) {
+          await supabase.from('usuarios').upsert([
+            {
+              id: userId,
+              nombre: null,
+              foto_url: null
+            }
+          ])
+        }
+
         setMessage('¡Cuenta creada exitosamente! Revisa tu correo para confirmar tu cuenta.')
-        // Opcional: redirigir después de un tiempo
         setTimeout(() => {
           navigate('/login')
         }, 3000)
@@ -59,7 +67,6 @@ export function RegistrationForm() {
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-    // Limpiar errores cuando el usuario empiece a escribir
     if (error) setError('')
   }
 
@@ -97,26 +104,6 @@ export function RegistrationForm() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            
-            {/* Nombre */}
-            <div className="space-y-2">
-              <label htmlFor="name" className="text-gray-700 font-medium">
-                Nombre
-              </label>
-              <input
-                id="name"
-                type="text"
-                placeholder="Escribe tu nombre"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
-                disabled={loading}
-                className="w-full h-12 rounded-2xl border border-gray-300 px-4 
-                          bg-white text-gray-900 
-                          focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none
-                          disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-            </div>
-
             {/* Correo */}
             <div className="space-y-2">
               <label htmlFor="email" className="text-gray-700 font-medium">
