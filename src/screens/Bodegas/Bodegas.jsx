@@ -10,18 +10,52 @@ export function BodegaScreen() {
   
   // ✅ ESTADO DE FILTROS ACTUALIZADO
   const [filters, setFilters] = useState({
-    locations: [], // ✅ Cambio: location -> locations (array)
+    locations: [],
     priceRange: [0, 3500000],
     size: '',
     features: [],
-    rating: 0 // ✅ Nuevo: filtro de calificación
+    rating: 0
   })
   
   const ciudadSeleccionada = searchParams.get('ciudad') || ''
   const zonaSeleccionada = searchParams.get('zona') || ''
   const empresaSeleccionada = searchParams.get('empresa') || ''
   
+  // ✅ OBTENER PARÁMETROS DE METRAJE DE LA URL
+  const minMetrajeParam = searchParams.get('minMetraje')
+  const maxMetrajeParam = searchParams.get('maxMetraje')
+  
   const { warehouses, loading, error, refetch } = useWarehouses()
+
+  // ✅ APLICAR FILTROS DE URL AL SIDEBAR
+  useEffect(() => {
+    // Inicializar nuevos filtros basados en los actuales
+    const newFilters = { ...filters };
+    
+    // Procesar parámetros de metraje y actualizar el filtro size
+    if (minMetrajeParam || maxMetrajeParam) {
+      const min = parseInt(minMetrajeParam);
+      const max = parseInt(maxMetrajeParam);
+      
+      // Convertir los parámetros numéricos a opciones de filtro de tamaño
+      if (!isNaN(min) && !isNaN(max)) {
+        // Caso: tenemos min y max
+        if (min === 1 && max === 15) {
+          newFilters.size = '1-15 m³';
+        } else if (min === 15 && max === 40) {
+          newFilters.size = '15-40 m³';
+        }
+      } else if (!isNaN(min) && min >= 42) {
+        // Caso: solo min = 42+
+        newFilters.size = '+42 m³';
+      }
+      
+      console.log('🔍 Aplicando filtro de tamaño:', newFilters.size);
+      
+      // Actualizar el estado de filtros
+      setFilters(newFilters);
+    }
+  }, [minMetrajeParam, maxMetrajeParam]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -53,24 +87,45 @@ export function BodegaScreen() {
       }
     }
 
-    // Filtro por tamaño
-    if (filters.size) {
+    // ✅ FILTRO POR TAMAÑO MEJORADO - USAR TAMBIÉN minMetrajeParam Y maxMetrajeParam
+    if (filters.size || minMetrajeParam || maxMetrajeParam) {
       const tieneMetraje = warehouse.miniBodegas.some(bodega => {
-        const metraje = parseFloat(bodega.metraje)
-        if (isNaN(metraje)) return false
+        const metraje = parseFloat(bodega.metraje);
+        if (isNaN(metraje)) return false;
         
+        // Primero verificar parámetros directos de URL
+        if (minMetrajeParam && maxMetrajeParam) {
+          const min = parseInt(minMetrajeParam);
+          const max = parseInt(maxMetrajeParam);
+          if (!isNaN(min) && !isNaN(max)) {
+            return metraje >= min && metraje <= max;
+          }
+        } else if (minMetrajeParam) {
+          const min = parseInt(minMetrajeParam);
+          if (!isNaN(min)) {
+            return metraje >= min;
+          }
+        } else if (maxMetrajeParam) {
+          const max = parseInt(maxMetrajeParam);
+          if (!isNaN(max)) {
+            return metraje <= max;
+          }
+        }
+        
+        // Luego verificar filters.size (que también puede estar establecido por los params de URL)
         switch (filters.size) {
           case '1-15 m³':
-            return metraje >= 1 && metraje <= 15
+            return metraje >= 1 && metraje <= 15;
           case '15-40 m³':
-            return metraje > 15 && metraje <= 40
+            return metraje > 15 && metraje <= 40;
           case '+42 m³':
-            return metraje > 42
+            return metraje >= 42;
           default:
-            return true
+            return true;
         }
-      })
-      if (!tieneMetraje) return false
+      });
+      
+      if (!tieneMetraje) return false;
     }
 
     // Filtro por características/features
@@ -182,8 +237,8 @@ export function BodegaScreen() {
       rating: 0
     })
     
-    // Limpiar URL params (opcional - puedes mantener esto o comentarlo)
-    // window.location.href = '/bodegas'
+    // Redireccionar sin parámetros de filtro
+    window.location.href = `/bodegas${ciudadSeleccionada ? `?ciudad=${ciudadSeleccionada}` : ''}`
   }
 
   if (loading) {
@@ -219,12 +274,26 @@ export function BodegaScreen() {
     )
   }
 
-  // ✅ GENERAR TÍTULO DINÁMICO
+  // ✅ GENERAR TÍTULO DINÁMICO MEJORADO
   const generarTitulo = () => {
     const partes = []
     if (empresaSeleccionada) partes.push(empresaSeleccionada)
     if (zonaSeleccionada) partes.push(zonaSeleccionada)  
     if (ciudadSeleccionada) partes.push(ciudadSeleccionada)
+    
+    let tamaño = '';
+    // Añadir información de tamaño al título
+    if (filters.size) {
+      tamaño = filters.size;
+    } else if (minMetrajeParam && maxMetrajeParam) {
+      tamaño = `${minMetrajeParam}-${maxMetrajeParam} m³`;
+    } else if (minMetrajeParam) {
+      tamaño = `+${minMetrajeParam} m³`;
+    } else if (maxMetrajeParam) {
+      tamaño = `hasta ${maxMetrajeParam} m³`;
+    }
+    
+    if (tamaño) partes.push(tamaño);
     
     if (partes.length > 0) {
       return `Bodegas ${partes.join(' - ')} (${filteredWarehouses.length} resultados)`
@@ -238,22 +307,33 @@ export function BodegaScreen() {
       
       {/* ✅ TÍTULO DINÁMICO MEJORADO */}
       {(ciudadSeleccionada || zonaSeleccionada || empresaSeleccionada || 
+        minMetrajeParam || maxMetrajeParam ||
         filters.locations.length > 0 || filters.size || filters.features.length > 0 || filters.rating > 0) && (
         <div className="bg-white border-b px-6 py-4">
           <div className="max-w-[1500px] mx-auto">
             <h2 className="text-xl font-semibold" style={{ color: "#2C3A61" }}>
               {generarTitulo()}
             </h2>
-            {/* ✅ MOSTRAR FILTROS ACTIVOS */}
+            {/* ✅ MOSTRAR FILTROS ACTIVOS MEJORADO */}
             <div className="mt-2 flex flex-wrap gap-2 text-sm text-gray-600">
+              {ciudadSeleccionada && (
+                <span className="bg-green-100 px-2 py-1 rounded">
+                  Ciudad: {ciudadSeleccionada}
+                </span>
+              )}
               {filters.locations.length > 0 && (
                 <span className="bg-blue-100 px-2 py-1 rounded">
                   Zonas: {filters.locations.join(', ')}
                 </span>
               )}
-              {filters.size && (
-                <span className="bg-green-100 px-2 py-1 rounded">
-                  Tamaño: {filters.size}
+              {(filters.size || minMetrajeParam || maxMetrajeParam) && (
+                <span className="bg-yellow-100 px-2 py-1 rounded">
+                  Tamaño: {
+                    filters.size || 
+                    (minMetrajeParam && maxMetrajeParam ? `${minMetrajeParam}-${maxMetrajeParam} m³` :
+                     minMetrajeParam ? `+${minMetrajeParam} m³` : 
+                     maxMetrajeParam ? `hasta ${maxMetrajeParam} m³` : '')
+                  }
                 </span>
               )}
               {filters.rating > 0 && (
@@ -286,9 +366,14 @@ export function BodegaScreen() {
             isOpen={showFilters}
             onClose={() => setShowFilters(false)}
             filters={filters}
-            onFiltersChange={setFilters} // ✅ Esto ya estaba conectado correctamente
+            onFiltersChange={setFilters}
             ciudadSeleccionada={ciudadSeleccionada}
             hideMapOnMobile={true}
+            // ✅ PASAR PARÁMETROS DE URL AL SIDEBAR
+            urlParams={{
+              minMetraje: minMetrajeParam,
+              maxMetraje: maxMetrajeParam
+            }}
           />
         </div>
         <div className="md:col-span-3">
@@ -301,7 +386,9 @@ export function BodegaScreen() {
                   filtroActivo={{
                     ciudad: ciudadSeleccionada,
                     zona: zonaSeleccionada, 
-                    empresa: empresaSeleccionada
+                    empresa: empresaSeleccionada,
+                    minMetraje: minMetrajeParam,
+                    maxMetraje: maxMetrajeParam
                   }}
                 />
               ))}
@@ -312,7 +399,7 @@ export function BodegaScreen() {
                 No se encontraron bodegas que coincidan con tu búsqueda
               </p>
               <button
-                onClick={limpiarTodosLosFiltros} // ✅ Usar la nueva función
+                onClick={limpiarTodosLosFiltros}
                 className="bg-[#4B799B] hover:bg-[#3b5f7a] text-white px-6 py-2 rounded-md"
               >
                 Limpiar filtros

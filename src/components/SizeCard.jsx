@@ -1,7 +1,13 @@
+import { useNavigate } from 'react-router-dom';
+
 export function SizeGuideSection() {
+  const navigate = useNavigate();
+  
   const sizeGuides = [
     {
       title: "Desde 1 m³ hasta 15 m³",
+      minMetraje: 1,
+      maxMetraje: 15,
       description: [
         "Trasteo de apartaestudio",
         "Cajas y maletas", 
@@ -12,6 +18,8 @@ export function SizeGuideSection() {
     },
     {
       title: "Desde 15 m³ hasta 40 m³",
+      minMetraje: 15,
+      maxMetraje: 40,
       description: [
         "Mudanza 2-3 habitaciones", 
         "Electrodomésticos", 
@@ -22,6 +30,8 @@ export function SizeGuideSection() {
     },
     {
       title: "Más de 42 m³",
+      minMetraje: 42,
+      maxMetraje: null, // sin límite superior
       description: [
         "Importaciones",
         "Inventario",
@@ -33,10 +43,32 @@ export function SizeGuideSection() {
     },
   ]
 
-  // ✅ FUNCIÓN TEMPORAL PARA EL BOTÓN (sin lógica por ahora)
+  // ✅ MODIFICADO: Pasar directamente minMetraje y maxMetraje como filtros
   const handleVerBodegas = (guide) => {
-    console.log('🔍 Ver bodegas para:', guide.title);
-    // TODO: Agregar lógica de navegación o filtrado
+    console.log('🔍 Navegando a bodegas para:', guide.title);
+    
+    // Ciudad por defecto: Cali
+    const ciudadDefault = "Cali";
+    
+    // Construir URL con los parámetros de búsqueda
+    const searchParams = new URLSearchParams();
+    searchParams.append('ciudad', ciudadDefault);
+    
+    // Añadir parámetros de filtro basados en el rango
+    if (guide.minMetraje && guide.maxMetraje) {
+      // Caso: rango definido (ej: 1-15m³)
+      searchParams.append('minMetraje', guide.minMetraje);
+      searchParams.append('maxMetraje', guide.maxMetraje);
+    } else if (guide.minMetraje) {
+      // Caso: más de X (ej: más de 42m³)
+      searchParams.append('minMetraje', guide.minMetraje);
+    } else if (guide.maxMetraje) {
+      // Caso: menos de X (si existiera esta opción)
+      searchParams.append('maxMetraje', guide.maxMetraje);
+    }
+    
+    // Navegar a la página de búsqueda con los filtros
+    navigate(`/bodegas?${searchParams.toString()}`);
   }
 
   return (
@@ -61,7 +93,6 @@ export function SizeGuideSection() {
                 {guide.title}
               </h3>
               
-              {/* ✅ ETIQUETAS EN LUGAR DE TEXTO */}
               <div className="flex-1 mb-6">
                 <p className="text-sm font-medium mb-3" style={{ color: "#2C3A61" }}>
                   Ideal para:
@@ -78,10 +109,10 @@ export function SizeGuideSection() {
                 </div>
               </div>
               
-              {/* ✅ BOTÓN AGREGADO */}
+              {/* ✅ MODIFICADO: Cambiar texto del botón a "Buscar minibodega" */}
               <button
                 onClick={() => handleVerBodegas(guide)}
-                className="w-full py-3 px-4 rounded-md font-medium transition-colors text-white"
+                className="w-full py-3 px-4 rounded-md font-medium transition-colors text-white relative"
                 style={{ 
                   backgroundColor: "#4B799B",
                   border: "none"
@@ -93,7 +124,7 @@ export function SizeGuideSection() {
                   e.target.style.backgroundColor = "#4B799B";
                 }}
               >
-                Ver bodegas disponibles
+                Buscar minibodega
               </button>
             </div>
           ))}
