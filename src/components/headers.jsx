@@ -44,14 +44,13 @@ export function Header({ tipo }) {
       try {
         // Consultar la tabla de notificaciones para el usuario actual
         const { data, error } = await supabase
-          .from('notificaciones') // Usa el nombre real de tu tabla
-          .select('count')
+          .from('notificaciones')
+          .select('id') // Seleccionar solo el ID para minimizar datos transferidos
           .eq('user_id', user.id)
-          .eq('leida', false) // Asumiendo que tienes un campo "leida"
-          .count();
+          .eq('leida', false);
           
         if (data && !error) {
-          setNotificaciones(data.count || 0);
+          setNotificaciones(data.length || 0);
         }
       } catch (err) {
         console.error("Error al cargar notificaciones:", err);

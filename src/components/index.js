@@ -19,7 +19,15 @@ export * from './CompanyDescription'
 
 export * from './SizeCardReserved'
 
-export * from './FormStepper' 
+export * from './Reservation/FormStepper' 
+export * from './Reservation/AuthStep'
+export * from './Reservation/ConfirmationPopup'
+export * from './Reservation/DateSelectionStep'
+export * from './Reservation/PersonalInfoStep'
+export * from './Reservation/ProgressSteps'
+export * from './Reservation/ServicesStep'
+export * from './Reservation/StepNavigation'
+
 export * from './FormStep'
 export * from './Stepper'
 

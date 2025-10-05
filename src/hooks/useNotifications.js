@@ -20,17 +20,17 @@ export function useNotifications() {
       setLoading(true);
       setError(null);
       
-      // ¡CORREGIDO! La forma correcta de contar registros en Supabase
+      // Forma correcta de contar notificaciones
       const { data, error } = await supabase
         .from('notificaciones')
-        .select('*', { count: 'exact' })
+        .select('id') // Solo seleccionamos ID para eficiencia
         .eq('user_id', user.id)
         .eq('leida', false);
       
       if (error) throw error;
       
-      // Obtener el conteo desde data.count
-      setNotificaciones(data.length || 0);
+      // Contar resultados
+      setNotificaciones(data?.length || 0);
     } catch (err) {
       console.error("Error al cargar notificaciones:", err);
       setError(err.message);
@@ -39,7 +39,48 @@ export function useNotifications() {
     }
   };
 
-  // Marcar una notificación como leída
+  // Función clave: crear notificación
+  const crearNotificacion = async (datos) => {
+    try {
+      console.log("⏳ Creando notificación con datos:", datos);
+      
+      // Validación de datos mínimos requeridos
+      if (!datos.user_id || !datos.titulo || !datos.mensaje) {
+        throw new Error("Faltan campos obligatorios para la notificación");
+      }
+      
+      const { data, error } = await supabase
+        .from('notificaciones')
+        .insert([{
+          user_id: datos.user_id,
+          empresa_id: datos.empresa_id || null,
+          tipo: datos.tipo || 'sistema',
+          titulo: datos.titulo,
+          mensaje: datos.mensaje,
+          reserva_id: datos.reserva_id || null,
+          leida: false
+        }]);
+      
+      if (error) {
+        console.error("❌ Error insertando notificación:", error);
+        throw error;
+      }
+      
+      console.log("✅ Notificación creada exitosamente:", data);
+      
+      // Si la notificación es para el usuario actual, recargar contador
+      if (user && datos.user_id === user.id) {
+        cargarNotificaciones();
+      }
+      
+      return { success: true };
+    } catch (err) {
+      console.error("❌ Error al crear notificación:", err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  // Marcar como leída
   const marcarComoLeida = async (id) => {
     if (!user) return;
     
@@ -75,32 +116,10 @@ export function useNotifications() {
     }
   };
 
-  // Crear una nueva notificación
-  const crearNotificacion = async (datos) => {
-    try {
-      const { error } = await supabase
-        .from('notificaciones')
-        .insert([datos]);
-      
-      if (error) throw error;
-      
-      // Recargar para actualizar el contador si la notificación es para el usuario actual
-      if (datos.user_id === user?.id) {
-        cargarNotificaciones();
-      }
-      
-      return { success: true };
-    } catch (err) {
-      console.error("Error al crear notificación:", err);
-      return { success: false, error: err };
-    }
-  };
-
-  // Cargar notificaciones al montar el componente y cuando cambia el usuario
+  // Cargar notificaciones al montar y cuando cambia el usuario
   useEffect(() => {
     cargarNotificaciones();
     
-    // Actualizar cada minuto
     const interval = setInterval(() => {
       cargarNotificaciones();
     }, 60000);
