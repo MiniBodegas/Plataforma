@@ -2,10 +2,15 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from 'react-router-dom';
 import { useCreateReservation } from '../hooks/useCreateReservation';
+import { useNotifications } from '../hooks/useNotifications';
 import { marcarBodegaComoReservada, crearReserva } from '../services/bodegasService';
 
 export function FormStepper({ onDataChange, reservationData, onReservationSuccess }) {
   const { user, signIn, signUp } = useAuth();
+  const navigate = useNavigate();
+  const { createReservation, loading: creatingReservation, error, actualizarDisponibilidadBodega } = useCreateReservation();
+  const { crearNotificacion } = useNotifications(); 
+  
   const [currentStep, setCurrentStep] = useState(1);
   const [showLogin, setShowLogin] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -21,9 +26,10 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
     nombre: '',
     ...reservationData
   });
-  const navigate = useNavigate();
-  const { createReservation, loading: creatingReservation, error, actualizarDisponibilidadBodega } = useCreateReservation();
 
+  // Nuevo estado para el popup de confirmación
+  const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
+  
   // Verificar si el usuario ya está logueado al montar el componente
   useEffect(() => {
     if (user) {
@@ -196,12 +202,27 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
       servicios: formData.servicios
     };
 
+    console.log('Enviando datos:', dataToSend);
     const result = await createReservation(dataToSend);
+    console.log('Resultado de createReservation:', result);
 
     if (result.success) {
       // ✅ DESPUÉS DE CONFIRMAR LA RESERVA, ACTUALIZAR DISPONIBILIDAD
       if (reservationData.bodegaSeleccionada?.id) {
         await actualizarDisponibilidadBodega(reservationData.bodegaSeleccionada.id, false);
+        
+        // 👇 CREAR NOTIFICACIÓN PARA EL PROVEEDOR
+        await crearNotificacion({
+          user_id: reservationData.bodegaSeleccionada.empresa_id, // ID del proveedor dueño de la bodega
+          empresa_id: reservationData.bodegaSeleccionada.empresa_id,
+          tipo: 'reserva',
+          titulo: '¡Nueva solicitud de reserva!',
+          mensaje: `El usuario ${user.user_metadata?.full_name || formData.nombre || 'Cliente'} ha solicitado reservar la bodega "${reservationData.bodegaSeleccionada.nombre}" a partir del ${new Date(formData.fechaInicio).toLocaleDateString()}.`,
+          reserva_id: result.reservaId, // Asegúrate que tu hook devuelva el ID de la reserva creada
+          leida: false
+        });
+        
+        console.log('✅ Notificación enviada al proveedor');
       }
       
       // Notificar éxito al componente padre
@@ -209,65 +230,76 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
         onReservationSuccess(reservationData.bodegaSeleccionada);
       }
       
-      // Redirigir o mostrar confirmación
-      navigate('/confirmacion-reserva', { 
-        state: { 
-          reservaConfirmada: true,
-          bodegaReservada: reservationData.bodegaSeleccionada
-        }
-      });
+      // Mostrar popup de confirmación en lugar de redirigir inmediatamente
+      setShowConfirmationPopup(true);
+      console.log('Popup configurado para mostrarse');
+      
+      // Redirigir después de mostrar el popup por unos segundos (opcional)
+      setTimeout(() => {
+        setShowConfirmationPopup(false);
+        navigate('/', { 
+          state: { 
+            reservaConfirmada: true,
+            bodegaReservada: reservationData.bodegaSeleccionada
+          }
+        });
+      }, 5000); // Mostrar por 5 segundos
+      
     } else {
       setAuthError(`Error creando la reserva: ${result.error}`);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!currentStep === steps.length - 1) return;
-    
-    setIsLoading(true);
-    setError('');
-
-    try {
-      console.log('📝 Enviando reserva:', reservationData);
-
-      // ✅ 1. CREAR LA RESERVA PRIMERO
-      const reservaCreada = await crearReserva({
-        bodegaId: reservationData.bodegaSeleccionada?.id,
-        empresaId: reservationData.bodegaSeleccionada?.empresaId,
-        numeroDocumento: reservationData.numeroDocumento,
-        numeroCelular: reservationData.numeroCelular,
-        fechaInicio: reservationData.fechaInicio,
-        servicios: reservationData.servicios || []
-      });
-
-      console.log('✅ Reserva creada exitosamente:', reservaCreada);
-
-      // ✅ 2. MARCAR BODEGA COMO NO DISPONIBLE AUTOMÁTICAMENTE
-      if (reservationData.bodegaSeleccionada?.id) {
-        await marcarBodegaComoReservada(reservationData.bodegaSeleccionada.id);
-        console.log('✅ Bodega marcada como reservada automáticamente');
-      }
-
-      // ✅ 3. NOTIFICAR ÉXITO AL COMPONENTE PADRE
-      if (onReservationSuccess) {
-        onReservationSuccess(reservationData.bodegaSeleccionada);
-      }
-
-      alert('🎉 ¡Reserva confirmada exitosamente!');
-
-    } catch (error) {
-      console.error('❌ Error procesando reserva:', error);
-      setError('Error al procesar la reserva: ' + error.message);
-      alert('Error al procesar la reserva: ' + error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
+      {/* Popup de Confirmación */}
+      {showConfirmationPopup && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+          <div className="bg-white rounded-xl p-8 max-w-md mx-auto shadow-2xl text-center relative">
+            <div className="absolute top-3 right-3">
+              <button 
+                onClick={() => {
+                  setShowConfirmationPopup(false);
+                  navigate('/confirmacion-reserva', { 
+                    state: { 
+                      reservaConfirmada: true,
+                      bodegaReservada: reservationData.bodegaSeleccionada
+                    }
+                  });
+                }}
+                className="text-gray-500 hover:text-gray-800"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="text-green-600 text-5xl mb-4">✓</div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">¡Gracias por tu reserva!</h3>
+            <p className="text-gray-600 mb-4">
+              En los siguientes días te informaremos si tu solicitud fue aceptada. 
+              Gracias por confiar en nosotros.
+            </p>
+            
+            <div className="mt-6">
+              <button 
+                onClick={() => {
+                  setShowConfirmationPopup(false);
+                  navigate('/confirmacion-reserva', { 
+                    state: { 
+                      reservaConfirmada: true,
+                      bodegaReservada: reservationData.bodegaSeleccionada
+                    }
+                  });
+                }}
+                className="px-6 py-2 bg-[#4B799B] text-white rounded-lg font-medium hover:bg-[#3b5f7a] transition-colors"
+              >
+                Continuar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Progress Steps */}
       <div className="mb-6">
         <div className="flex justify-between items-start mb-4">
@@ -652,3 +684,32 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
     </div>
   );  
 }
+
+// En tu hook useCreateReservation
+const createReservation = async (data) => {
+  try {
+    setLoading(true);
+    setError(null);
+    
+    // Tu lógica existente...
+    const { data: reservaData, error } = await supabase
+      .from('reservas')
+      .insert([{
+        // Tus campos de reserva
+      }])
+      .select() // Importante: selecciona para obtener el ID generado
+      .single();
+    
+    if (error) throw error;
+    
+    console.log('Reserva creada:', reservaData);
+    
+    return { 
+      success: true,  // Asegúrate de que esto exista
+      reservaId: reservaData?.id // Usa operador opcional para evitar errores
+    };
+  } catch (err) {
+    console.error('Error al crear reserva:', err);
+    return { success: false, error: err.message };
+  }
+};

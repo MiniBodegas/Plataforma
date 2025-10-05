@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase'; 
+import { Notifications } from './index';
 
 export function Header({ tipo }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [notificaciones, setNotificaciones] = useState(0); // Estado para notificaciones
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -32,6 +35,35 @@ export function Header({ tipo }) {
       navigate(loginRoute);
     }
   };
+
+  // Cargar notificaciones no leídas
+  useEffect(() => {
+    async function cargarNotificaciones() {
+      if (!user) return;
+      
+      try {
+        // Consultar la tabla de notificaciones para el usuario actual
+        const { data, error } = await supabase
+          .from('notificaciones') // Usa el nombre real de tu tabla
+          .select('count')
+          .eq('user_id', user.id)
+          .eq('leida', false) // Asumiendo que tienes un campo "leida"
+          .count();
+          
+        if (data && !error) {
+          setNotificaciones(data.count || 0);
+        }
+      } catch (err) {
+        console.error("Error al cargar notificaciones:", err);
+      }
+    }
+    
+    cargarNotificaciones();
+    
+    // Opcionalmente actualizar cada minuto
+    const interval = setInterval(cargarNotificaciones, 60000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   return (
     <header className="w-full bg-white text-[#2C3A61] shadow-sm relative">
@@ -63,10 +95,12 @@ export function Header({ tipo }) {
                   <Link 
                     to="/perfil-user"
                     className="flex items-center gap-2 px-4 py-2 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
-                    hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 whitespace-nowrap"
+                    hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 whitespace-nowrap relative"
                   >
                     <User className="h-4 w-4" />
                     Mi Perfil
+                    {/* Contador de notificaciones */}
+                    <Notifications />
                   </Link>
                   <button 
                     onClick={handleLogout}
@@ -129,6 +163,11 @@ export function Header({ tipo }) {
                   >
                     <User className="h-4 w-4" />
                     Mi Perfil
+                    {notificaciones > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold">
+                        {notificaciones}
+                      </span>
+                    )}
                   </Link>
                   <button 
                     onClick={handleLogout}
@@ -197,11 +236,13 @@ export function Header({ tipo }) {
                   <Link 
                     to="/perfil-user"
                     className="flex items-center gap-2 px-4 py-3 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
-                    hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 text-center"
+                    hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 text-center relative"
                     onClick={closeMenu}
                   >
                     <User className="h-4 w-4" />
                     Mi Perfil
+                    {/* Contador para mobile */}
+                    <Notifications />
                   </Link>
                   <button 
                     onClick={handleLogout}

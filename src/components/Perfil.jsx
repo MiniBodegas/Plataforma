@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Añadido useEffect
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { useRequireProfile } from "../hooks/useRequireProfile";
+import { useAuth } from "../contexts/AuthContext"; // Importa useAuth
+import { supabase } from "../lib/supabase"; // Importa supabase
 
 const opciones = [
   {
@@ -35,9 +37,37 @@ const opciones = [
 ];
 
 export function Perfil() {
-  useRequireProfile(); // Esto fuerza completar perfil antes de mostrar este componente
+  useRequireProfile();
+  const { user } = useAuth(); // Obtiene el usuario autenticado
   const [open, setOpen] = useState(null);
+  const [nombre, setNombre] = useState(""); // Estado para el nombre
+  const [loading, setLoading] = useState(true); // Estado para la carga
   const navigate = useNavigate();
+
+  // Obtener el nombre del usuario de la base de datos
+  useEffect(() => {
+    async function fetchUsuario() {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from("usuarios")
+          .select("nombre")
+          .eq("id", user.id)
+          .single();
+          
+        if (data && data.nombre) {
+          setNombre(data.nombre);
+        }
+      } catch (error) {
+        console.error("Error al obtener el perfil:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchUsuario();
+  }, [user]);
 
   const handleClick = (idx, opcion) => {
     if (opcion.tipo === "ruta") {
@@ -48,7 +78,7 @@ export function Perfil() {
   };
 
   const handleBack = () => {
-    navigate(-1); // Regresa a la página anterior
+    navigate(-1);
   };
 
   return (
@@ -65,7 +95,7 @@ export function Perfil() {
         </div>
 
         <h2 className="text-2xl font-bold text-[#2C3A61] text-center mt-4 mb-2">
-          Juan Esteban Ramirez Perdomo
+          {loading ? "Cargando..." : nombre || "Usuario"}
         </h2>
         <h3 className="text-xl font-bold text-[#2C3A61] text-center mb-8">
           Mi cuenta

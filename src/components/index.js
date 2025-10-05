@@ -61,3 +61,5 @@ export * from './AgregarMiniBodegaBtn'
 export * from './CompanyDescripcionPerfil'
 export * from './CompanyRating'
 export * from './CompletarPerfil'
+
+export * from './Notifications'

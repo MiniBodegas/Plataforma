@@ -5,10 +5,12 @@ import { useProveedorDashboard } from '../../hooks/useProveedorDashboard';
 import { Check, X, Edit3, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useNotifications } from '../../hooks/useNotifications'; // Añadir esta importación
 
 export function Reservas() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { crearNotificacion } = useNotifications(); // Añadir esto para usar el hook
 
   const { 
     reservas, 
@@ -45,7 +47,22 @@ export function Reservas() {
       if (!resultado.success) {
         alert(`Error al aceptar la reserva: ${resultado.error}`);
       } else {
-        // ✅ MENSAJE SIMPLIFICADO - SIN MENCIÓN DE CAMBIO DE DISPONIBILIDAD
+        // Obtener la reserva específica que fue aceptada
+        const reservaAceptada = reservas.find(r => r.id === id);
+        
+        // Enviar notificación al usuario que hizo la reserva
+        if (reservaAceptada && reservaAceptada.user_id) {
+          await crearNotificacion({
+            user_id: reservaAceptada.user_id,
+            tipo: 'estado_reserva',
+            titulo: '¡Reserva aprobada!',
+            mensaje: `Tu reserva para la bodega "${reservaAceptada.bodega?.nombre || 'seleccionada'}" ha sido APROBADA. Ya puedes comenzar a utilizarla según las fechas acordadas.`,
+            reserva_id: id,
+            leida: false
+          });
+          console.log('✅ Notificación enviada al usuario sobre reserva aceptada');
+        }
+        
         alert('✅ Reserva aceptada exitosamente.');
         console.log('✅ Reserva aceptada');
       }
@@ -68,7 +85,24 @@ export function Reservas() {
       if (!resultado.success) {
         alert(`Error al rechazar la reserva: ${resultado.error}`);
       } else {
-        // ✅ MENSAJE SIMPLIFICADO - SIN MENCIÓN DE CAMBIO DE DISPONIBILIDAD
+        // Obtener la reserva específica que fue rechazada
+        const reservaRechazada = reservas.find(r => r.id === id);
+        
+        // Enviar notificación al usuario que hizo la reserva
+        if (reservaRechazada && reservaRechazada.user_id) {
+          await crearNotificacion({
+            user_id: reservaRechazada.user_id,
+            tipo: 'estado_reserva',
+            titulo: 'Reserva rechazada',
+            mensaje: `Tu reserva para la bodega "${reservaRechazada.bodega?.nombre || 'seleccionada'}" ha sido RECHAZADA.${
+              motivoRechazo ? ` Motivo: ${motivoRechazo}` : ''
+            }`,
+            reserva_id: id,
+            leida: false
+          });
+          console.log('✅ Notificación enviada al usuario sobre reserva rechazada');
+        }
+        
         alert('❌ Reserva rechazada exitosamente.');
         console.log('✅ Reserva rechazada');
       }

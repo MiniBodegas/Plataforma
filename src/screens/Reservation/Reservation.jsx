@@ -25,10 +25,26 @@ export function Reservation() {
   // Obtener datos de la bodega desde la navegación
   useEffect(() => {
     if (location.state && location.state.bodegaSeleccionada) {
+      // Crear una copia con el campo empresa_id estandarizado
+      const bodega = location.state.bodegaSeleccionada;
+      
+      // Asegurar que tenemos empresa_id (usar la versión correcta del campo)
+      const empresa_id = bodega.empresa_id || bodega.empresaId || null;
+      
+      if (!empresa_id) {
+        console.error('ADVERTENCIA: La bodega seleccionada no tiene ID de empresa');
+      }
+      
       setReservationData(prev => ({
         ...prev,
-        bodegaSeleccionada: location.state.bodegaSeleccionada
+        bodegaSeleccionada: {
+          ...bodega,
+          empresa_id: empresa_id // Estandarizar el nombre del campo
+        }
       }));
+      
+      // Log para debugging
+      console.log('ID de empresa establecido:', empresa_id);
     }
   }, [location.state]);
 
@@ -45,7 +61,7 @@ export function Reservation() {
 
   // ✅ CREAR WAREHOUSE PARA COMPANYDESCRIPTION (IGUAL QUE EN BODEGAS DISPONIBLES)
   const warehouse = bodegaInfo ? {
-    id: bodegaInfo.empresaId || bodegaInfo.id,
+    id: bodegaInfo.empresa_id || bodegaInfo.empresaId || bodegaInfo.id, // Priorizar empresa_id
     name: bodegaInfo.name || "Empresa sin nombre",
     city: bodegaInfo.city || "Ciudad no disponible",
     zone: bodegaInfo.zone || "Zona no disponible", 
@@ -89,6 +105,24 @@ export function Reservation() {
       totalBodegas: warehouse.totalBodegas,
       priceRange: warehouse.priceRange
     } : null
+  });
+
+  // En el componente donde seleccionas una bodega (por ejemplo, BodegaCard)
+  const handleSelectBodega = (bodega) => {
+    if (!bodega.empresa_id) {
+      console.error('La bodega seleccionada no tiene ID de empresa');
+    }
+    setReservationData({
+      ...reservationData,
+      bodegaSeleccionada: bodega
+    });
+  };
+
+  // Añade este log al final de Reservation.jsx
+  console.log('Datos finales de reserva:', {
+    bodegaId: reservationData.bodegaSeleccionada?.id,
+    empresaId: reservationData.bodegaSeleccionada?.empresa_id,
+    // otros campos relevantes
   });
 
   return (
