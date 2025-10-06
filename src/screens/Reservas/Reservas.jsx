@@ -60,6 +60,7 @@ export function Reservas() {
           mensaje: `Tu reserva ha sido ACEPTADA. ${r?.mini_bodegas?.nombre || r?.mini_bodegas?.zona ? `Bodega en zona "${r.mini_bodegas.zona || 'N/A'}" - ${r.mini_bodegas.ciudad || 'N/A'}". ` : ''}Revisa los detalles en tu panel.`,
           reserva_id: id,
           empresa_id: empresa, // Usar directamente el empresa_id de la reserva
+          emisor_id: user.id // AÑADIR ESTA LÍNEA para incluir quién envía la notificación
         });
       }
       alert('✅ Reserva aceptada exitosamente.');
@@ -85,8 +86,9 @@ export function Reservas() {
       }
       const r = reservas.find(res => res.id === id);
       if (r?.user_id) {
-        // Buscar el ID de empresa correcto
-        const empresa = r.bodega?.empresa_id || empresaId;
+        // Usar directamente el empresa_id de la reserva
+        // que viene de la base de datos
+        const empresa = r.empresa_id || empresaId;
         console.log('🏢 ID de empresa a usar en notificación:', empresa);
         
         await crearNotificacion({
@@ -95,7 +97,8 @@ export function Reservas() {
           titulo: 'Reserva rechazada',
           mensaje: `Tu reserva ha sido RECHAZADA.${motivoRechazo ? ` Motivo: ${motivoRechazo}` : ''}`,
           reserva_id: id,
-          empresa_id: empresa, // Usar el ID de empresa de la bodega si está disponible
+          empresa_id: empresa, // Usar directamente el empresa_id de la reserva
+          emisor_id: user.id // AÑADIR ESTA LÍNEA para incluir quién envía la notificación
         });
       }
       alert('❌ Reserva rechazada exitosamente.');

@@ -36,41 +36,46 @@ export function useNotifications() {
   };
 
   // Crear notificación vía RPC crear_notificacion
-  const crearNotificacion = async ({
-    user_id,        // destinatario (UUID de auth.users.id)
-    titulo,
-    mensaje,
-    tipo = 'sistema',     // usamos 'sistema' para no romper el CHECK
-    empresa_id = null,
-    reserva_id = null,
-  }) => {
+  const crearNotificacion = async (datos) => {
     try {
-      const { data, error } = await supabase.rpc('crear_notificacion', {
-        receptor_id: user_id,
-        titulo,
-        mensaje,
-        tipo,
-        empresa_id,
-        reserva_id
-      });
-
+      console.log("⏳ Creando notificación con datos:", datos);
+      
+      // Validación de datos mínimos requeridos
+      if (!datos.user_id || !datos.titulo || !datos.mensaje) {
+        throw new Error("Faltan campos obligatorios para la notificación");
+      }
+      
+      // Preparar parámetros para la función RPC
+      const params = {
+        receptor_id: datos.user_id,
+        titulo: datos.titulo,
+        mensaje: datos.mensaje,
+        tipo: datos.tipo || 'sistema',
+        empresa_id: datos.empresa_id || null,
+        reserva_id: datos.reserva_id || null,
+        emisor_id: datos.emisor_id || user?.id || null // Usar emisor_id proporcionado o el usuario actual
+      };
+      
+      console.log("✅ Parámetros de notificación:", params);
+      
+      // Usar la función RPC para crear notificaciones
+      const { data, error } = await supabase.rpc('crear_notificacion', params);
+      
       if (error) {
-        console.error('❌ Error insertando notificación (RPC):', error);
-        return { success: false, error: error.message };
+        console.error("❌ Error insertando notificación:", error);
+        throw error;
       }
-      if (!data?.success) {
-        console.error('❌ RPC devolvió error lógico:', data);
-        return { success: false, error: data?.error || 'rpc_error' };
-      }
-
-      // Si el destinatario soy yo, refresco contador
-      if (user && user.id === user_id) {
+      
+      console.log("✅ Notificación creada exitosamente:", data);
+      
+      // Si la notificación es para el usuario actual, recargar contador
+      if (user && datos.user_id === user.id) {
         cargarNotificaciones();
       }
-
-      return { success: true, id: data.notificacion_id };
+      
+      return { success: true };
     } catch (err) {
-      console.error('❌ Error al crear notificación (catch):', err);
+      console.error("❌ Error al crear notificación:", err);
       return { success: false, error: err.message };
     }
   };
