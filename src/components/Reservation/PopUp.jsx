@@ -1,4 +1,4 @@
-export function ConfirmationPopup({ onClose, bodegaData }) {
+export function PopUp({ onClose, bodegaData }) {
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
       <div className="bg-white rounded-xl p-8 max-w-md mx-auto shadow-2xl text-center relative">
