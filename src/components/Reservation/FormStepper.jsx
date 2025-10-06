@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCreateReservation } from '../../hooks/useCreateReservation';
 import { useNotifications } from '../../hooks/useNotifications';
 import { supabase } from '../../lib/supabase'; 
-import { ConfirmationPopup } from "../index";
+import { ConfirmationPopup } from "./ConfirmationPopup";
 
 
 import { AuthStep, 

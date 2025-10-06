@@ -26,7 +26,6 @@ export * from './Reservation/PersonalInfoStep'
 export * from './Reservation/ProgressSteps'
 export * from './Reservation/ServicesStep'
 export * from './Reservation/StepNavigation'
-export * from './Reservation/ConfirmationPopup'
 
 export * from './FormStep'
 export * from './Stepper'
