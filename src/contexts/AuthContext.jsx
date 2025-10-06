@@ -36,44 +36,36 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Registro
+  const signIn = async (email, password) => {
+    return await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+  }
+
   const signUp = async (email, password, userData = {}) => {
-    const { data, error } = await supabase.auth.signUp({
+    return await supabase.auth.signUp({
       email,
       password,
       options: {
         data: userData
       }
     })
-    return { data, error }
   }
 
-  // Login
-  const signIn = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    })
-    return { data, error }
-  }
-
-  // Logout
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    return { error }
+    return await supabase.auth.signOut()
   }
 
-  // Reset password
   const resetPassword = async (email) => {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email)
-    return { data, error }
+    return await supabase.auth.resetPasswordForEmail(email)
   }
 
   const value = {
     user,
     loading,
-    signUp,
     signIn,
+    signUp,
     signOut,
     resetPassword
   }

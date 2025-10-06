@@ -8,126 +8,106 @@ export function useNotifications() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Cargar notificaciones
+  // Contar notificaciones no leídas (eficiente con count/head)
   const cargarNotificaciones = async () => {
-    if (!user) {
-      setNotificaciones(0);
-      setLoading(false);
-      return;
-    }
-    
     try {
+      if (!user) {
+        setNotificaciones(0);
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       setError(null);
-      
-      // Forma correcta de contar notificaciones
-      const { data, error } = await supabase
+
+      const { count, error: errCount } = await supabase
         .from('notificaciones')
-        .select('id') // Solo seleccionamos ID para eficiencia
+        .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .eq('leida', false);
-      
-      if (error) throw error;
-      
-      // Contar resultados
-      setNotificaciones(data?.length || 0);
+
+      if (errCount) throw errCount;
+      setNotificaciones(count || 0);
     } catch (err) {
-      console.error("Error al cargar notificaciones:", err);
+      console.error('Error al cargar notificaciones:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Función clave: crear notificación
-  const crearNotificacion = async (datos) => {
+  // Crear notificación vía RPC crear_notificacion
+  const crearNotificacion = async ({
+    user_id,        // destinatario (UUID de auth.users.id)
+    titulo,
+    mensaje,
+    tipo = 'sistema',     // usamos 'sistema' para no romper el CHECK
+    empresa_id = null,
+    reserva_id = null,
+  }) => {
     try {
-      console.log("⏳ Creando notificación con datos:", datos);
-      
-      // Validación de datos mínimos requeridos
-      if (!datos.user_id || !datos.titulo || !datos.mensaje) {
-        throw new Error("Faltan campos obligatorios para la notificación");
-      }
-      
-      const { data, error } = await supabase
-        .from('notificaciones')
-        .insert([{
-          user_id: datos.user_id,
-          empresa_id: datos.empresa_id || null,
-          tipo: datos.tipo || 'sistema',
-          titulo: datos.titulo,
-          mensaje: datos.mensaje,
-          reserva_id: datos.reserva_id || null,
-          leida: false
-        }]);
-      
+      const { data, error } = await supabase.rpc('crear_notificacion', {
+        receptor_id: user_id,
+        titulo,
+        mensaje,
+        tipo,
+        empresa_id,
+        reserva_id
+      });
+
       if (error) {
-        console.error("❌ Error insertando notificación:", error);
-        throw error;
+        console.error('❌ Error insertando notificación (RPC):', error);
+        return { success: false, error: error.message };
       }
-      
-      console.log("✅ Notificación creada exitosamente:", data);
-      
-      // Si la notificación es para el usuario actual, recargar contador
-      if (user && datos.user_id === user.id) {
+      if (!data?.success) {
+        console.error('❌ RPC devolvió error lógico:', data);
+        return { success: false, error: data?.error || 'rpc_error' };
+      }
+
+      // Si el destinatario soy yo, refresco contador
+      if (user && user.id === user_id) {
         cargarNotificaciones();
       }
-      
-      return { success: true };
+
+      return { success: true, id: data.notificacion_id };
     } catch (err) {
-      console.error("❌ Error al crear notificación:", err);
+      console.error('❌ Error al crear notificación (catch):', err);
       return { success: false, error: err.message };
     }
   };
 
-  // Marcar como leída
   const marcarComoLeida = async (id) => {
     if (!user) return;
-    
     try {
-      await supabase
-        .from('notificaciones')
-        .update({ leida: true })
-        .eq('id', id);
-      
-      // Recargar para actualizar el contador
+      await supabase.from('notificaciones').update({ leida: true }).eq('id', id);
       cargarNotificaciones();
     } catch (err) {
-      console.error("Error al marcar como leída:", err);
+      console.error('Error al marcar como leída:', err);
       setError(err.message);
     }
   };
 
-  // Marcar todas como leídas
   const marcarTodasComoLeidas = async () => {
     if (!user) return;
-    
     try {
       await supabase
         .from('notificaciones')
         .update({ leida: true })
         .eq('user_id', user.id)
         .eq('leida', false);
-      
       setNotificaciones(0);
     } catch (err) {
-      console.error("Error al marcar todas como leídas:", err);
+      console.error('Error al marcar todas como leídas:', err);
       setError(err.message);
     }
   };
 
-  // Cargar notificaciones al montar y cuando cambia el usuario
   useEffect(() => {
     cargarNotificaciones();
-    
-    const interval = setInterval(() => {
-      cargarNotificaciones();
-    }, 60000);
-    
+    const interval = setInterval(cargarNotificaciones, 60000);
     return () => clearInterval(interval);
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
-  // Retorna los datos y funciones necesarias
   return {
     notificaciones,
     loading,

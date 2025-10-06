@@ -71,3 +71,4 @@ export * from './CompanyRating'
 export * from './CompletarPerfil'
 
 export * from './Notifications'
+export * from './NotificationBell'

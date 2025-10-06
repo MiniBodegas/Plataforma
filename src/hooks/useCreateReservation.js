@@ -11,7 +11,7 @@ export function useCreateReservation() {
   const actualizarDisponibilidadBodega = async (bodegaId, disponible) => {
     try {
       const { error } = await supabase
-        .from('mini_bodegas') // Cambiado de 'bodegas' a 'mini_bodegas'
+        .from('mini_bodegas') // Nombre correcto de la tabla
         .update({ disponible: disponible })
         .eq('id', bodegaId);
       
@@ -40,30 +40,19 @@ export function useCreateReservation() {
         console.warn('¡Advertencia! El ID de empresa no está disponible');
       }
       
-      // Calcular fecha_fin automáticamente (1 mes después de la fecha_inicio)
-      let fechaFin;
-      if (data.fechaInicio) {
-        const inicio = new Date(data.fechaInicio);
-        inicio.setMonth(inicio.getMonth() + 1);
-        fechaFin = inicio.toISOString().split('T')[0];
-      } else {
-        const ahora = new Date();
-        ahora.setMonth(ahora.getMonth() + 1);
-        fechaFin = ahora.toISOString().split('T')[0];
-      }
-      
       // Extraer el precio mensual de la bodega seleccionada
       const precioMensual = data.bodegaSeleccionada.precio || 
                           data.bodegaSeleccionada.precio_mensual || 
                           data.bodegaSeleccionada.precio_base || 
                           '0.00';
       
+      // Objeto de datos de la reserva SIN fecha_fin
       const reservaData = {
         mini_bodega_id: data.bodegaSeleccionada.id,
         empresa_id: empresaId,
         user_id: user?.id,
         fecha_inicio: data.fechaInicio,
-        fecha_fin: fechaFin,
+        // Se elimina el campo fecha_fin
         servicios_adicionales: data.servicios || [],
         tipo_documento: data.tipoDocumento,
         numero_documento: data.numeroDocumento,
@@ -71,6 +60,8 @@ export function useCreateReservation() {
         estado: 'pendiente',
         precio_total: precioMensual.toString()
       };
+      
+      console.log('Creando reserva sin fecha de finalización:', reservaData);
       
       const { data: reservaCreada, error } = await supabase
         .from('reservas')

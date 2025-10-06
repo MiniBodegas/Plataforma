@@ -214,32 +214,42 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
     }
   };
 
-  // Función para enviar notificación
+  // Función optimizada para enviar notificación al propietario correcto
   const enviarNotificacionProveedor = async (reserva, bodega, usuario) => {
     try {
+      // Verificaciones iniciales
       if (!bodega || !bodega.empresa_id) {
         console.error("❌ No se puede enviar notificación: falta empresa_id");
         return false;
       }
       
-      // Nota: Esta consulta podría fallar si no existe la tabla 'usuarios'
-      const { data: empresaData, error: empresaError } = await supabase
-        .from('usuarios')
-        .select('user_id')
+      console.log("⏳ Buscando propietario para la empresa ID:", bodega.empresa_id);
+      
+      // Consultar directamente la tabla empresas para obtener el user_id asociado
+      const { data: empresa, error: empresaError } = await supabase
+        .from('empresas')
+        .select('user_id, nombre')
         .eq('id', bodega.empresa_id)
         .single();
-        
-      if (empresaError || !empresaData?.user_id) {
-        console.error("❌ No se encontró usuario para esta empresa:", empresaError);
+      
+      if (empresaError || !empresa?.user_id) {
+        console.error("❌ No se encontró el propietario de la empresa:", empresaError);
         return false;
       }
       
+      console.log("✓ Propietario encontrado:", empresa.user_id);
+      
+      // Obtener nombre de bodega de manera segura
+      const nombreBodega = bodega.nombre || bodega.titulo || bodega.descripcion || "Mini Bodega";
+      const nombreEmpresa = empresa.nombre || "la empresa";
+      
+      // Crear notificación para el propietario
       const resultado = await crearNotificacion({
-        user_id: empresaData.user_id,
+        user_id: empresa.user_id, // ID del usuario propietario
         empresa_id: bodega.empresa_id,
         tipo: 'nueva_reserva',
         titulo: '¡Nueva solicitud de reserva!',
-        mensaje: `El usuario ${usuario?.user_metadata?.full_name || formData.nombre || 'Cliente'} ha solicitado reservar la bodega "${bodega.nombre}" a partir del ${new Date(formData.fechaInicio).toLocaleDateString()}.`,
+        mensaje: `El usuario ${usuario?.user_metadata?.full_name || formData.nombre || 'Cliente'} ha solicitado reservar la bodega "${nombreBodega}" de ${nombreEmpresa} a partir del ${new Date(formData.fechaInicio).toLocaleDateString()}.`,
         reserva_id: reserva.id || reserva.reservaId,
         leida: false
       });

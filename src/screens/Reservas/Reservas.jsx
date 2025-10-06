@@ -2,70 +2,67 @@ import { useState } from 'react';
 import { ReservaCard, NavBarProveedores } from "../../components";
 import { useReservasByEmpresa } from '../../hooks/useReservasByEmpresa';
 import { useProveedorDashboard } from '../../hooks/useProveedorDashboard';
-import { Check, X, Edit3, AlertCircle } from 'lucide-react';
+import { AlertCircle, Check, Edit3, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { useNotifications } from '../../hooks/useNotifications'; // Añadir esta importación
+import { useNotifications } from '../../hooks/useNotifications';
 
 export function Reservas() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { crearNotificacion } = useNotifications(); // Añadir esto para usar el hook
+  const { crearNotificacion } = useNotifications();
 
-  const { 
-    reservas, 
-    loading: loadingReservas, 
-    error: errorReservas, 
-    actualizarEstadoReserva 
+  const {
+    reservas,
+    loading: loadingReservas,
+    error: errorReservas,
+    actualizarEstadoReserva
   } = useReservasByEmpresa();
 
-  // ✅ Hook para gestionar disponibilidad de bodegas
-  const { 
-    bodegas, 
-    loading: loadingBodegas, 
-    error: errorBodegas, 
+  const {
+    bodegas,
+    loading: loadingBodegas,
+    error: errorBodegas,
     actualizarDisponibilidad,
     empresaId
   } = useProveedorDashboard();
 
   const [procesando, setProcesando] = useState(false);
-  const [vistaActual, setVistaActual] = useState('reservas'); // 'reservas' o 'disponibilidad'
+  const [vistaActual, setVistaActual] = useState('reservas'); // 'reservas' | 'disponibilidad'
 
-  // ✅ Estados para gestión de disponibilidad
   const [editando, setEditando] = useState(null);
   const [motivo, setMotivo] = useState('');
   const [procesandoBodega, setProcesandoBodega] = useState(null);
 
+  // ✅ ACEPTAR → notificar a USUARIO: "tu reserva ha sido aceptada"
   const handleAceptar = async (id) => {
     setProcesando(true);
-    
     try {
       console.log('✅ Aceptando reserva:', id);
+      console.log('🏢 ID de empresa actual:', empresaId);
       
       const resultado = await actualizarEstadoReserva(id, 'aceptada');
-      
       if (!resultado.success) {
         alert(`Error al aceptar la reserva: ${resultado.error}`);
-      } else {
-        // Obtener la reserva específica que fue aceptada
-        const reservaAceptada = reservas.find(r => r.id === id);
-        
-        // Enviar notificación al usuario que hizo la reserva
-        if (reservaAceptada && reservaAceptada.user_id) {
-          await crearNotificacion({
-            user_id: reservaAceptada.user_id,
-            tipo: 'estado_reserva',
-            titulo: '¡Reserva aprobada!',
-            mensaje: `Tu reserva para la bodega "${reservaAceptada.bodega?.nombre || 'seleccionada'}" ha sido APROBADA. Ya puedes comenzar a utilizarla según las fechas acordadas.`,
-            reserva_id: id,
-            leida: false
-          });
-          console.log('✅ Notificación enviada al usuario sobre reserva aceptada');
-        }
-        
-        alert('✅ Reserva aceptada exitosamente.');
-        console.log('✅ Reserva aceptada');
+        return;
       }
+      const r = reservas.find(res => res.id === id);
+      if (r?.user_id) {
+        // Usar directamente el empresa_id de la reserva
+        // que viene de la base de datos
+        const empresa = r.empresa_id || empresaId;
+        console.log('🏢 ID de empresa a usar en notificación:', empresa);
+        
+        await crearNotificacion({
+          user_id: r.user_id,
+          tipo: 'reserva_aceptada',
+          titulo: '¡Reserva aceptada!',
+          mensaje: `Tu reserva ha sido ACEPTADA. ${r?.mini_bodegas?.nombre || r?.mini_bodegas?.zona ? `Bodega en zona "${r.mini_bodegas.zona || 'N/A'}" - ${r.mini_bodegas.ciudad || 'N/A'}". ` : ''}Revisa los detalles en tu panel.`,
+          reserva_id: id,
+          empresa_id: empresa, // Usar directamente el empresa_id de la reserva
+        });
+      }
+      alert('✅ Reserva aceptada exitosamente.');
     } catch (error) {
       console.error('❌ Error aceptando reserva:', error);
       alert('Error al procesar la aceptación de reserva');
@@ -74,38 +71,34 @@ export function Reservas() {
     }
   };
 
+  // ✅ RECHAZAR → notificar a USUARIO: "tu reserva ha sido rechazada" (+ motivo si hay)
   const handleRechazar = async (id, motivoRechazo = null) => {
     setProcesando(true);
-    
     try {
       console.log('❌ Rechazando reserva:', { id, motivoRechazo });
+      console.log('🏢 ID de empresa actual:', empresaId); // Verificar valor
       
       const resultado = await actualizarEstadoReserva(id, 'rechazada', motivoRechazo);
-      
       if (!resultado.success) {
         alert(`Error al rechazar la reserva: ${resultado.error}`);
-      } else {
-        // Obtener la reserva específica que fue rechazada
-        const reservaRechazada = reservas.find(r => r.id === id);
-        
-        // Enviar notificación al usuario que hizo la reserva
-        if (reservaRechazada && reservaRechazada.user_id) {
-          await crearNotificacion({
-            user_id: reservaRechazada.user_id,
-            tipo: 'estado_reserva',
-            titulo: 'Reserva rechazada',
-            mensaje: `Tu reserva para la bodega "${reservaRechazada.bodega?.nombre || 'seleccionada'}" ha sido RECHAZADA.${
-              motivoRechazo ? ` Motivo: ${motivoRechazo}` : ''
-            }`,
-            reserva_id: id,
-            leida: false
-          });
-          console.log('✅ Notificación enviada al usuario sobre reserva rechazada');
-        }
-        
-        alert('❌ Reserva rechazada exitosamente.');
-        console.log('✅ Reserva rechazada');
+        return;
       }
+      const r = reservas.find(res => res.id === id);
+      if (r?.user_id) {
+        // Buscar el ID de empresa correcto
+        const empresa = r.bodega?.empresa_id || empresaId;
+        console.log('🏢 ID de empresa a usar en notificación:', empresa);
+        
+        await crearNotificacion({
+          user_id: r.user_id,
+          tipo: 'reserva_rechazada',
+          titulo: 'Reserva rechazada',
+          mensaje: `Tu reserva ha sido RECHAZADA.${motivoRechazo ? ` Motivo: ${motivoRechazo}` : ''}`,
+          reserva_id: id,
+          empresa_id: empresa, // Usar el ID de empresa de la bodega si está disponible
+        });
+      }
+      alert('❌ Reserva rechazada exitosamente.');
     } catch (error) {
       console.error('❌ Error rechazando reserva:', error);
       alert('Error al procesar el rechazo de reserva');
@@ -114,22 +107,15 @@ export function Reservas() {
     }
   };
 
-  // ✅ Función para cambiar disponibilidad de bodegas MANUALMENTE
   const handleCambiarDisponibilidad = async (bodegaId, nuevoEstado) => {
     try {
       setProcesandoBodega(bodegaId);
-      
       const motivoFinal = nuevoEstado ? null : (motivo.trim() || null);
-      
       await actualizarDisponibilidad(bodegaId, nuevoEstado, motivoFinal);
-      
       setEditando(null);
       setMotivo('');
-      
       const accion = nuevoEstado ? 'habilitada' : 'deshabilitada';
       alert(`✅ Bodega ${accion} exitosamente`);
-      
-      console.log(`✅ Bodega ${bodegaId} ${accion}`);
     } catch (error) {
       alert('Error al actualizar disponibilidad: ' + error.message);
     } finally {
@@ -137,11 +123,11 @@ export function Reservas() {
     }
   };
 
-  // Estados de loading y error
+  // Estados de loading/error
   const loading = loadingReservas || (vistaActual === 'disponibilidad' && loadingBodegas);
   const error = errorReservas || (vistaActual === 'disponibilidad' && errorBodegas);
 
-  // Mostrar loading de autenticación primero
+  // Auth loading
   if (authLoading) {
     return (
       <div className="min-h-screen bg-white px-6 py-8">
@@ -157,7 +143,7 @@ export function Reservas() {
     );
   }
 
-  // Mostrar mensaje si no hay usuario
+  // No user
   if (!user) {
     return (
       <div className="min-h-screen bg-white px-6 py-8">
@@ -170,7 +156,7 @@ export function Reservas() {
             <p className="text-yellow-600 mb-4">
               Para acceder al dashboard de proveedores necesitas estar logueado.
             </p>
-            <button 
+            <button
               onClick={() => navigate('/login')}
               className="bg-[#4B799B] text-white px-6 py-2 rounded-lg hover:bg-[#3b5f7a]"
             >
@@ -182,7 +168,6 @@ export function Reservas() {
     );
   }
 
-  // Mostrar loading
   if (loading) {
     return (
       <div className="min-h-screen bg-white px-6 py-8">
@@ -190,20 +175,18 @@ export function Reservas() {
           <h2 className="text-3xl font-bold text-[#2C3A61] mb-8 text-center">
             Mis mini bodegas
           </h2>
-          <NavBarProveedores />
-          
-          <div className="flex justify-center items-center py-20">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2C3A61] mx-auto mb-4"></div>
-              <p className="text-gray-600">Cargando...</p>
-            </div>
+        </div>
+        <NavBarProveedores />
+        <div className="flex justify-center items-center py-20">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2C3A61] mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando...</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // Mostrar error
   if (error) {
     return (
       <div className="min-h-screen bg-white px-6 py-8">
@@ -211,41 +194,33 @@ export function Reservas() {
           <h2 className="text-3xl font-bold text-[#2C3A61] mb-8 text-center">
             Mis mini bodegas
           </h2>
-          <NavBarProveedores />
-          
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-            <div className="text-red-600 text-lg font-semibold mb-2">
-              ❌ Error cargando datos
-            </div>
-            <p className="text-red-500">{error}</p>
-          </div>
+        </div>
+        <NavBarProveedores />
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+          <div className="text-red-600 text-lg font-semibold mb-2">❌ Error cargando datos</div>
+          <p className="text-red-500">{String(error)}</p>
         </div>
       </div>
     );
   }
 
-  // Filtrar reservas por estado
   const reservasPendientes = reservas.filter(r => r.estado === 'pendiente');
   const reservasAceptadas = reservas.filter(r => r.estado === 'aceptada');
   const reservasRechazadas = reservas.filter(r => r.estado === 'rechazada');
 
-  // Componente para renderizar cada sección de reservas
   const renderSeccion = (titulo, reservasArray, colorTitulo, icono, colorFondo) => (
     <div className="mb-8">
       <div className="flex items-center gap-3 mb-4">
         <span className="text-2xl">{icono}</span>
-        <h3 className={`text-xl font-semibold ${colorTitulo}`}>
-          {titulo}
-        </h3>
+        <h3 className={`text-xl font-semibold ${colorTitulo}`}>{titulo}</h3>
         <span className={`px-3 py-1 rounded-full text-sm font-medium ${colorFondo}`}>
           {reservasArray.length}
         </span>
       </div>
-      
       <div className="space-y-4">
         {reservasArray.length > 0 ? (
           reservasArray.map(reserva => (
-            <ReservaCard 
+            <ReservaCard
               key={reserva.id}
               reserva={reserva}
               onAceptar={handleAceptar}
@@ -278,7 +253,6 @@ export function Reservas() {
         </h2>
         <NavBarProveedores />
 
-        {/* ✅ NAVEGACIÓN ENTRE VISTAS */}
         <div className="flex justify-center mb-8">
           <div className="bg-gray-100 rounded-lg p-1 inline-flex">
             <button
@@ -304,10 +278,8 @@ export function Reservas() {
           </div>
         </div>
 
-        {/* ✅ VISTA DE RESERVAS */}
         {vistaActual === 'reservas' && (
           <>
-            {/* Resumen simplificado */}
             <div className="flex justify-center gap-6 mb-8">
               <div className="bg-yellow-50 px-4 py-3 rounded-lg border border-yellow-200 text-center">
                 <div className="text-xl font-bold text-yellow-700">{reservasPendientes.length}</div>
@@ -323,73 +295,32 @@ export function Reservas() {
               </div>
             </div>
 
-            {/* Mensaje si no hay reservas */}
-            {reservas.length === 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-8 text-center mb-8">
-                <div className="text-blue-600 text-4xl mb-3">🏢</div>
-                <h3 className="text-blue-800 text-lg font-semibold mb-2">
-                  No tienes reservas aún
-                </h3>
-                <p className="text-blue-600">
-                  Las solicitudes de reserva de tus mini bodegas aparecerán aquí.
-                </p>
-              </div>
-            )}
-
-            {/* Secciones de reservas */}
             <div className="space-y-10">
-              {renderSeccion(
-                'Pendientes', 
-                reservasPendientes, 
-                'text-yellow-600', 
-                '⏳',
-                'bg-yellow-100 text-yellow-800'
-              )}
-              
-              {renderSeccion(
-                'Aceptadas', 
-                reservasAceptadas, 
-                'text-green-600', 
-                '✅',
-                'bg-green-100 text-green-800'
-              )}
-              
-              {renderSeccion(
-                'Rechazadas', 
-                reservasRechazadas, 
-                'text-red-600', 
-                '❌',
-                'bg-red-100 text-red-800'
-              )}
+              {renderSeccion('Pendientes', reservasPendientes, 'text-yellow-600', '⏳', 'bg-yellow-100 text-yellow-800')}
+              {renderSeccion('Aceptadas', reservasAceptadas, 'text-green-600', '✅', 'bg-green-100 text-green-800')}
+              {renderSeccion('Rechazadas', reservasRechazadas, 'text-red-600', '❌', 'bg-red-100 text-red-800')}
             </div>
           </>
         )}
 
-        {/* ✅ VISTA DE GESTIÓN DE DISPONIBILIDAD - SOLO CAMBIOS MANUALES */}
         {vistaActual === 'disponibilidad' && (
           <div className="mt-8">
             <h3 className="text-2xl font-bold mb-6 text-[#2C3A61]">Gestión de Disponibilidad</h3>
-            
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
               <p className="text-blue-800 text-sm">
-                <strong>ℹ️ Nota:</strong> Aquí puedes habilitar/deshabilitar manualmente tus bodegas. 
+                <strong>ℹ️ Nota:</strong> Aquí puedes habilitar/deshabilitar manualmente tus bodegas.
                 Los cambios en las reservas NO afectan automáticamente la disponibilidad.
               </p>
             </div>
-            
-            {/* Estadísticas de disponibilidad */}
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <h4 className="font-semibold text-green-800">Disponibles</h4>
-                <p className="text-2xl font-bold text-green-600">
-                  {bodegas.filter(b => b.disponible).length}
-                </p>
+                <p className="text-2xl font-bold text-green-600">{bodegas.filter(b => b.disponible).length}</p>
               </div>
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <h4 className="font-semibold text-red-800">No Disponibles</h4>
-                <p className="text-2xl font-bold text-red-600">
-                  {bodegas.filter(b => !b.disponible).length}
-                </p>
+                <p className="text-2xl font-bold text-red-600">{bodegas.filter(b => !b.disponible).length}</p>
               </div>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="font-semibold text-blue-800">Total</h4>
@@ -397,7 +328,6 @@ export function Reservas() {
               </div>
             </div>
 
-            {/* Lista de bodegas - SIEMPRE VISIBLE */}
             <div className="space-y-4">
               {bodegas.map(bodega => (
                 <div key={bodega.id} className="bg-white border rounded-lg p-4 shadow-sm">
@@ -408,14 +338,11 @@ export function Reservas() {
                           {bodega.metraje}m³ - {bodega.ciudad}
                         </h4>
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          bodega.disponible 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-red-100 text-red-700'
+                          bodega.disponible ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                         }`}>
                           {bodega.disponible ? 'Disponible' : 'No Disponible'}
                         </span>
                       </div>
-                      
                       <div className="mt-2 text-sm text-gray-600">
                         <p>📍 {bodega.zona} - {bodega.ciudad}</p>
                         <p>💰 ${Number(bodega.precio_mensual).toLocaleString()}/mes</p>
@@ -451,10 +378,7 @@ export function Reservas() {
                             {bodega.disponible ? 'Deshabilitar' : 'Habilitar'}
                           </button>
                           <button
-                            onClick={() => {
-                              setEditando(null);
-                              setMotivo('');
-                            }}
+                            onClick={() => { setEditando(null); setMotivo(''); }}
                             className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
                           >
                             <X className="h-4 w-4" />
@@ -462,10 +386,7 @@ export function Reservas() {
                         </div>
                       ) : (
                         <button
-                          onClick={() => {
-                            setEditando(bodega.id);
-                            setMotivo(bodega.motivo_no_disponible || '');
-                          }}
+                          onClick={() => { setEditando(bodega.id); setMotivo(bodega.motivo_no_disponible || ''); }}
                           className="px-3 py-1 bg-[#4B799B] text-white rounded text-sm hover:bg-[#3b5f7a] flex items-center gap-1"
                         >
                           <Edit3 className="h-4 w-4" />
@@ -479,9 +400,7 @@ export function Reservas() {
             </div>
 
             {bodegas.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                No tienes mini bodegas registradas
-              </div>
+              <div className="text-center py-8 text-gray-500">No tienes mini bodegas registradas</div>
             )}
           </div>
         )}

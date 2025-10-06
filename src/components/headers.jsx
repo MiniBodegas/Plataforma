@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase'; 
-import { Notifications } from './index';
+import { NotificationBell } from './NotificationBell';
 
 export function Header({ tipo }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -91,15 +91,16 @@ export function Header({ tipo }) {
               {/* Mostrar diferentes botones según el estado de autenticación */}
               {user ? (
                 <div className="flex items-center space-x-4">
+                  {/* Campana de notificaciones antes del botón de perfil */}
+                  <NotificationBell />
+                  
                   <Link 
                     to="/perfil-user"
                     className="flex items-center gap-2 px-4 py-2 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
-                    hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 whitespace-nowrap relative"
+                    hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 whitespace-nowrap"
                   >
                     <User className="h-4 w-4" />
                     Mi Perfil
-                    {/* Contador de notificaciones */}
-                    <Notifications />
                   </Link>
                   <button 
                     onClick={handleLogout}
@@ -155,6 +156,9 @@ export function Header({ tipo }) {
               {/* Mostrar diferentes botones según el estado de autenticación para proveedores */}
               {user && user?.user_metadata?.user_type === 'proveedor' ? (
                 <div className="flex items-center space-x-4">
+                  {/* Campana de notificaciones antes del botón de perfil */}
+                  <NotificationBell />
+                  
                   <Link 
                     to="/perfil-proveedor"
                     className="flex items-center gap-2 px-3 lg:px-4 py-2 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
@@ -162,11 +166,6 @@ export function Header({ tipo }) {
                   >
                     <User className="h-4 w-4" />
                     Mi Perfil
-                    {notificaciones > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold">
-                        {notificaciones}
-                      </span>
-                    )}
                   </Link>
                   <button 
                     onClick={handleLogout}
@@ -232,16 +231,19 @@ export function Header({ tipo }) {
               {/* Menú mobile para usuarios */}
               {user ? (
                 <>
+                  {/* Campana de notificaciones independiente en versión móvil */}
+                  <div className="px-3 py-2">
+                    <NotificationBell />
+                  </div>
+                  
                   <Link 
                     to="/perfil-user"
                     className="flex items-center gap-2 px-4 py-3 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
-                    hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 text-center relative"
+                    hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 text-center"
                     onClick={closeMenu}
                   >
                     <User className="h-4 w-4" />
                     Mi Perfil
-                    {/* Contador para mobile */}
-                    <Notifications />
                   </Link>
                   <button 
                     onClick={handleLogout}
@@ -298,6 +300,11 @@ export function Header({ tipo }) {
               {/* Menú mobile para proveedores */}
               {user && user?.user_metadata?.user_type === 'proveedor' ? (
                 <>
+                  {/* Campana de notificaciones independiente en versión móvil */}
+                  <div className="px-3 py-2">
+                    <NotificationBell />
+                  </div>
+                
                   <Link 
                     to="/perfil-proveedor"
                     className="flex items-center gap-2 px-4 py-3 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
