@@ -4,14 +4,13 @@ import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
 
 export function CompletarFormularioProveedor() {
-  const { user, setUserTypeManually } = useAuth(); // Agregar setUserTypeManually
+  const { user, setUserTypeManually } = useAuth();
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
     nombreEmpresa: "",
     descripcion: "",
     telefono: "",
-    email: "",
     ciudad: "",
     direccionPrincipal: "",
     nombreRepresentante: "",
@@ -53,63 +52,29 @@ export function CompletarFormularioProveedor() {
           nombreEmpresa: empresa.nombre || "",
           descripcion: empresa.descripcion || "",
           telefono: empresa.telefono || "",
-          email: empresa.email || "",
           ciudad: empresa.ciudad || "",
           direccionPrincipal: empresa.direccion_principal || "",
           nombreRepresentante: empresa.nombre_representante || "",
           celular: empresa.celular || ""
         });
 
-        // Verificar archivos existentes
+        // Verificar archivos existentes en storage
         await verificarArchivosExistentes(empresa.id);
+        
+        // Log para debugging - CORREGIR nombres de columnas
+        console.log('📊 Empresa encontrada:');
+        console.log('  - Cámara de Comercio en DB:', empresa.camara_comercio);
+        console.log('  - RUT en DB:', empresa.rut);
       }
     } catch (error) {
       console.log('No se encontró empresa existente');
     }
   };
 
-  const descargarArchivo = async (empresaId, tipo, nombreArchivo) => {
-    try {
-      // Usar signed URL para acceso seguro a archivos privados
-      const { data, error } = await supabase.storage
-        .from('documentos-empresas')
-        .createSignedUrl(`${empresaId}/${tipo}/${nombreArchivo}`, 60); // URL válida por 60 segundos
-
-      if (error) throw error;
-
-      // Crear un enlace temporal para descargar
-      const a = document.createElement('a');
-      a.href = data.signedUrl;
-      a.download = nombreArchivo;
-      a.target = '_blank'; // Abrir en nueva pestaña
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      
-    } catch (error) {
-      console.error('Error descargando archivo:', error);
-      setError('Error al descargar el archivo');
-    }
-  };
-
-  // Función para obtener URL de vista previa (opcional)
-  const obtenerUrlVistaPrevia = async (empresaId, tipo, nombreArchivo) => {
-    try {
-      const { data, error } = await supabase.storage
-        .from('documentos-empresas')
-        .createSignedUrl(`${empresaId}/${tipo}/${nombreArchivo}`, 300); // 5 minutos
-
-      if (error) throw error;
-      return data.signedUrl;
-    } catch (error) {
-      console.error('Error obteniendo vista previa:', error);
-      return null;
-    }
-  };
-
-  // Función mejorada para verificar archivos existentes
   const verificarArchivosExistentes = async (empresaId) => {
     try {
+      console.log('🔍 Verificando archivos para empresa:', empresaId);
+      
       // Verificar Cámara de Comercio
       const { data: camaraFiles, error: camaraError } = await supabase.storage
         .from('documentos-empresas')
@@ -120,24 +85,69 @@ export function CompletarFormularioProveedor() {
         .from('documentos-empresas')
         .list(`${empresaId}/rut`);
 
-      if (camaraError) console.error('Error listando archivos camara:', camaraError);
-      if (rutError) console.error('Error listando archivos rut:', rutError);
+      if (camaraError && camaraError.message !== 'The resource was not found') {
+        console.error('Error listando archivos camara:', camaraError);
+      }
+      
+      if (rutError && rutError.message !== 'The resource was not found') {
+        console.error('Error listando archivos rut:', rutError);
+      }
 
       setArchivosExistentes({
         camaraComercio: camaraFiles && camaraFiles.length > 0 ? camaraFiles[0] : null,
         rut: rutFiles && rutFiles.length > 0 ? rutFiles[0] : null
       });
+      
+      console.log('Archivos encontrados:', {
+        camara: camaraFiles?.length || 0,
+        rut: rutFiles?.length || 0
+      });
+      
     } catch (error) {
       console.error('Error verificando archivos existentes:', error);
     }
   };
 
-  // Función mejorada para subir archivos con validación adicional
+  const descargarArchivo = async (empresaId, tipo, nombreArchivo) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('documentos-empresas')
+        .createSignedUrl(`${empresaId}/${tipo}/${nombreArchivo}`, 60);
+
+      if (error) throw error;
+
+      const a = document.createElement('a');
+      a.href = data.signedUrl;
+      a.download = nombreArchivo;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+    } catch (error) {
+      console.error('Error descargando archivo:', error);
+      setError('Error al descargar el archivo');
+    }
+  };
+
+  const obtenerUrlVistaPrevia = async (empresaId, tipo, nombreArchivo) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('documentos-empresas')
+        .createSignedUrl(`${empresaId}/${tipo}/${nombreArchivo}`, 300);
+
+      if (error) throw error;
+      return data.signedUrl;
+    } catch (error) {
+      console.error('Error obteniendo vista previa:', error);
+      return null;
+    }
+  };
+
   const subirArchivo = async (file, empresaId, tipo) => {
     try {
       setUploadProgress(prev => ({ ...prev, [tipo]: 0 }));
 
-      // Validaciones adicionales de seguridad
       const fileExt = file.name.split('.').pop().toLowerCase();
       const extensionesPermitidas = ['pdf', 'jpg', 'jpeg', 'png'];
       
@@ -145,7 +155,6 @@ export function CompletarFormularioProveedor() {
         throw new Error(`Extensión de archivo no permitida: .${fileExt}`);
       }
 
-      // Generar nombre único y seguro
       const timestamp = Date.now();
       const randomString = Math.random().toString(36).substring(2, 15);
       const fileName = `${tipo}-${timestamp}-${randomString}.${fileExt}`;
@@ -162,7 +171,6 @@ export function CompletarFormularioProveedor() {
         }
       }
 
-      // Subir nuevo archivo
       const { data, error } = await supabase.storage
         .from('documentos-empresas')
         .upload(filePath, file, {
@@ -187,23 +195,30 @@ export function CompletarFormularioProveedor() {
   };
 
   const validarFormulario = () => {
-    if (!formData.nombreEmpresa.trim()) {
-      setError('El nombre de la empresa es obligatorio');
-      return false;
-    }
-    
-    if (!formData.nombreRepresentante.trim()) {
-      setError('El nombre del representante es obligatorio');
-      return false;
-    }
-    
-    if (!formData.celular.trim()) {
-      setError('El celular es obligatorio');
-      return false;
+    const errores = [];
+
+    if (!formData.nombreEmpresa.trim()) errores.push('El nombre de la empresa es obligatorio');
+    if (!formData.descripcion.trim()) errores.push('La descripción es obligatoria');
+    if (!formData.ciudad.trim()) errores.push('La ciudad es obligatoria');
+    if (!formData.direccionPrincipal.trim()) errores.push('La dirección principal es obligatoria');
+    if (!formData.nombreRepresentante.trim()) errores.push('El nombre del representante es obligatorio');
+    if (!formData.celular.trim()) errores.push('El celular es obligatorio');
+
+    // Validar documentos
+    if (!empresaExistente) {
+      if (!archivos.camaraComercio) errores.push('La Cámara de Comercio es obligatoria');
+      if (!archivos.rut) errores.push('El RUT es obligatorio');
+    } else {
+      if (!archivosExistentes.camaraComercio && !archivos.camaraComercio) {
+        errores.push('La Cámara de Comercio es obligatoria');
+      }
+      if (!archivosExistentes.rut && !archivos.rut) {
+        errores.push('El RUT es obligatorio');
+      }
     }
 
-    if (!formData.ciudad.trim()) {
-      setError('La ciudad es obligatoria');
+    if (errores.length > 0) {
+      setError(errores[0]); // Mostrar el primer error
       return false;
     }
 
@@ -220,14 +235,16 @@ export function CompletarFormularioProveedor() {
 
     try {
       let empresaId = empresaExistente?.id;
+      let rutaCamaraComercio = empresaExistente?.camara_comercio || null; // CORREGIR
+      let rutaRut = empresaExistente?.rut || null; // CORREGIR
 
       const empresaData = {
         nombre: formData.nombreEmpresa.trim(),
-        descripcion: formData.descripcion.trim() || null,
+        descripcion: formData.descripcion.trim(),
         telefono: formData.telefono.trim() || null,
-        email: formData.email.trim() || null,
+        email: user.email,
         ciudad: formData.ciudad.trim(),
-        direccion_principal: formData.direccionPrincipal.trim() || null,
+        direccion_principal: formData.direccionPrincipal.trim(),
         nombre_representante: formData.nombreRepresentante.trim(),
         celular: formData.celular.trim(),
         user_id: user.id,
@@ -235,15 +252,14 @@ export function CompletarFormularioProveedor() {
       };
 
       if (empresaExistente) {
-        // Actualizar empresa existente
         const { error } = await supabase
           .from('empresas')
           .update(empresaData)
           .eq('id', empresaExistente.id);
           
         if (error) throw error;
+        console.log('✅ Empresa actualizada');
       } else {
-        // Crear nueva empresa
         empresaData.created_at = new Date().toISOString();
         empresaData.rating = "0.0";
         
@@ -255,42 +271,87 @@ export function CompletarFormularioProveedor() {
           
         if (error) throw error;
         empresaId = nuevaEmpresa.id;
+        console.log('✅ Nueva empresa creada con ID:', empresaId);
 
-        // Establecer como proveedor cuando crea su primera empresa
         setUserTypeManually('proveedor');
       }
 
-      // Subir archivos si hay nuevos
-      const promesasArchivos = [];
-
+      // Subir archivos
       if (archivos.camaraComercio) {
-        promesasArchivos.push(
-          subirArchivo(archivos.camaraComercio, empresaId, 'camara-comercio')
-        );
+        console.log('📁 Subiendo Cámara de Comercio...');
+        const rutaArchivo = await subirArchivo(archivos.camaraComercio, empresaId, 'camara-comercio');
+        rutaCamaraComercio = rutaArchivo;
+        console.log('✅ Cámara de Comercio subida:', rutaArchivo);
       }
 
       if (archivos.rut) {
-        promesasArchivos.push(
-          subirArchivo(archivos.rut, empresaId, 'rut')
-        );
+        console.log('📁 Subiendo RUT...');
+        const rutaArchivo = await subirArchivo(archivos.rut, empresaId, 'rut');
+        rutaRut = rutaArchivo;
+        console.log('✅ RUT subido:', rutaArchivo);
       }
 
-      if (promesasArchivos.length > 0) {
-        await Promise.all(promesasArchivos);
+      // Actualizar rutas de documentos - CORREGIR nombres de columnas
+      if (rutaCamaraComercio || rutaRut) {
+        const documentosUpdate = {};
+        
+        // Usar los nombres correctos de las columnas de la base de datos
+        if (rutaCamaraComercio) documentosUpdate.camara_comercio = rutaCamaraComercio;
+        if (rutaRut) documentosUpdate.rut = rutaRut;
+
+        const { error: updateError } = await supabase
+          .from('empresas')
+          .update(documentosUpdate)
+          .eq('id', empresaId);
+
+        if (updateError) {
+          console.error('Error actualizando rutas de documentos:', updateError);
+          throw new Error('Error guardando referencias de documentos');
+        }
+        
+        console.log('✅ Rutas de documentos actualizadas');
       }
 
-      // Redirigir al perfil del proveedor
+      console.log('🎉 Proceso completado exitosamente');
       navigate('/perfil-proveedor');
       
     } catch (error) {
-      console.error('Error guardando empresa:', error);
+      console.error('💥 Error en el proceso:', error);
       setError(error.message || 'Error al guardar la información. Intenta nuevamente.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Agregar esta función al componente para mostrar el estado de los documentos
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleFileChange = (tipo, file) => {
+    if (file) {
+      const tiposPermitidos = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+      if (!tiposPermitidos.includes(file.type)) {
+        setError(`Solo se permiten archivos PDF, JPG, JPEG o PNG para ${tipo}`);
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        setError(`El archivo de ${tipo} no puede superar 5MB`);
+        return;
+      }
+
+      setArchivos(prev => ({
+        ...prev,
+        [tipo]: file
+      }));
+      setError("");
+    }
+  };
+
+  // Componente DocumentoEstado (movido aquí para tener acceso a las funciones)
   const DocumentoEstado = ({ tipo, archivo, empresaId }) => {
     const [vistaPrevia, setVistaPrevia] = useState(null);
     const [cargandoVista, setCargandoVista] = useState(false);
@@ -303,7 +364,6 @@ export function CompletarFormularioProveedor() {
         const url = await obtenerUrlVistaPrevia(empresaId, tipo, archivo.name);
         if (url) {
           setVistaPrevia(url);
-          // Auto-cerrar vista previa después de 4 minutos (antes de que expire)
           setTimeout(() => setVistaPrevia(null), 240000);
         }
       } catch (error) {
@@ -362,36 +422,6 @@ export function CompletarFormularioProveedor() {
     );
   };
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleFileChange = (tipo, file) => {
-    if (file) {
-      // Validar tipo de archivo
-      const tiposPermitidos = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-      if (!tiposPermitidos.includes(file.type)) {
-        setError(`Solo se permiten archivos PDF, JPG, JPEG o PNG para ${tipo}`);
-        return;
-      }
-
-      // Validar tamaño (máximo 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setError(`El archivo de ${tipo} no puede superar 5MB`);
-        return;
-      }
-
-      setArchivos(prev => ({
-        ...prev,
-        [tipo]: file
-      }));
-      setError("");
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <div className="max-w-2xl w-full bg-white rounded-2xl shadow-lg p-8">
@@ -422,7 +452,7 @@ export function CompletarFormularioProveedor() {
                   type="text"
                   value={formData.nombreEmpresa}
                   onChange={(e) => handleInputChange('nombreEmpresa', e.target.value)}
-                  className="w-full h-12 rounded-lg border border-gray-300 px-4 
+                  className="w-full h-12 rounded-lg border border-gray-300 px-4 bg-white text-black
                             focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
                   placeholder="Ingresa el nombre de tu empresa"
                   disabled={loading}
@@ -437,7 +467,7 @@ export function CompletarFormularioProveedor() {
                   type="text"
                   value={formData.ciudad}
                   onChange={(e) => handleInputChange('ciudad', e.target.value)}
-                  className="w-full h-12 rounded-lg border border-gray-300 px-4 
+                  className="w-full h-12 rounded-lg border border-gray-300 px-4 bg-white text-black
                             focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
                   placeholder="Ciudad donde opera la empresa"
                   disabled={loading}
@@ -446,17 +476,36 @@ export function CompletarFormularioProveedor() {
 
               <div className="md:col-span-2">
                 <label className="block text-gray-700 font-medium mb-2">
-                  Descripción
+                  Descripción <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   value={formData.descripcion}
                   onChange={(e) => handleInputChange('descripcion', e.target.value)}
                   rows="3"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 bg-white text-black
                             focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
-                  placeholder="Breve descripción de tu empresa"
+                  placeholder="Breve descripción de tu empresa (obligatorio)"
                   disabled={loading}
                 />
+              </div>
+
+              {/* Email de solo lectura */}
+              <div>
+                <label className="block text-gray-700 font-medium mb-2">
+                  Email de la empresa
+                </label>
+                <input
+                  type="email"
+                  value={user?.email || ""}
+                  className="w-full h-12 rounded-lg border border-gray-300 px-4 bg-gray-100 text-gray-600
+                            cursor-not-allowed"
+                  placeholder="email@empresa.com"
+                  disabled={true}
+                  readOnly
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Este email viene de tu cuenta y no se puede modificar
+                </p>
               </div>
 
               <div>
@@ -467,39 +516,24 @@ export function CompletarFormularioProveedor() {
                   type="tel"
                   value={formData.telefono}
                   onChange={(e) => handleInputChange('telefono', e.target.value)}
-                  className="w-full h-12 rounded-lg border border-gray-300 px-4 
+                  className="w-full h-12 rounded-lg border border-gray-300 px-4 bg-white text-black
                             focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
                   placeholder="Teléfono fijo de la empresa"
                   disabled={loading}
                 />
               </div>
 
-              <div>
-                <label className="block text-gray-700 font-medium mb-2">
-                  Email de la empresa
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full h-12 rounded-lg border border-gray-300 px-4 
-                            focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
-                  placeholder="email@empresa.com"
-                  disabled={loading}
-                />
-              </div>
-
               <div className="md:col-span-2">
                 <label className="block text-gray-700 font-medium mb-2">
-                  Dirección principal
+                  Dirección principal <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.direccionPrincipal}
                   onChange={(e) => handleInputChange('direccionPrincipal', e.target.value)}
-                  className="w-full h-12 rounded-lg border border-gray-300 px-4 
+                  className="w-full h-12 rounded-lg border border-gray-300 px-4 bg-white text-black
                             focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
-                  placeholder="Dirección principal de la empresa"
+                  placeholder="Dirección principal de la empresa (obligatorio)"
                   disabled={loading}
                 />
               </div>
@@ -519,7 +553,7 @@ export function CompletarFormularioProveedor() {
                   type="text"
                   value={formData.nombreRepresentante}
                   onChange={(e) => handleInputChange('nombreRepresentante', e.target.value)}
-                  className="w-full h-12 rounded-lg border border-gray-300 px-4 
+                  className="w-full h-12 rounded-lg border border-gray-300 px-4 bg-white text-black
                             focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
                   placeholder="Nombre completo del representante"
                   disabled={loading}
@@ -534,7 +568,7 @@ export function CompletarFormularioProveedor() {
                   type="tel"
                   value={formData.celular}
                   onChange={(e) => handleInputChange('celular', e.target.value)}
-                  className="w-full h-12 rounded-lg border border-gray-300 px-4 
+                  className="w-full h-12 rounded-lg border border-gray-300 px-4 bg-white text-black
                             focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
                   placeholder="Número de celular"
                   disabled={loading}
@@ -545,31 +579,48 @@ export function CompletarFormularioProveedor() {
 
           {/* Documentos */}
           <div>
-            <h3 className="text-lg font-semibold text-[#2C3A61] mb-4">Documentos Legales</h3>
+            <h3 className="text-lg font-semibold text-[#2C3A61] mb-4">
+              Documentos Legales <span className="text-red-500">*</span>
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Los siguientes documentos son obligatorios para completar tu perfil de proveedor:
+            </p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Cámara de Comercio */}
               <div>
                 <label className="block text-gray-700 font-medium mb-2">
-                  Cámara de Comercio
+                  Cámara de Comercio <span className="text-red-500">*</span>
                 </label>
                 {archivosExistentes.camaraComercio ? (
-                  <DocumentoEstado 
-                    tipo="camara-comercio" 
-                    archivo={archivosExistentes.camaraComercio} 
-                    empresaId={empresaExistente.id} 
-                  />
+                  <div>
+                    <DocumentoEstado 
+                      tipo="camara-comercio" 
+                      archivo={archivosExistentes.camaraComercio} 
+                      empresaId={empresaExistente.id} 
+                    />
+                    <div className="mt-3">
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileChange('camaraComercio', e.target.files[0])}
+                        className="w-full text-sm bg-white text-black"
+                        disabled={loading}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Subir nuevo archivo para reemplazar</p>
+                    </div>
+                  </div>
                 ) : (
                   <div>
                     <input
                       type="file"
                       accept=".pdf,.jpg,.jpeg,.png"
                       onChange={(e) => handleFileChange('camaraComercio', e.target.files[0])}
-                      className="w-full h-12 border border-gray-300 rounded-lg px-4 py-3
+                      className="w-full h-12 border border-gray-300 rounded-lg px-4 py-3 bg-white text-black
                                 focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
                       disabled={loading}
                     />
-                    <p className="text-xs text-gray-500 mt-1">PDF, JPG, JPEG o PNG (máx. 5MB)</p>
+                    <p className="text-xs text-gray-500 mt-1">PDF, JPG, JPEG o PNG (máx. 5MB) - Obligatorio</p>
                   </div>
                 )}
                 {uploadProgress.camaraComercio !== undefined && (
@@ -588,25 +639,37 @@ export function CompletarFormularioProveedor() {
               {/* RUT */}
               <div>
                 <label className="block text-gray-700 font-medium mb-2">
-                  RUT
+                  RUT <span className="text-red-500">*</span>
                 </label>
                 {archivosExistentes.rut ? (
-                  <DocumentoEstado 
-                    tipo="rut" 
-                    archivo={archivosExistentes.rut} 
-                    empresaId={empresaExistente.id} 
-                  />
+                  <div>
+                    <DocumentoEstado 
+                      tipo="rut" 
+                      archivo={archivosExistentes.rut} 
+                      empresaId={empresaExistente.id} 
+                    />
+                    <div className="mt-3">
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileChange('rut', e.target.files[0])}
+                        className="w-full text-sm bg-white text-black"
+                        disabled={loading}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Subir nuevo archivo para reemplazar</p>
+                    </div>
+                  </div>
                 ) : (
                   <div>
                     <input
                       type="file"
                       accept=".pdf,.jpg,.jpeg,.png"
                       onChange={(e) => handleFileChange('rut', e.target.files[0])}
-                      className="w-full h-12 border border-gray-300 rounded-lg px-4 py-3
+                      className="w-full h-12 border border-gray-300 rounded-lg px-4 py-3 bg-white text-black
                                 focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
                       disabled={loading}
                     />
-                    <p className="text-xs text-gray-500 mt-1">PDF, JPG, JPEG o PNG (máx. 5MB)</p>
+                    <p className="text-xs text-gray-500 mt-1">PDF, JPG, JPEG o PNG (máx. 5MB) - Obligatorio</p>
                   </div>
                 )}
                 {uploadProgress.rut !== undefined && (
