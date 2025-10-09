@@ -1,5 +1,5 @@
 import { Routes, Route, Outlet } from 'react-router-dom';
-import { Header, Footer,CompletarPerfil } from '../components/index';
+import { Header, Footer,CompletarPerfil,CompletarFormularioProveedor } from '../components/index';
 import {
   HomeScreen,
   BodegaScreen,
@@ -90,6 +90,7 @@ export const AppRouter = () => {
         <Route path="/perfil-proveedor" element={<PerfilProveedorScreen />} />
         <Route path="/perfil-form-proveedor" element={<PerfilFormProveedorScreen />} />
         <Route path="/bodega-editor-proveedor" element={<BodegaEditorProveedorScreen />} />
+        <Route path="/completar-formulario-proveedor" element={<CompletarFormularioProveedor />} />
 
 
 

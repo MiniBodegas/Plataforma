@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { supabase } from "../lib/supabase";
 
 const opciones = [
   {
@@ -15,7 +17,7 @@ const opciones = [
   {
     nombre: "Mi perfil",
     tipo: "ruta",
-    ruta: "/perfil-form-proveedor",
+    ruta: "/completar-formulario-proveedor",
   },
   {
     nombre: "Centro de ayuda",
@@ -39,7 +41,101 @@ const opciones = [
 
 export function PerfilProveedor() {
   const [open, setOpen] = useState(null);
+  const [empresa, setEmpresa] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth(); // Obtener authLoading
+
+  useEffect(() => {
+    console.log('🚀 PerfilProveedor useEffect ejecutado');
+    console.log('👤 Usuario actual:', user);
+    console.log('⏳ Auth loading:', authLoading);
+    
+    // NO hacer nada si auth está cargando
+    if (authLoading) {
+      console.log('⏳ Auth aún cargando, esperando...');
+      return;
+    }
+    
+    // Si auth terminó de cargar pero no hay usuario, redirigir a login
+    if (!authLoading && !user) {
+      console.log('❌ No hay usuario después de cargar auth, redirigiendo a login...');
+      navigate('/login-proveedor'); // o la ruta que uses para login de proveedores
+      return;
+    }
+    
+    // Si hay usuario, verificar información
+    if (user) {
+      verificarInformacionCompleta();
+    }
+  }, [user, authLoading]); // Agregar authLoading como dependencia
+
+  const verificarInformacionCompleta = async () => {
+    console.log('🔍 Iniciando verificación de información completa...');
+    
+    if (!user) {
+      console.log('❌ No hay usuario en verificarInformacionCompleta');
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      console.log('📡 Consultando empresa para user_id:', user.id);
+      
+      const { data: empresaData, error } = await supabase
+        .from('empresas')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+        
+      console.log('📊 Resultado consulta empresa:');
+      console.log('  - Data:', empresaData);
+      console.log('  - Error:', error);
+        
+      if (error || !empresaData) {
+        console.log('❌ No se encontró empresa o hubo error, redirigiendo al formulario...');
+        navigate('/completar-formulario-proveedor');
+        return;
+      }
+
+      // Verificar si las columnas existen
+      console.log('🔍 Verificando columnas existentes:', Object.keys(empresaData));
+
+      // VALIDACIÓN COMPLETA - todos los campos obligatorios
+      const camposObligatorios = [
+        'nombre',
+        'ciudad',
+        'nombre_representante', 
+        'celular'
+      ];
+
+      console.log('📝 Verificando campos obligatorios:', camposObligatorios);
+
+      const informacionIncompleta = camposObligatorios.some(campo => {
+        const valor = empresaData[campo];
+        const estaVacio = !valor || (typeof valor === 'string' && valor.trim() === '');
+        console.log(`  - ${campo}: "${valor}" (vacío: ${estaVacio})`);
+        return estaVacio;
+      });
+
+      console.log('📋 Información incompleta:', informacionIncompleta);
+
+      if (informacionIncompleta) {
+        console.log('❌ Información incompleta, redirigiendo al formulario...');
+        navigate('/completar-formulario-proveedor');
+        return;
+      }
+
+      console.log('✅ Información completa, mostrando perfil');
+      setEmpresa(empresaData);
+    } catch (error) {
+      console.error('💥 Error verificando empresa:', error);
+      navigate('/completar-formulario-proveedor');
+    } finally {
+      setLoading(false);
+      console.log('⏳ Loading establecido a false');
+    }
+  };
 
   const handleClick = (idx, opcion) => {
     if (opcion.tipo === "ruta") {
@@ -49,37 +145,57 @@ export function PerfilProveedor() {
     }
   };
 
+  console.log('🎨 Renderizando PerfilProveedor - AuthLoading:', authLoading, 'Loading:', loading, 'Empresa:', empresa);
+
+  // Mostrar loading mientras auth está cargando O mientras verificamos empresa
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex items-center gap-2 text-[#2C3A61]">
+          <div className="w-6 h-6 border-2 border-[#2C3A61] border-t-transparent rounded-full animate-spin"></div>
+          {authLoading ? 'Verificando sesión...' : 'Cargando perfil...'}
+        </div>
+      </div>
+    );
+  }
+
+  // Si llegamos aquí, significa que auth cargó, hay usuario y empresa válida
   return (
     <div className="min-h-screen flex flex-col justify-between bg-white">
       <div>
         <h2 className="text-2xl font-bold text-[#2C3A61] text-center mt-12 mb-2">
-          Juan Esteban Ramirez Perdomo
+          {empresa?.nombre_representante || "Representante Legal"}
         </h2>
-        <h3 className="text-xl font-bold text-[#2C3A61] text-center mb-8">
-          Mi cuenta
+        <h3 className="text-xl font-bold text-[#2C3A61] text-center mb-2">
+          {empresa?.nombre || "Empresa"}
         </h3>
-        <div className="max-w-xl mx-auto">
+        <h4 className="text-lg text-[#2C3A61] text-center mb-8">
+          Mi cuenta
+        </h4>
+
+        <div className="px-6 space-y-4">
           {opciones.map((opcion, idx) => (
-            <div key={opcion.nombre}>
+            <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden">
               <button
-                className="w-full flex items-center justify-between py-6 border-b border-gray-200 focus:outline-none"
                 onClick={() => handleClick(idx, opcion)}
+                className="w-full p-4 bg-white hover:bg-gray-50 flex items-center justify-between text-left"
               >
-                <span className="font-semibold text-[#2C3A61] text-left">{opcion.nombre}</span>
-                <svg
-                  width="28"
-                  height="28"
-                  fill="none"
-                  stroke="#2C3A61"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                  className={opcion.tipo === "desplegable" && open === idx ? "rotate-90 transition-transform" : ""}
-                >
-                  <path d="M9 6l6 6-6 6" />
-                </svg>
+                <span className="text-[#2C3A61] font-medium">{opcion.nombre}</span>
+                {opcion.tipo === "desplegable" && (
+                  <svg
+                    className={`w-5 h-5 text-[#2C3A61] transition-transform ${
+                      open === idx ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                )}
               </button>
               {opcion.tipo === "desplegable" && open === idx && (
-                <div className="bg-gray-50 rounded-xl border border-gray-200 mb-4">
+                <div className="bg-gray-50 border-t border-gray-200">
                   {opcion.contenido}
                 </div>
               )}
@@ -87,30 +203,15 @@ export function PerfilProveedor() {
           ))}
         </div>
       </div>
-      <footer className="text-center py-6 text-[#2C3A61] text-sm">
-        Plataforma de mini bodegas
-        <div className="flex justify-center gap-4 mt-2">
-          {/* Iconos de redes sociales (simples) */}
-          <a href="#" aria-label="Facebook">
-            <svg width="20" height="20" fill="none" stroke="#2C3A61" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
-            </svg>
-          </a>
-          <a href="#" aria-label="Instagram">
-            <svg width="20" height="20" fill="none" stroke="#2C3A61" strokeWidth="2" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="3.2"/>
-              <rect x="2" y="2" width="20" height="20" rx="5"/>
-              <circle cx="17.5" cy="6.5" r="1"/>
-            </svg>
-          </a>
-          <a href="#" aria-label="WhatsApp">
-            <svg width="20" height="20" fill="none" stroke="#2C3A61" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M20 4.5A9.5 9.5 0 0 0 4.5 20l-1.5 4 4-1.5A9.5 9.5 0 1 0 20 4.5z"/>
-              <path d="M8.5 13.5c1.5 3 6 3 7.5 0"/>
-            </svg>
-          </a>
-        </div>
-      </footer>
+
+      <div className="p-6">
+        <button 
+          onClick={() => navigate('/login-proveedor')} // Ajusta la ruta según tu estructura
+          className="w-full h-12 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
+        >
+          Cerrar sesión
+        </button>
+      </div>
     </div>
   );
 }

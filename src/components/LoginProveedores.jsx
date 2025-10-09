@@ -12,38 +12,36 @@ export function LoginProveedores() {
     Contraseña: ""
   })
 
-  const { signIn } = useAuth()
+  const { signIn, setUserTypeManually } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
-    if (!formData.Email || !formData.Contraseña) {
-      setError('Por favor completa todos los campos')
-      return
-    }
-
-    setLoading(true)
     setError('')
+    setLoading(true)
 
     try {
       const { data, error } = await signIn(formData.Email, formData.Contraseña)
-
+      
       if (error) {
-        setError(error.message === 'Invalid login credentials' 
-          ? 'Credenciales incorrectas. Verifica tu email y contraseña.' 
-          : error.message)
-      } else {
-        // Verificar si el usuario es un proveedor
-        const userMetadata = data.user?.user_metadata
-        if (userMetadata?.user_type === 'proveedor') {
-          navigate('/home-proveedor')
-        } else {
-          setError('Esta cuenta no está registrada como proveedor. Usa el login de usuarios.')
-        }
+        setError(error.message)
+        return
       }
-    } catch (err) {
-      setError('Ocurrió un error inesperado')
+
+      // Establecer como proveedor
+      setUserTypeManually('proveedor')
+
+      // Redirigir
+      const redirectPath = localStorage.getItem('redirectAfterLogin')
+      if (redirectPath) {
+        localStorage.removeItem('redirectAfterLogin')
+        navigate(redirectPath)
+      } else {
+        navigate('/home-proveedor') // O donde quieras que vayan los proveedores
+      }
+      
+    } catch (error) {
+      setError('Error inesperado al iniciar sesión')
     } finally {
       setLoading(false)
     }

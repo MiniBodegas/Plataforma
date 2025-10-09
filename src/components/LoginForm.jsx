@@ -12,7 +12,7 @@ export function LoginForm() {
     password: "",
   })
 
-  const { signIn } = useAuth()
+  const { signIn, setUserTypeManually } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
@@ -28,16 +28,27 @@ export function LoginForm() {
     setError('')
 
     try {
-      const { error } = await signIn(formData.email, formData.password)
-
+      const { data, error } = await signIn(formData.email, formData.password)
+      
       if (error) {
         setError(error.message === 'Invalid login credentials' 
           ? 'Credenciales incorrectas. Verifica tu email y contraseña.' 
           : error.message)
+        return
+      }
+
+      // Establecer como usuario normal
+      setUserTypeManually('usuario')
+
+      // Redirigir
+      const redirectPath = localStorage.getItem('redirectAfterLogin')
+      if (redirectPath) {
+        localStorage.removeItem('redirectAfterLogin')
+        navigate(redirectPath)
       } else {
-        // Login exitoso, redirigir al dashboard o home
         navigate('/')
       }
+      
     } catch (err) {
       setError('Ocurrió un error inesperado')
     } finally {

@@ -71,3 +71,5 @@ export * from './CompletarPerfil'
 
 export * from './Notifications'
 export * from './NotificationBell'
+
+export * from './CompletarFormularioProveedor'
