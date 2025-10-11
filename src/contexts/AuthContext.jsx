@@ -1,175 +1,91 @@
-import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { supabase } from '../lib/supabase';
 
-const AuthContext = createContext({})
-
-export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
-}
+const AuthContext = createContext({});
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [userType, setUserType] = useState(null); // Nuevo estado
+  const [session, setSession] = useState(null);
 
   useEffect(() => {
-    // Obtener tipo de usuario guardado
-    const savedUserType = localStorage.getItem('userType');
-    if (savedUserType) {
-      setUserType(savedUserType);
-    }
+    let mounted = true;
 
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-      setLoading(false);
+    // Obtener sesión inicial
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+
+        if (error) {
+          console.error('Error obteniendo sesión:', error);
+        } else {
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error('Error en getInitialSession:', error);
+        if (mounted) setLoading(false);
+      }
     };
 
-    getSession();
+    getInitialSession();
 
+    // Escuchar cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔐 Auth event:', event);
+        }
+        
+        if (!mounted) return;
+
+        setSession(session);
         setUser(session?.user ?? null);
-        setLoading(false);
+        
+        // Asegurar que loading sea false después de cualquier evento
+        if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+          setLoading(false);
+        }
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
-
-  const signUp = async (email, password, userData = {}) => {
-    return await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: userData
-      }
-    })
-  };
-
-  const signIn = async (email, password) => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      // Determinar tipo de usuario después del login
-      if (data.user) {
-        await determinarTipoUsuario(data.user);
-      }
-
-      return { data, error: null };
-    } catch (error) {
-      return { data: null, error };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Nueva función para determinar tipo de usuario
-  const determinarTipoUsuario = async (user) => {
-    try {
-      // Verificar si tiene empresa (es proveedor)
-      const { data: empresa, error } = await supabase
-        .from('empresas')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      const tipo = empresa && !error ? 'proveedor' : 'usuario';
-      setUserType(tipo);
-      localStorage.setItem('userType', tipo);
-      
-      console.log('🏷️ Tipo de usuario determinado:', tipo);
-      
-    } catch (error) {
-      console.log('Error determinando tipo usuario, asumiendo usuario normal');
-      setUserType('usuario');
-      localStorage.setItem('userType', 'usuario');
-    }
-  };
 
   const signOut = async () => {
     try {
       setLoading(true);
-      
-      // Obtener tipo de usuario antes de limpiar
-      const currentUserType = userType || localStorage.getItem('userType') || 'usuario';
-      
-      // Intentar logout de Supabase
-      let { error } = await supabase.auth.signOut();
-      
-      if (error && error.message?.includes('403')) {
-        console.warn('Logout global falló, intentando logout local...');
-        ({ error } = await supabase.auth.signOut({ scope: 'local' }));
-      }
-      
-      if (error) {
-        console.warn('Logout de Supabase falló, forzando logout local:', error);
-      }
-      
-    } catch (err) {
-      console.error('Error en signOut:', err);
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error cerrando sesión:', error);
+      throw error;
     } finally {
-      // Limpiar estado de la aplicación
-      setUser(null);
-      setUserType(null);
       setLoading(false);
-      
-      // Limpiar localStorage (excepto userType temporalmente)
-      const tempUserType = userType || localStorage.getItem('userType') || 'usuario';
-      
-      try {
-        localStorage.removeItem('redirectAfterLogin');
-        Object.keys(localStorage).forEach(key => {
-          if (key.startsWith('supabase.auth.token') || 
-              key.startsWith('sb-') || 
-              key.includes('supabase')) {
-            localStorage.removeItem(key);
-          }
-        });
-      } catch (storageError) {
-        console.warn('Error limpiando localStorage:', storageError);
-      }
-      
-      // Redirigir según el tipo de usuario
-      const redirectUrl = tempUserType === 'proveedor' ? '/home-proveedor' : '/';
-      
-      console.log('🔄 Redirigiendo a:', redirectUrl, 'para tipo:', tempUserType);
-      
-      // Limpiar userType después de obtener la URL
-      localStorage.removeItem('userType');
-      
-      setTimeout(() => {
-        window.location.href = redirectUrl;
-      }, 100);
     }
   };
 
-  // Nueva función para establecer tipo de usuario manualmente
-  const setUserTypeManually = (tipo) => {
-    setUserType(tipo);
-    localStorage.setItem('userType', tipo);
-  };
+  // Memoizar funciones para evitar re-renders
+  const authMethods = useMemo(() => ({
+    getUserType: () => user?.user_metadata?.user_type || null,
+    isProveedor: () => user?.user_metadata?.user_type === 'proveedor',
+    isUsuario: () => user?.user_metadata?.user_type === 'usuario',
+  }), [user?.user_metadata?.user_type]);
 
-  const value = {
+  // Memoizar el value del context
+  const value = useMemo(() => ({
     user,
-    userType,
+    session,
     loading,
-    signUp,
-    signIn,
     signOut,
-    setUserTypeManually,
-    determinarTipoUsuario
-  };
+    ...authMethods,
+  }), [user, session, loading, authMethods]);
 
   return (
     <AuthContext.Provider value={value}>
@@ -177,3 +93,11 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth debe ser usado dentro de AuthProvider');
+  }
+  return context;
+};
