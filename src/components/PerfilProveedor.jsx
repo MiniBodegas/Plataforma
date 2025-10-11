@@ -43,11 +43,6 @@ const opciones = [
       </div>
     ),
   },
-  {
-    nombre: "Cerrar sesión",
-    tipo: "ruta",
-    ruta: "/",
-  },
 ];
 
 export function PerfilProveedor() {

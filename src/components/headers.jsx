@@ -4,12 +4,16 @@ import { Menu, X, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase'; 
 import { NotificationBell } from './NotificationBell';
+import { useVerificarPerfilCompleto } from '../hooks/useVerificarPerfilCompleto';
 
 export function Header({ tipo }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [notificaciones, setNotificaciones] = useState(0); // Estado para notificaciones
+  const [notificaciones, setNotificaciones] = useState(0);
+  
+  // Hook para verificar perfil completo
+  const { perfilCompleto, loading: loadingPerfil } = useVerificarPerfilCompleto();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -24,16 +28,34 @@ export function Header({ tipo }) {
     closeMenu();
   };
 
-  // Función para manejar enlaces protegidos
+  // Función actualizada para manejar enlaces protegidos con verificación de perfil
   const handleProtectedLink = (targetRoute, loginRoute) => {
     closeMenu();
-    if (user && user?.user_metadata?.user_type === 'proveedor') {
-      navigate(targetRoute);
-    } else {
-      // Guardar la ruta a la que quería ir para redirigir después del login
+    
+    if (!user || user?.user_metadata?.user_type !== 'proveedor') {
+      // Si no está logueado como proveedor, redirigir al login
       localStorage.setItem('redirectAfterLogin', targetRoute);
       navigate(loginRoute);
+      return;
     }
+
+    // Si está logueado pero va a crear mini bodega, verificar perfil
+    if (targetRoute === '/bodega-editor-proveedor') {
+      if (loadingPerfil) {
+        // Mostrar loading o esperar
+        console.log('Verificando perfil...');
+        return;
+      }
+      
+      if (!perfilCompleto) {
+        // Redirigir a completar perfil
+        navigate('/completar-formulario-proveedor');
+        return;
+      }
+    }
+
+    // Si todo está bien, navegar al destino
+    navigate(targetRoute);
   };
 
   // Cargar notificaciones no leídas
@@ -133,12 +155,15 @@ export function Header({ tipo }) {
 
           {tipo === "proveedor" && (
             <>
-              {/* Mostrar siempre "Crea tu mini bodega", pero protegerlo */}
+              {/* Botón "Crea tu mini bodega" con verificación de perfil */}
               <button
                 onClick={() => handleProtectedLink('/bodega-editor-proveedor', '/login-proveedores')}
-                className="text-base font-medium relative group whitespace-nowrap cursor-pointer bg-transparent border-none p-0 text-[#2C3A61]"
+                disabled={loadingPerfil}
+                className={`text-base font-medium relative group whitespace-nowrap cursor-pointer bg-transparent border-none p-0 text-[#2C3A61] ${
+                  loadingPerfil ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
-                Crea tu mini bodega
+                {loadingPerfil ? 'Verificando...' : 'Crea tu mini bodega'}
                 <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-[#2C3A61] transition-all duration-300 group-hover:w-full"></span>
               </button>
 
@@ -278,12 +303,15 @@ export function Header({ tipo }) {
 
           {tipo === "proveedor" && (
             <>
-              {/* Mostrar siempre "Crea tu mini bodega" en mobile, pero protegerlo */}
+              {/* Botón mobile "Crea tu mini bodega" con verificación */}
               <button
                 onClick={() => handleProtectedLink('/bodega-editor-proveedor', '/login-proveedores')}
-                className="text-base font-medium py-2 px-3 rounded hover:bg-gray-50 transition-colors duration-200 text-left w-full bg-transparent border-none"
+                disabled={loadingPerfil}
+                className={`text-base font-medium py-2 px-3 rounded hover:bg-gray-50 transition-colors duration-200 text-left w-full bg-transparent border-none ${
+                  loadingPerfil ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
-                Crea tu mini bodega
+                {loadingPerfil ? 'Verificando...' : 'Crea tu mini bodega'}
               </button>
 
               {/* Dashboard solo visible para proveedores logueados en mobile */}

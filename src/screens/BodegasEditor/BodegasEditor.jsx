@@ -14,7 +14,7 @@ export function BodegaEditorProveedorScreen() {
       direccion: "",
       ciudad: "",
       zona: "",
-      precioMensual: "" // ✅ Asegurar que está incluido
+      precioMensual: ""
     },
     { 
       metraje: "", 
@@ -24,7 +24,7 @@ export function BodegaEditorProveedorScreen() {
       direccion: "",
       ciudad: "",
       zona: "",
-      precioMensual: "" // ✅ Asegurar que está incluido
+      precioMensual: "" 
     }
   ]);
   const [empresa, setEmpresa] = useState("");
