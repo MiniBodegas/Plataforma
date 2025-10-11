@@ -12,7 +12,7 @@ export function LoginForm() {
     password: "",
   })
 
-  const { signIn, setUserTypeManually } = useAuth()
+  const { signIn } = useAuth() // ✅ Solo usar signIn
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
@@ -28,28 +28,43 @@ export function LoginForm() {
     setError('')
 
     try {
+      console.log('🔄 Intentando login con:', formData.email);
+      
       const { data, error } = await signIn(formData.email, formData.password)
       
       if (error) {
+        console.error('❌ Error en login:', error);
         setError(error.message === 'Invalid login credentials' 
           ? 'Credenciales incorrectas. Verifica tu email y contraseña.' 
           : error.message)
         return
       }
 
-      // Establecer como usuario normal
-      setUserTypeManually('usuario')
+      console.log('✅ Login exitoso:', data);
+      console.log('👤 Usuario completo:', data.user);
+      console.log('📋 Metadata:', data.user?.user_metadata);
+      console.log('🏷️ Tipo:', data.user?.user_metadata?.user_type);
 
-      // Redirigir
-      const redirectPath = localStorage.getItem('redirectAfterLogin')
+      // ✅ ELIMINAR setUserTypeManually - debe ser automático
+      
+      // Redirigir según tipo de usuario
+      const userType = data.user?.user_metadata?.user_type;
+      const redirectPath = localStorage.getItem('redirectAfterLogin');
+      
       if (redirectPath) {
-        localStorage.removeItem('redirectAfterLogin')
-        navigate(redirectPath)
+        localStorage.removeItem('redirectAfterLogin');
+        navigate(redirectPath);
       } else {
-        navigate('/')
+        // Redirigir según tipo de usuario
+        if (userType === 'proveedor') {
+          navigate('/home-proveedor');
+        } else {
+          navigate('/'); // Home de usuario normal
+        }
       }
       
     } catch (err) {
+      console.error('💥 Error inesperado:', err);
       setError('Ocurrió un error inesperado')
     } finally {
       setLoading(false)
@@ -58,7 +73,6 @@ export function LoginForm() {
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-    // Limpiar errores cuando el usuario empiece a escribir
     if (error) setError('')
   }
 
@@ -78,10 +92,8 @@ export function LoginForm() {
 
         {/* Formulario derecha */}
         <div className="p-8 md:p-12">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-            Iniciar sesión
-          </h2>
-
+          {/* ✅ Quitar título duplicado - dejarlo solo en Login.jsx */}
+          
           {/* Mensaje de error */}
           {error && (
             <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">

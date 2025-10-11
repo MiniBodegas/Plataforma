@@ -1,34 +1,44 @@
 // hooks/useVerificarPerfilCompleto.js
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { supabase } from "../lib/supabase";
+import { ProfileService } from "../services/ProfileService";
 
 export function useVerificarPerfilCompleto() {
-  const { user } = useAuth();
+  const { user, loading: authLoading, isProveedor } = useAuth(); // ✅ Agregar isProveedor
   const [perfilCompleto, setPerfilCompleto] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      verificarPerfil();
-    } else {
+    if (!authLoading && user) {
+      // ✅ SOLO ejecutar para proveedores
+      if (isProveedor()) {
+        verificarPerfil();
+      } else {
+        // ✅ Para usuarios normales, no verificar empresa
+        console.log('ℹ️ Usuario es cliente, no necesita verificación de empresa');
+        setPerfilCompleto(true); // Los clientes siempre tienen "perfil completo"
+        setLoading(false);
+      }
+    } else if (!authLoading && !user) {
       setLoading(false);
+      setPerfilCompleto(false);
     }
-  }, [user]);
+  }, [user, authLoading, isProveedor]);
 
   const verificarPerfil = async () => {
     try {
-      const { data: empresa, error } = await supabase
-        .from('empresas')
-        .select('nombre, descripcion, ciudad, direccion_principal, nombre_representante, celular, camara_comercio, rut')
-        .eq('user_id', user.id)
-        .single();
+      setLoading(true);
+      console.log('🔍 useVerificarPerfilCompleto: Verificando perfil de PROVEEDOR para:', user.id);
+      
+      const empresa = await ProfileService.getEmpresaByUserId(user.id);
 
-      if (error || !empresa) {
+      if (!empresa) {
+        console.log('ℹ️ Proveedor no tiene empresa creada');
         setPerfilCompleto(false);
-        setLoading(false);
         return;
       }
+
+      console.log('✅ Empresa encontrada, verificando campos...');
 
       const camposObligatorios = [
         'nombre', 
@@ -46,11 +56,12 @@ export function useVerificarPerfilCompleto() {
         return valor && valor.toString().trim() !== '';
       });
 
+      console.log('📊 Perfil de proveedor completo:', completo);
       setPerfilCompleto(completo);
-      setLoading(false);
     } catch (error) {
-      console.error('Error verificando perfil:', error);
+      console.error('❌ Error verificando perfil de proveedor:', error);
       setPerfilCompleto(false);
+    } finally {
       setLoading(false);
     }
   };

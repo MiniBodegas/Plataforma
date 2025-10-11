@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { ProfileService } from '../services/ProfileService';
+import { supabase } from '../lib/supabase';
 
 const UserProfileContext = createContext({});
 
@@ -14,7 +15,7 @@ export function UserProfileProvider({ children }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Solo ejecutar cuando auth loading termine y tengamos un usuario proveedor
+    // ✅ Solo cargar para proveedores
     if (!authLoading && user && isProveedor()) {
       loadProfile();
     } else if (!authLoading && (!user || !isProveedor())) {
@@ -31,23 +32,72 @@ export function UserProfileProvider({ children }) {
       setLoading(true);
       setError(null);
       
+      console.log('🔍 Cargando perfil para usuario:', user.id);
+      
+      // DEBUGGING: Intentar query directa primero
+      console.log('🧪 Testing direct query...');
+      const { data: directTest, error: directError } = await supabase
+        .from('empresas')
+        .select('id, nombre')
+        .eq('user_id', user.id);
+      
+      console.log('🧪 Direct query result:', { directTest, directError });
+      
+      if (directError) {
+        console.error('❌ Direct query failed:', directError);
+        setError(`Error directo: ${directError.message}`);
+        return;
+      }
+      
+      // Si el test directo funciona, usar ProfileService
       const empresaData = await ProfileService.getEmpresaByUserId(user.id);
+      console.log('📊 Empresa obtenida:', empresaData);
+      
       setEmpresa(empresaData);
 
-      // Si tiene empresa, cargar sus minibodegas
+      // Si tiene empresa, intentar cargar minibodegas
       if (empresaData) {
-        const [minibodegasData, count] = await Promise.all([
-          ProfileService.getMinibodegasByEmpresa(empresaData.id),
-          ProfileService.countMinibodegasActivas(empresaData.id)
-        ]);
+        console.log('🏢 Empresa encontrada, cargando minibodegas...');
         
-        setMinibodegas(minibodegasData);
-        setMinibodegasCount(count);
+        try {
+          // Cargar minibodegas con manejo de errores individual
+          const minibodegasData = await ProfileService.getMinibodegasByEmpresa(empresaData.id);
+          console.log('📦 Minibodegas cargadas:', minibodegasData);
+          setMinibodegas(minibodegasData);
+
+          // Intentar obtener conteo
+          const count = await ProfileService.countMinibodegasActivas(empresaData.id);
+          console.log('🔢 Conteo de minibodegas:', count);
+          setMinibodegasCount(count);
+          
+        } catch (minibodegasError) {
+          console.warn('⚠️ Error cargando minibodegas:', minibodegasError);
+          // No fallar todo el profile por este error
+          setMinibodegas([]);
+          setMinibodegasCount(0);
+          
+          // Solo mostrar error si es crítico
+          if (minibodegasError.message.includes('permission') || 
+              minibodegasError.message.includes('RLS') ||
+              minibodegasError.message.includes('406')) {
+            setError(`Error de permisos con minibodegas: ${minibodegasError.message}`);
+          }
+        }
+      } else {
+        console.log('ℹ️ No se encontró empresa para el usuario');
+        setMinibodegas([]);
+        setMinibodegasCount(0);
       }
+      
     } catch (err) {
-      console.error('Error cargando perfil:', err);
-      // Solo mostrar error si no es "no encontrado"
-      if (!err.message.includes('Could not find') && !err.message.includes('PGRST116')) {
+      console.error('❌ Error cargando perfil:', err);
+      
+      // Manejar diferentes tipos de errores
+      if (err.message.includes('406') || err.message.includes('Not Acceptable')) {
+        setError('Error de permisos. Verifica la configuración de seguridad.');
+      } else if (err.message.includes('401') || err.message.includes('JWT')) {
+        setError('Sesión expirada. Por favor inicia sesión nuevamente.');
+      } else if (!err.message.includes('Could not find') && !err.message.includes('PGRST116')) {
         setError(err.message);
       }
     } finally {

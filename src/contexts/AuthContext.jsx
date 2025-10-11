@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext({});
@@ -9,25 +9,21 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
 
   useEffect(() => {
-    let mounted = true;
-
     // Obtener sesión inicial
     const getInitialSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (!mounted) return;
-
         if (error) {
           console.error('Error obteniendo sesión:', error);
         } else {
           setSession(session);
           setUser(session?.user ?? null);
         }
-        setLoading(false);
       } catch (error) {
         console.error('Error en getInitialSession:', error);
-        if (mounted) setLoading(false);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -36,27 +32,63 @@ export function AuthProvider({ children }) {
     // Escuchar cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔐 Auth event:', event);
-        }
-        
-        if (!mounted) return;
-
+        console.log('🔐 Auth event:', event);
         setSession(session);
         setUser(session?.user ?? null);
-        
-        // Asegurar que loading sea false después de cualquier evento
-        if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     );
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
+
+  // ✅ AGREGAR función signIn
+  const signIn = async (email, password) => {
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('Error en signIn:', error);
+        return { data: null, error };
+      }
+
+      console.log('✅ Login exitoso:', data);
+      return { data, error: null };
+      
+    } catch (error) {
+      console.error('Error inesperado en signIn:', error);
+      return { data: null, error };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ AGREGAR función signUp
+  const signUp = async (email, password, metadata = {}) => {
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: metadata // Para guardar user_type
+        }
+      });
+
+      return { data, error };
+    } catch (error) {
+      console.error('Error en signUp:', error);
+      return { data: null, error };
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const signOut = async () => {
     try {
@@ -71,21 +103,29 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Memoizar funciones para evitar re-renders
-  const authMethods = useMemo(() => ({
-    getUserType: () => user?.user_metadata?.user_type || null,
-    isProveedor: () => user?.user_metadata?.user_type === 'proveedor',
-    isUsuario: () => user?.user_metadata?.user_type === 'usuario',
-  }), [user?.user_metadata?.user_type]);
+  const getUserType = () => {
+    return user?.user_metadata?.user_type || null;
+  };
 
-  // Memoizar el value del context
-  const value = useMemo(() => ({
+  const isProveedor = () => {
+    return getUserType() === 'proveedor';
+  };
+
+  const isUsuario = () => {
+    return getUserType() === 'usuario';
+  };
+
+  const value = {
     user,
     session,
     loading,
+    signIn,     // ✅ Agregar
+    signUp,     // ✅ Agregar
     signOut,
-    ...authMethods,
-  }), [user, session, loading, authMethods]);
+    getUserType,
+    isProveedor,
+    isUsuario,
+  };
 
   return (
     <AuthContext.Provider value={value}>
