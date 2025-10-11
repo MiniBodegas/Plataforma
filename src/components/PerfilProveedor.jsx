@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
+import { ChecklistProgreso } from "./index";
 
 const opciones = [
   {
@@ -10,12 +11,26 @@ const opciones = [
     ruta: "/mis-mini-bodegas",
   },
   {
-    nombre: "Planes y facturación",
+    nombre: "Reservas y transacciones",
     tipo: "ruta",
     ruta: "/",
   },
   {
     nombre: "Mi perfil",
+    tipo: "ruta",
+    ruta: "/completar-formulario-proveedor",
+  },
+  {
+    nombre: "Configuración de pagos",
+    tipo: "desplegable",
+    contenido: (
+      <div className="p-4 text-gray-600">
+        Métodos de pago registrados: <br />- Tarjeta Visa terminación 1234
+      </div>
+    ),
+  },
+  {
+    nombre: "Planes y facturación",
     tipo: "ruta",
     ruta: "/completar-formulario-proveedor",
   },
@@ -29,13 +44,9 @@ const opciones = [
     ),
   },
   {
-    nombre: "Configuración de pagos",
-    tipo: "desplegable",
-    contenido: (
-      <div className="p-4 text-gray-600">
-        Métodos de pago registrados: <br />- Tarjeta Visa terminación 1234
-      </div>
-    ),
+    nombre: "Cerrar sesión",
+    tipo: "ruta",
+    ruta: "/",
   },
 ];
 
@@ -161,21 +172,28 @@ export function PerfilProveedor() {
 
   // Si llegamos aquí, significa que auth cargó, hay usuario y empresa válida
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-white">
-      <div>
-        <h2 className="text-2xl font-bold text-[#2C3A61] text-center mt-12 mb-2">
-          {empresa?.nombre_representante || "Representante Legal"}
-        </h2>
-        <h3 className="text-xl font-bold text-[#2C3A61] text-center mb-2">
-          {empresa?.nombre || "Empresa"}
-        </h3>
-        <h4 className="text-lg text-[#2C3A61] text-center mb-8">
-          Mi cuenta
-        </h4>
+    <div className="min-h-screen flex flex-col justify-between bg-gray-50">
+      <div className="px-6 py-6">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-[#2C3A61] mb-2">
+            {empresa?.nombre_representante || "Representante Legal"}
+          </h2>
+          <h3 className="text-xl font-bold text-[#2C3A61] mb-2">
+            {empresa?.nombre || "Empresa"}
+          </h3>
+          <h4 className="text-lg text-[#2C3A61]">
+            Mi cuenta
+          </h4>
+        </div>
 
-        <div className="px-6 space-y-4">
+        {/* Checklist de progreso */}
+        <ChecklistProgreso />
+
+        {/* Opciones del menú */}
+        <div className="space-y-4">
           {opciones.map((opcion, idx) => (
-            <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden">
+            <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden bg-white">
               <button
                 onClick={() => handleClick(idx, opcion)}
                 className="w-full p-4 bg-white hover:bg-gray-50 flex items-center justify-between text-left"
@@ -204,9 +222,10 @@ export function PerfilProveedor() {
         </div>
       </div>
 
+      {/* Botón de cerrar sesión */}
       <div className="p-6">
         <button 
-          onClick={() => navigate('/login-proveedor')} // Ajusta la ruta según tu estructura
+          onClick={() => navigate('/login-proveedor')}
           className="w-full h-12 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
         >
           Cerrar sesión

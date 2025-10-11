@@ -77,3 +77,5 @@ export * from './FormularioEmpresa/DocumentoEstado'
 export * from './FormularioEmpresa/InformacionEmpresa'
 export * from './FormularioEmpresa/DocumentosLegales'
 export * from './FormularioEmpresa/InformacionRepresentante'
+
+export * from './ChecklistProgreso'
