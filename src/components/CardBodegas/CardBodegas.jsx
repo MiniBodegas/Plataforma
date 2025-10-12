@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { Image, RotateCcw } from "lucide-react";
+import { Image, RotateCcw, Minus, Plus } from "lucide-react";
 import './CardBodegas.css';
 
-export function  CardBodegas({
+export function CardBodegas({
   id = null,
   metraje = "",
   descripcion = "",
@@ -12,6 +12,9 @@ export function  CardBodegas({
   ciudad = "",
   zona = "",
   precioMensual = "",
+  cantidad = 1,
+  maxCantidad = 99,
+  nombrePersonalizado = "", // ✅ NUEVO: nombre personalizado
   onImagenChange,
   onMetrajeChange,
   onDescripcionChange,
@@ -19,7 +22,9 @@ export function  CardBodegas({
   onDireccionChange,
   onCiudadChange,
   onZonaChange,
-  onPrecioMensualChange
+  onPrecioMensualChange,
+  onCantidadChange,
+  onNombrePersonalizadoChange // ✅ NUEVO: callback para nombre personalizado
 }) {
   const [editMetraje, setEditMetraje] = useState(false);
   const [editDescripcion, setEditDescripcion] = useState(false);
@@ -28,8 +33,54 @@ export function  CardBodegas({
   const [editDireccion, setEditDireccion] = useState(false);
   const [editCiudad, setEditCiudad] = useState(false);
   const [editZona, setEditZona] = useState(false);
+  const [editNombrePersonalizado, setEditNombrePersonalizado] = useState(false); // ✅ NUEVO: estado para editar nombre
   const [flipped, setFlipped] = useState(false);
   const [imagenError, setImagenError] = useState(false);
+  
+  // ✅ ESTADO INTERNO PARA CANTIDAD
+  const [cantidadInterna, setCantidadInterna] = useState(cantidad);
+
+  // ✅ SINCRONIZAR CON PROP EXTERNA
+  useEffect(() => {
+    setCantidadInterna(cantidad);
+  }, [cantidad]);
+
+  // ✅ FUNCIONES PARA MANEJAR CANTIDAD - CON DEBUG
+  const aumentarCantidad = () => {
+    const nuevaCantidad = cantidadInterna + 1;
+    console.log('🔼 CardBodegas: Aumentando cantidad de', cantidadInterna, 'a', nuevaCantidad);
+    if (nuevaCantidad <= maxCantidad) {
+      setCantidadInterna(nuevaCantidad);
+      if (onCantidadChange) {
+        console.log('📤 CardBodegas: Notificando cambio al padre:', nuevaCantidad);
+        onCantidadChange(nuevaCantidad);
+      } else {
+        console.log('❌ CardBodegas: onCantidadChange no está definido');
+      }
+    }
+  };
+
+  const disminuirCantidad = () => {
+    const nuevaCantidad = cantidadInterna - 1;
+    console.log('🔽 CardBodegas: Disminuyendo cantidad de', cantidadInterna, 'a', nuevaCantidad);
+    if (nuevaCantidad >= 1) {
+      setCantidadInterna(nuevaCantidad);
+      if (onCantidadChange) {
+        console.log('📤 CardBodegas: Notificando cambio al padre:', nuevaCantidad);
+        onCantidadChange(nuevaCantidad);
+      } else {
+        console.log('❌ CardBodegas: onCantidadChange no está definido');
+      }
+    }
+  };
+
+  const handleCantidadInput = (e) => {
+    const valor = parseInt(e.target.value) || 1;
+    if (valor >= 1 && valor <= maxCantidad) {
+      setCantidadInterna(valor);
+      onCantidadChange && onCantidadChange(valor);
+    }
+  };
 
   // Formatear precio para mostrar
   const formatearPrecio = (precio) => {
@@ -41,6 +92,9 @@ export function  CardBodegas({
       maximumFractionDigits: 0
     }).format(precio);
   };
+
+  // ✅ CALCULAR PRECIO TOTAL CON CANTIDAD INTERNA
+  const precioTotal = precioMensual ? precioMensual * cantidadInterna : 0;
 
   // Función para obtener la URL correcta de la imagen
   const getImageUrl = (img) => {
@@ -98,10 +152,10 @@ export function  CardBodegas({
   }, [imagen]);
 
   return (
-    <div className={`flip-card w-72 h-[480px]${flipped ? " flipped" : ""}`}>
+    <div className={`flip-card w-72 h-[520px]${flipped ? " flipped" : ""}`}>
       <div className="flip-inner">
         {/* Cara frontal */}
-        <div className="flip-front bg-[#F7F8FA] rounded-2xl shadow p-6 flex flex-col items-center w-72 h-[480px]">
+        <div className="flip-front bg-[#F7F8FA] rounded-2xl shadow p-6 flex flex-col items-center w-72 h-[520px]">
           {/* Sección de imagen */}
           <div className="bg-[#E9E9E9] rounded-xl w-full h-36 flex flex-col justify-center items-center mb-4">
             {tieneImagen() ? (
@@ -214,9 +268,9 @@ export function  CardBodegas({
               )}
             </div>
 
-            {/* Precio mensual */}
-            <div className="flex items-center justify-center text-[#2C3A61] text-sm mb-4">
-              <span className="font-semibold whitespace-nowrap mr-2">💰 Precio:</span>
+            {/* Precio mensual unitario */}
+            <div className="flex items-center justify-center text-[#2C3A61] text-sm mb-2">
+              <span className="font-semibold whitespace-nowrap mr-2">💰 Precio c/u:</span>
               {editPrecio ? (
                 <input
                   type="number"
@@ -245,6 +299,41 @@ export function  CardBodegas({
                 </span>
               )}
             </div>
+
+            {/* ✅ CONTROLES DE CANTIDAD - SOLO BOTONES + Y - */}
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="text-xs text-[#2C3A61] font-semibold">Cantidad:</span>
+              
+              <button
+                onClick={disminuirCantidad}
+                disabled={cantidadInterna <= 1}
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-sm
+                  ${cantidadInterna <= 1 
+                    ? 'text-gray-300 cursor-not-allowed' 
+                    : 'text-[#2C3A61] hover:bg-gray-100 active:scale-95'
+                  } transition-all duration-150`}
+              >
+                <Minus className="h-3 w-3" />
+              </button>
+              
+              <span className="w-8 h-6 text-center text-sm font-bold text-[#2C3A61] flex items-center justify-center">
+                {cantidadInterna}
+              </span>
+              
+              <button
+                onClick={aumentarCantidad}
+                disabled={cantidadInterna >= maxCantidad}
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-sm
+                  ${cantidadInterna >= maxCantidad 
+                    ? 'text-gray-300 cursor-not-allowed' 
+                    : 'text-[#2C3A61] hover:bg-gray-100 active:scale-95'
+                  } transition-all duration-150`}
+              >
+                <Plus className="h-3 w-3" />
+              </button>
+              
+              <span className="text-xs text-gray-400">/{maxCantidad}</span>
+            </div>
           </div>
           
           {/* Botón para voltear la card */}
@@ -258,10 +347,44 @@ export function  CardBodegas({
         </div>
         
         {/* Cara trasera - Ubicación y Detalles */}
-        <div className="flip-back bg-[#F7F8FA] rounded-2xl shadow p-6 flex flex-col justify-between w-72 h-[480px]">
+        <div className="flip-back bg-[#F7F8FA] rounded-2xl shadow p-6 flex flex-col justify-between w-72 h-[520px]">
           <div className="w-full text-center">
             <h3 className="font-bold text-[#2C3A61] text-lg mb-6">📍 Ubicación y Detalles</h3>
             
+            {/* ✅ NUEVO: Nombre personalizado */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-[#2C3A61] mb-2">
+                🏷️ Nombre personalizado (opcional):
+              </label>
+              {editNombrePersonalizado ? (
+                <input
+                  type="text"
+                  value={nombrePersonalizado}
+                  onChange={e => onNombrePersonalizadoChange && onNombrePersonalizadoChange(e.target.value)}
+                  className="w-full p-2 rounded bg-white text-[#2C3A61] border text-sm"
+                  onBlur={() => setEditNombrePersonalizado(false)}
+                  autoFocus
+                  placeholder="Ej: Bodega Principal, Local Centro, etc."
+                  maxLength={50}
+                />
+              ) : (
+                <div
+                  className="w-full p-2 rounded bg-gray-50 text-[#2C3A61] border cursor-pointer hover:bg-gray-100 transition text-sm min-h-[40px] flex items-center"
+                  onClick={() => setEditNombrePersonalizado(true)}
+                  title={nombrePersonalizado || "Agrega un nombre personalizado"}
+                >
+                  <span className="truncate w-full text-center">
+                    {nombrePersonalizado || "Sin nombre personalizado"}
+                  </span>
+                </div>
+              )}
+              {nombrePersonalizado && (
+                <div className="text-xs text-gray-500 mt-1">
+                  {nombrePersonalizado.length}/50 caracteres
+                </div>
+              )}
+            </div>
+
             {/* Dirección */}
             <div className="mb-4">
               <label className="block text-sm font-semibold text-[#2C3A61] mb-2">Dirección:</label>
@@ -315,7 +438,7 @@ export function  CardBodegas({
             </div>
 
             {/* Zona */}
-            <div className="mb-6">
+            <div className="mb-4"> {/* ✅ CAMBIÉ mb-6 a mb-4 para dar espacio */}
               <label className="block text-sm font-semibold text-[#2C3A61] mb-2">Zona:</label>
               {editZona ? (
                 <select

@@ -3,12 +3,9 @@ import { supabase } from '../lib/supabase';
 
 export class ProfileService {
   static async getEmpresaByUserId(userId) {
-    console.log('🔍 ProfileService: Buscando empresa para userId:', userId);
-    
     try {
       // Verificar sesión primero
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log('🔑 Sesión actual:', session?.user?.id);
       
       if (sessionError || !session) {
         throw new Error('Usuario no autenticado');
@@ -21,29 +18,21 @@ export class ProfileService {
         .eq('user_id', userId)
         .maybeSingle(); // Usar maybeSingle en lugar de single
 
-      console.log('📊 Respuesta completa:', { data, error, userId });
-
       if (error) {
-        console.error('❌ Error en consulta empresas:', error);
         throw new Error(`Error obteniendo empresa: ${error.message} (Code: ${error.code})`);
       }
 
       if (!data) {
-        console.log('ℹ️ No se encontró empresa para el usuario');
         return null;
       }
 
-      console.log('✅ Empresa encontrada:', data);
       return data;
     } catch (err) {
-      console.error('💥 Error en ProfileService.getEmpresaByUserId:', err);
       throw err;
     }
   }
 
   static async getMinibodegasByEmpresa(empresaId) {
-    console.log('🔍 ProfileService: Buscando minibodegas para empresaId:', empresaId);
-    
     try {
       const { data, error } = await supabase
         .from('mini_bodegas')
@@ -52,21 +41,16 @@ export class ProfileService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('❌ Error obteniendo minibodegas:', error);
         throw new Error(`Error obteniendo minibodegas: ${error.message}`);
       }
 
-      console.log('✅ Minibodegas encontradas:', data?.length || 0);
       return data || [];
     } catch (err) {
-      console.error('💥 Error en getMinibodegasByEmpresa:', err);
       throw err;
     }
   }
 
   static async countMinibodegasActivas(empresaId) {
-    console.log('🔢 ProfileService: Contando minibodegas para empresaId:', empresaId);
-    
     try {
       const { count, error } = await supabase
         .from('mini_bodegas')
@@ -74,15 +58,12 @@ export class ProfileService {
         .eq('empresa_id', empresaId);
 
       if (error) {
-        console.error('❌ Error contando minibodegas:', error);
         // No fallar por esto, retornar 0
         return 0;
       }
 
-      console.log('✅ Conteo de minibodegas:', count);
       return count || 0;
     } catch (err) {
-      console.error('💥 Error en countMinibodegasActivas:', err);
       return 0;
     }
   }

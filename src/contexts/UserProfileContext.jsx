@@ -32,46 +32,33 @@ export function UserProfileProvider({ children }) {
       setLoading(true);
       setError(null);
       
-      console.log('🔍 Cargando perfil para usuario:', user.id);
-      
       // DEBUGGING: Intentar query directa primero
-      console.log('🧪 Testing direct query...');
       const { data: directTest, error: directError } = await supabase
         .from('empresas')
         .select('id, nombre')
         .eq('user_id', user.id);
       
-      console.log('🧪 Direct query result:', { directTest, directError });
-      
       if (directError) {
-        console.error('❌ Direct query failed:', directError);
         setError(`Error directo: ${directError.message}`);
         return;
       }
       
       // Si el test directo funciona, usar ProfileService
       const empresaData = await ProfileService.getEmpresaByUserId(user.id);
-      console.log('📊 Empresa obtenida:', empresaData);
-      
       setEmpresa(empresaData);
 
       // Si tiene empresa, intentar cargar minibodegas
       if (empresaData) {
-        console.log('🏢 Empresa encontrada, cargando minibodegas...');
-        
         try {
           // Cargar minibodegas con manejo de errores individual
           const minibodegasData = await ProfileService.getMinibodegasByEmpresa(empresaData.id);
-          console.log('📦 Minibodegas cargadas:', minibodegasData);
           setMinibodegas(minibodegasData);
 
           // Intentar obtener conteo
           const count = await ProfileService.countMinibodegasActivas(empresaData.id);
-          console.log('🔢 Conteo de minibodegas:', count);
           setMinibodegasCount(count);
           
         } catch (minibodegasError) {
-          console.warn('⚠️ Error cargando minibodegas:', minibodegasError);
           // No fallar todo el profile por este error
           setMinibodegas([]);
           setMinibodegasCount(0);
@@ -84,14 +71,11 @@ export function UserProfileProvider({ children }) {
           }
         }
       } else {
-        console.log('ℹ️ No se encontró empresa para el usuario');
         setMinibodegas([]);
         setMinibodegasCount(0);
       }
       
     } catch (err) {
-      console.error('❌ Error cargando perfil:', err);
-      
       // Manejar diferentes tipos de errores
       if (err.message.includes('406') || err.message.includes('Not Acceptable')) {
         setError('Error de permisos. Verifica la configuración de seguridad.');
@@ -115,7 +99,6 @@ export function UserProfileProvider({ children }) {
       
       return updatedEmpresa;
     } catch (err) {
-      console.error('Error actualizando empresa:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -136,7 +119,6 @@ export function UserProfileProvider({ children }) {
       setEmpresa(newEmpresa);
       return newEmpresa;
     } catch (err) {
-      console.error('Error creando empresa:', err);
       setError(err.message);
       throw err;
     } finally {

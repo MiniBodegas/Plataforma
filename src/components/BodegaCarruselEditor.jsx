@@ -1,158 +1,17 @@
 import { useState, useRef } from "react";
-import { Pencil, Image, X, Save, Loader2 } from "lucide-react";
-import { supabase } from "../lib/supabase";
+import { Pencil, Image, X } from "lucide-react";
 
 export function BodegaCarruselEditor({
   empresaId = null, // ID de la empresa si ya existe
   empresa,
   onEmpresaChange,
   imagenes: initialImagenes = [],
-  onImagenesChange,
-  onSave // Callback cuando se guarde exitosamente
+  onImagenesChange
 }) {
   const [editEmpresa, setEditEmpresa] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const fileInputRef = useRef(null);
   const [imagenes, setImagenes] = useState(initialImagenes);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  // Función para subir múltiples imágenes a Supabase Storage
-  const uploadImages = async (files) => {
-    const uploadPromises = files.map(async (file, index) => {
-      try {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-${index}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-        const filePath = `carrusel/${fileName}`;
-
-        const { data, error } = await supabase.storage
-          .from('imagenes')
-          .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
-
-        if (error) throw error;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('imagenes')
-          .getPublicUrl(filePath);
-
-        return publicUrl;
-      } catch (error) {
-        console.error(`Error uploading image ${index}:`, error);
-        return null;
-      }
-    });
-
-    const results = await Promise.all(uploadPromises);
-    return results.filter(url => url !== null); // Filtrar URLs exitosas
-  };
-
-  // Función para guardar empresa y carrusel en Supabase
-  const handleSaveCarrusel = async () => {
-    setSaving(true);
-    
-    try {
-      console.log('Guardando carrusel...');
-      
-      // Validar datos
-      if (!empresa?.trim()) {
-        alert('Por favor ingresa el nombre de la empresa');
-        return;
-      }
-
-      if (!imagenes || imagenes.length === 0) {
-        alert('Por favor agrega al menos una imagen');
-        return;
-      }
-
-      // 1. Guardar o actualizar empresa
-      let empresaData;
-      if (empresaId) {
-        // Actualizar empresa existente
-        const { data, error } = await supabase
-          .from('empresas')
-          .update({ nombre: empresa.trim() })
-          .eq('id', empresaId)
-          .select();
-        
-        if (error) throw error;
-        empresaData = data[0];
-      } else {
-        // Crear nueva empresa
-        const { data, error } = await supabase
-          .from('empresas')
-          .insert([{
-            nombre: empresa.trim(),
-            ciudad: 'Bogotá' // Por defecto
-          }])
-          .select();
-        
-        if (error) throw error;
-        empresaData = data[0];
-      }
-
-      console.log('Empresa guardada:', empresaData);
-
-      // 2. Subir imágenes al storage
-      const imagenesFile = imagenes.filter(img => typeof img !== 'string'); // Solo archivos nuevos
-      const imagenesUrl = imagenes.filter(img => typeof img === 'string'); // URLs existentes
-
-      let nuevasUrls = [];
-      if (imagenesFile.length > 0) {
-        console.log('Subiendo imágenes...');
-        nuevasUrls = await uploadImages(imagenesFile);
-      }
-
-      const todasLasUrls = [...imagenesUrl, ...nuevasUrls];
-      console.log('URLs de imágenes:', todasLasUrls);
-
-      // 3. Limpiar registros existentes del carrusel si es actualización
-      if (empresaId) {
-        await supabase
-          .from('carrusel_imagenes')
-          .delete()
-          .eq('empresa_id', empresaData.id);
-      }
-
-      // 4. Guardar imágenes del carrusel en la base de datos
-      if (todasLasUrls.length > 0) {
-        const carruselData = todasLasUrls.map((url, index) => ({
-          empresa_id: empresaData.id,
-          imagen_url: url,
-          orden: index,
-          alt_text: `Imagen ${index + 1} de ${empresa}`
-        }));
-
-        const { error: carruselError } = await supabase
-          .from('carrusel_imagenes')
-          .insert(carruselData);
-
-        if (carruselError) throw carruselError;
-      }
-
-      console.log('Carrusel guardado exitosamente');
-      setSaved(true);
-
-      // Callback para el componente padre
-      if (onSave) {
-        onSave({
-          empresa: empresaData,
-          imagenes: todasLasUrls
-        });
-      }
-
-      // Resetear estado después de 3 segundos
-      setTimeout(() => setSaved(false), 3000);
-
-    } catch (error) {
-      console.error('Error guardando carrusel:', error);
-      alert(`Error al guardar el carrusel: ${error.message}`);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   // Maneja la carga de imágenes y genera previews
   const handleImagenesChange = (e) => {
@@ -285,19 +144,20 @@ export function BodegaCarruselEditor({
           </div>
         )}
         
+        {/* ✅ Nombre de empresa editable */}
         {editEmpresa ? (
           <input
             type="text"
             value={empresa}
             onChange={e => onEmpresaChange(e.target.value)}
             placeholder="Ingresa el nombre de tu empresa"
-            className="text-center text-xl font-medium w-full border-b border-gray-300 outline-none mb-2 bg-white text-[#2C3A61]"
+            className="text-center text-xl font-medium w-full border-b border-gray-300 outline-none mb-2 bg-white text-[#2C3A61] mt-4"
             onBlur={() => setEditEmpresa(false)}
             autoFocus
             style={{ backgroundColor: "#fff", color: "#2C3A61" }}
           />
         ) : (
-          <div className="flex items-center justify-center w-full mb-4">
+          <div className="flex items-center justify-center w-full mt-4">
             <span className="text-[#2C3A61] text-xl font-medium flex-1">
               {empresa || "Ingresa el nombre de tu empresa"}
             </span>
@@ -306,34 +166,8 @@ export function BodegaCarruselEditor({
             </button>
           </div>
         )}
-
-        {/* Botón guardar carrusel */}
-        <button
-          className={`w-full max-w-md py-2 px-4 rounded-xl font-bold transition flex items-center justify-center ${
-            saved 
-              ? 'bg-green-500 text-white' 
-              : 'bg-[#2C3A61] text-white hover:bg-[#4B799B]'
-          }`}
-          onClick={handleSaveCarrusel}
-          disabled={saving}
-        >
-          {saving ? (
-            <>
-              <Loader2 className="animate-spin h-4 w-4 mr-2" />
-              Guardando...
-            </>
-          ) : saved ? (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              ¡Guardado!
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              Guardar Carrusel
-            </>
-          )}
-        </button>
+        
+        {/* ✅ ELIMINADO: Botón guardar carrusel */}
         
         {/* Indicadores de carrusel */}
         <div className="flex gap-2 mt-4">

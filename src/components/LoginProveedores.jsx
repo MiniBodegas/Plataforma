@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Eye, EyeOff } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
+import { supabase } from "../lib/supabase"
 
 export function LoginProveedores() {
   const [showPassword, setShowPassword] = useState(false)
@@ -12,7 +13,7 @@ export function LoginProveedores() {
     Contraseña: ""
   })
 
-  const { signIn, setUserTypeManually } = useAuth()
+  const { signIn } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
@@ -21,26 +22,51 @@ export function LoginProveedores() {
     setLoading(true)
 
     try {
+      console.log('🔐 Intentando login como proveedor con:', formData.Email)
+      
       const { data, error } = await signIn(formData.Email, formData.Contraseña)
       
       if (error) {
+        console.error('❌ Error en signIn:', error)
         setError(error.message)
         return
       }
 
-      // Establecer como proveedor
-      setUserTypeManually('proveedor')
+      console.log('✅ Login exitoso, verificando si es proveedor...')
 
-      // Redirigir
+      // ✅ CAMBIAR DE 'proveedores' A 'empresas'
+      const { data: empresa, error: empresaError } = await supabase
+        .from('empresas')
+        .select('*')
+        .eq('email', formData.Email)
+        .single()
+
+      if (empresaError || !empresa) {
+        console.error('❌ No se encontró empresa:', empresaError)
+        setError('Este email no está registrado como proveedor. Usa el login de clientes.')
+        
+        // ✅ CERRAR SESIÓN SI NO ES PROVEEDOR
+        await supabase.auth.signOut()
+        return
+      }
+
+      console.log('✅ Empresa verificada:', empresa.nombre)
+
+      // ✅ ESTABLECER TIPO DE USUARIO Y DATOS DE LA EMPRESA
+      localStorage.setItem('userType', 'proveedor')
+      localStorage.setItem('empresaData', JSON.stringify(empresa)) // Cambiar de proveedorData a empresaData
+
+      // ✅ REDIRIGIR
       const redirectPath = localStorage.getItem('redirectAfterLogin')
       if (redirectPath) {
         localStorage.removeItem('redirectAfterLogin')
         navigate(redirectPath)
       } else {
-        navigate('/home-proveedor') // O donde quieras que vayan los proveedores
+        navigate('/home-proveedor')
       }
       
     } catch (error) {
+      console.error('❌ Error inesperado:', error)
       setError('Error inesperado al iniciar sesión')
     } finally {
       setLoading(false)
@@ -164,6 +190,11 @@ export function LoginProveedores() {
               >
                 ¿No tienes cuenta? Regístrate como Proveedor
               </Link>
+              
+              {/* ✅ ENLACE PARA LOGIN DE CLIENTES */}
+              <div className="text-sm text-gray-600">
+                ¿Eres cliente? <Link to="/login" className="text-[#4B799B] hover:underline">Inicia sesión aquí</Link>
+              </div>
             </div>
           </form>
         </div>
