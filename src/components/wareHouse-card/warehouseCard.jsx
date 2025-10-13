@@ -1,21 +1,15 @@
 import { Link, useNavigate } from "react-router-dom"
 import { Star, MapPin, Ruler, Shield } from "lucide-react"
+// importar useCompanyReviews ya no es necesario para la card
 
 export function WarehouseCard({ warehouse = {}, filtroActivo = null }) {
   const navigate = useNavigate()
+  const { id, name = "Empresa sin nombre", location = "Ubicación no disponible", sizes = [], priceRange = { min: 0, max: 0 }, image, features = [], description } = warehouse
 
-  const {
-    id,
-    name = "Empresa sin nombre",
-    location = "Ubicación no disponible",
-    sizes = [],
-    priceRange = { min: 0, max: 0 },
-    image,
-    features = [],
-    rating = 0,
-    description,
-    reviewCount = 0
-  } = warehouse
+  // Usa el hook para traer el rating y el número de reseñas
+  const average = parseFloat(warehouse.rating) || 0
+  const count = parseInt(warehouse.reviewCount, 10) || 0
+  const loadingReviews = false
 
   const canNavigate = typeof id === "number" || typeof id === "string"
 
@@ -77,8 +71,8 @@ export function WarehouseCard({ warehouse = {}, filtroActivo = null }) {
 
   return (
     <div 
-      className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow w-full max-w-[500px] h-[550px] flex flex-col cursor-pointer"
-      onClick={handleCardClick} // ✅ CLICK EN CARD = PERFIL
+      className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow w-full max-w-[500px] flex flex-col cursor-pointer"
+      onClick={handleCardClick}
     >
       {/* Imagen */}
       <div className="relative h-40 sm:h-56">
@@ -116,15 +110,18 @@ export function WarehouseCard({ warehouse = {}, filtroActivo = null }) {
             </Link>
           </div>
 
-          {rating > 0 && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1">
-                <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                <span className="text-xs sm:text-sm text-[#2C3A61] font-medium">{Number(rating).toFixed(1)}</span>
-                <span className="text-xs text-gray-500">({reviewCount || 25} reseñas)</span>
-              </div>
+          {/* Mostrar rating real */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <Star className="h-4 w-4 text-yellow-400 fill-current" />
+              <span className="text-xs sm:text-sm text-[#2C3A61] font-medium">
+                {loadingReviews ? "..." : Number(average).toFixed(1)}
+              </span>
+              <span className="text-xs text-gray-500">
+                ({loadingReviews ? "..." : count} reseñas)
+              </span>
             </div>
-          )}
+          </div>
         </div>
 
         <div className="flex items-center gap-1 mb-2 sm:mb-3">

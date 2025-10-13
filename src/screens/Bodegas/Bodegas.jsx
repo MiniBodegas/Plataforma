@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { HeroSection, FilterSidebar, WarehouseGrid, WarehouseCard } from '../../components/index'
+import { HeroSection, FilterSidebar, WarehouseCard } from '../../components/index'
 import { useWarehouses } from '../../hooks/useWarehouses'
 
 export function BodegaScreen() {

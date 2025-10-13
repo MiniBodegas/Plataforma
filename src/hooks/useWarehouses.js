@@ -28,20 +28,48 @@ export function useWarehouses() {
         throw new Error(`Error RLS: ${empresasError.message}`)
       }
 
-      console.log('✅ Empresas encontradas con RLS:', empresas?.length || 0)
-      console.log('📊 Empresas:', empresas?.map(e => ({
-        id: e.id,
-        nombre: e.nombre,
-        ciudad: e.ciudad
-      })))
-
       if (!empresas || empresas.length === 0) {
         console.log('⚠️ No se encontraron empresas')
         setWarehouses([])
         return
       }
 
-      // ✅ PROCESAR CADA EMPRESA
+      // --- Traer todas las reviews de una sola vez desde la tabla de reviews (empresa_review)
+      const empresaIds = empresas.map(e => String(e.id)).filter(Boolean)
+      console.log('🔎 empresaIds (sample):', empresaIds.slice(0,10))
+      let allReviews = []
+      try {
+        const { data: reviewsData, error: reviewsError } = await supabase
+          .from('empresa_review')
+          .select('empresa_id, rating')
+          .in('empresa_id', empresaIds)
+
+        if (reviewsError) {
+          console.warn('⚠️ Error cargando reviews (empresa_review):', reviewsError)
+        } else {
+          allReviews = (reviewsData || []).map(r => ({
+            empresa_id: String(r.empresa_id),
+            rating: Number(r.rating)
+          }))
+          console.log(`✅ Reviews cargadas (empresa_review): ${allReviews.length}`)
+          console.log('🧾 Ejemplo rows reviews:', allReviews.slice(0,10))
+        }
+      } catch (e) {
+        console.warn('⚠️ Excepción cargando reviews:', e)
+      }
+
+      // Mapear reviews por empresa_id (ya normalizados a string)
+      const reviewMap = new Map()
+      ;(allReviews || []).forEach(r => {
+        const id = String(r.empresa_id)
+        const val = Number(r.rating) || 0
+        if (!reviewMap.has(id)) reviewMap.set(id, [])
+        reviewMap.get(id).push(val)
+      })
+
+      console.log('🔍 reviewMap sample:', Array.from(reviewMap.entries()).slice(0,10).map(([k,v])=>({id:k,count:v.length,avg:(v.reduce((a,b)=>a+b,0)/v.length).toFixed(2)})))
+
+      // PROCESAR CADA EMPRESA (usando string key lookup)
       const warehousesPromises = empresas.map(async (empresa) => {
         console.log(`🔍 Procesando: ${empresa.nombre}`)
 
@@ -141,6 +169,16 @@ export function useWarehouses() {
         const ciudades = [...new Set(miniBodegasDisponibles.map(b => b.ciudad).filter(Boolean))]
         const zonas = [...new Set(miniBodegasDisponibles.map(b => b.zona).filter(Boolean))]
 
+        // --- Obtener rating real y reviewCount desde reviewMap ---
+        let ratingValue = 0
+        let reviewCount = 0
+
+        // Normaliza empresa.id a string para buscar en reviewMap
+        const vals = reviewMap.get(String(empresa.id)) || []
+        reviewCount = vals.length
+        ratingValue = reviewCount > 0 ? vals.reduce((a,b) => a + b, 0) / reviewCount : 0
+
+        // Construir objeto warehouse (manteniendo el resto de campos)
         const warehouse = {
           id: empresa.id,
           name: empresa.nombre,
@@ -163,8 +201,9 @@ export function useWarehouses() {
           images: todasLasImagenes.length > 0 ? todasLasImagenes : [companyImage],
           image: companyImage,
           companyImage: companyImage,
-          rating: 4.5,
-          reviewCount: Math.floor(Math.random() * 50) + 10,
+          // <-- usar valores reales calculados
+          rating: Number((ratingValue || 0).toFixed(1)),
+          reviewCount: reviewCount || 0,
           miniBodegas: miniBodegasDisponibles,
           empresa: empresa,
           totalBodegas: miniBodegasDisponibles.length,
@@ -174,7 +213,9 @@ export function useWarehouses() {
 
         console.log(`✅ Warehouse: ${warehouse.name}`, {
           bodegas: warehouse.totalBodegas,
-          precio: warehouse.priceRange
+          precio: warehouse.priceRange,
+          rating: warehouse.rating,
+          reviewCount: warehouse.reviewCount
         })
 
         return warehouse
