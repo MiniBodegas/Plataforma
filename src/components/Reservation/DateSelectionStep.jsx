@@ -8,6 +8,14 @@ function getFirstDayOfWeek(year, month) {
   return new Date(year, month, 1).getDay();
 }
 
+function isSameDay(a, b) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
 const WEEKDAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
 export function DateSelectionStep({ fechaInicio, handleFechaChange }) {
@@ -119,14 +127,5 @@ export function DateSelectionStep({ fechaInicio, handleFechaChange }) {
           })}
       </div>
     </div>
-  );
-}
-
-// Utilidad para comparar fechas (ignora hora)
-function isSameDay(a, b) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
   );
 }
