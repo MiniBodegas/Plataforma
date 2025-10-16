@@ -3,7 +3,7 @@ import { Trash2, Save, Loader2, CheckCircle, AlertTriangle } from "lucide-react"
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useProveedorProfile } from "../../hooks/useProveedorProfile";
-import { BodegaCarruselEditor, DescriptionEditor, BodegasList } from "../../components/index";
+import { BodegaCarruselEditor, DescriptionEditor,SedesGrid } from "../../components/index";
 
 export function BodegaEditorProveedorScreen() {
   const { user } = useAuth();
@@ -35,6 +35,7 @@ export function BodegaEditorProveedorScreen() {
   const [eliminandoBodega, setEliminandoBodega] = useState(null);
   const [perfilCompleto, setPerfilCompleto] = useState(false);
   const [empresaId, setEmpresaId] = useState(null);
+  const [selectedSede, setSelectedSede] = useState(null); // sede seleccionada o creada
 
   // Wrapper que acepta string o object y mantiene empresa como objeto en el estado
   const handleEmpresaChange = (value) => {
@@ -236,7 +237,16 @@ export function BodegaEditorProveedorScreen() {
       const { data: dbIdsData } = await supabase.from("mini_bodegas").select("id").eq("empresa_id", empresaData.id);
       const idsEnDB = (dbIdsData || []).map(d => d.id);
 
-      const nuevas = [];
+      // determinar sede_id que usaremos para las mini_bodegas
+      let sedeIdToUse = selectedSede?.id || null;
+
+      // Si la sede es obligatoria, impedir guardar sin selección
+      if (!sedeIdToUse) {
+        mostrarMensaje('error', '❌ Selecciona o crea una sede antes de guardar');
+        setGuardandoTodo(false);
+        return;
+      }
+      
       for (let i = 0; i < miniBodegas.length; i++) {
         const b = miniBodegas[i];
         if (b.id && idsEnDB.includes(b.id)) {
@@ -253,6 +263,7 @@ export function BodegaEditorProveedorScreen() {
             cantidad: parseInt(b.cantidad, 10) || 1,
             nombre_personalizado: b.nombre_personalizado || null,
             imagen_url: imagenUrl,
+            sede_id: sedeIdToUse,
             disponible: true,
             orden: i,
             updated_at: new Date().toISOString()
@@ -264,6 +275,7 @@ export function BodegaEditorProveedorScreen() {
           const imagenUrl = b.imagen && typeof b.imagen !== "string" ? await uploadFile(b.imagen, "mini-bodegas") : (b.imagen || null);
           const payload = {
             empresa_id: empresaData.id,
+            sede_id: sedeIdToUse,
             metraje: b.metraje,
             descripcion: b.descripcion,
             contenido: b.contenido,
@@ -282,6 +294,9 @@ export function BodegaEditorProveedorScreen() {
         }
       }
 
+      // Nota: la gestión de mini bodegas se realiza ahora por sede (SedesGrid -> MiniBodegasInSede).
+      // Si quieres mantener guardado global aquí, reintroduce la lógica correspondiente.
+      
       // recargar datos desde hook
       await refresh();
       setPerfilCompleto(true);
@@ -361,13 +376,8 @@ export function BodegaEditorProveedorScreen() {
         </div>
 
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-center mb-6 text-[#2C3A61]">📦 Mini Bodegas</h2>
-          <BodegasList
-            bodegas={miniBodegas}
-            onChangeField={handleUpdateBodega}
-            onEliminar={handleEliminarBodega}
-            onAgregar={handleAgregarBodega}
-          />
+          <h2 className="text-2xl font-bold text-center mb-6 text-[#2C3A61]">🏷️ Sedes y Mini Bodegas</h2>
+          <SedesGrid empresaId={empresaId} onSelectSede={(s) => setSelectedSede(s)} />
         </div>
 
         <div className="flex justify-center mt-8">
