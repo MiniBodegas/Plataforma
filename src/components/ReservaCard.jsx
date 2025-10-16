@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 // ✅ AGREGAR ESTAS IMPORTACIONES QUE FALTAN
-import { User, MapPin, Calendar, Check, X, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { User, MapPin, Calendar, Check, X } from 'lucide-react';
 
 export function ReservaCard({ reserva, onAceptar, onRechazar, disabled }) {
   // ✅ USAR CAMPOS REALES DE LA ESTRUCTURA

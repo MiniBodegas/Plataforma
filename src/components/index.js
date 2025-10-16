@@ -81,3 +81,4 @@ export * from './FormularioEmpresa/InformacionRepresentante'
 export * from './ChecklistProgreso'
 
 export * from './Reservation/DateSelectionStep'
+export * from './BodegasList'
