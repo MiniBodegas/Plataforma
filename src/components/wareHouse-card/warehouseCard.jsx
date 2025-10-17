@@ -1,94 +1,174 @@
+import React, { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Star, MapPin, Ruler, Shield } from "lucide-react"
-// importar useCompanyReviews ya no es necesario para la card
+import { supabase } from "../../lib/supabase"
+import { useSedes } from "../../hooks/useSedes"
 
-export function WarehouseCard({ warehouse = {}, filtroActivo = null }) {
+export function WarehouseCard({
+  warehouse = {},
+  sede = null,
+  empresa = null,
+  minis = [],
+  filtroActivo = null
+}) {
+  // Debug: inspeccionar props / datos internos
+  console.log("[WarehouseCard] props -> sede:", sede, "empresa:", empresa, "minis.length:", (minis || []).length, "warehouse.id:", warehouse?.id)
+
   const navigate = useNavigate()
-  const { id, name = "Empresa sin nombre", location = "Ubicación no disponible", sizes = [], priceRange = { min: 0, max: 0 }, image, features = [], description } = warehouse
+  // fallback: si no llega `sede`, intentar traerla por id desde la tabla `sedes`
+  const [sedeFetched, setSedeFetched] = useState(null)
+  const minisToRender = (Array.isArray(minis) && minis.length > 0) ? minis : (warehouse?.miniBodegas || [])
+  const sedeIdToFetch = sede?.id ?? minisToRender?.[0]?.sede_id ?? minisToRender?.[0]?.sede
 
-  // Usa el hook para traer el rating y el número de reseñas
-  const average = parseFloat(warehouse.rating) || 0
-  const count = parseInt(warehouse.reviewCount, 10) || 0
+  useEffect(() => {
+    let mounted = true
+    if (sede || !sedeIdToFetch) {
+      // si ya tenemos sede o no hay id, no hacer fetch
+      return
+    }
+    ;(async () => {
+      try {
+        const { data, error } = await supabase
+          .from("sedes")
+          .select("id, nombre, ciudad")
+          .eq("id", sedeIdToFetch)
+          .single()
+        if (!error && mounted) setSedeFetched(data || null)
+      } catch (err) {
+        console.error("[WarehouseCard] fetch sede by id error:", err)
+      }
+    })()
+    return () => { mounted = false }
+  }, [sede, sedeIdToFetch])
+
+  // Preferir datos pasados explícitamente: sede > sedeFetched > warehouse
+  const sedeObj = sede || (warehouse && warehouse.sede) || null
+  const sedeFinal = sedeObj || sedeFetched || null
+
+  // Mostrar únicamente el nombre de la sede, tomado directamente de la prop `sedeFinal`
+  const displayedSedeName = sedeFinal?.nombre ?? "Sede sin nombre"
+
+  const empresaObj =
+    empresa ||
+    (warehouse && { id: warehouse.id, name: warehouse.name, image: warehouse.image }) ||
+    {}
+
+  // minisToRender ya definido arriba
+
+  // título y ciudad: usar siempre el nombre de la SEDE (sedeFinal)
+  const displayedCity = sedeFinal?.ciudad ?? minisToRender?.[0]?.ciudad ?? empresaObj.city ?? warehouse?.city ?? ""
+
+  const image =
+    empresaObj.image ||
+    sedeObj?.imagen ||
+    warehouse?.image ||
+    "https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop"
+
+  // Normalizar campos
+  const id = sedeObj?.id ?? empresaObj?.id ?? warehouse?.id ?? null
+  const name = empresaObj?.name || warehouse?.name || displayedSedeName
+
+  // priceRange: inferir de minis si no viene
+  const priceRange =
+    empresaObj?.priceRange ||
+    warehouse?.priceRange ||
+    (() => {
+      if (minisToRender && minisToRender.length > 0) {
+        const prices = minisToRender
+          .map((m) => m?.precio_mensual ?? m?.price ?? m?.price_month)
+          .filter((v) => v != null && !Number.isNaN(Number(v)))
+          .map(Number)
+        if (prices.length === 0) return { min: 0, max: 0 }
+        return { min: Math.min(...prices), max: Math.max(...prices) }
+      }
+      return { min: 0, max: 0 }
+    })()
+
+  const sizes =
+    empresaObj?.sizes || warehouse?.sizes || minisToRender.map((m) => m?.metraje ?? m?.size ?? m?.tamano).filter(Boolean)
+
+  const description = empresaObj?.description || warehouse?.description || ""
+  const features = empresaObj?.features || warehouse?.features || []
+
+  // rating/reviews
+  const average = parseFloat(empresaObj?.rating ?? warehouse?.rating ?? 0) || 0
+  const count = parseInt(empresaObj?.reviewCount ?? warehouse?.reviewCount ?? 0, 10) || 0
   const loadingReviews = false
 
-  const canNavigate = typeof id === "number" || typeof id === "string"
+  const canNavigate = Boolean(id)
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
+  const formatPrice = (price) =>
+    new Intl.NumberFormat("es-CO", {
+      style: "currency",
+      currency: "COP",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(price)
-  }
 
-  // ✅ FUNCIÓN PARA GENERAR URL CON FILTROS
+  // ✅ Generar URL con filtros
   const generateUrlWithFilters = (basePath) => {
     let url = basePath
-    
     if (filtroActivo && (filtroActivo.ciudad || filtroActivo.zona || filtroActivo.empresa)) {
       const params = new URLSearchParams()
-      
-      if (filtroActivo.ciudad) {
-        params.append('ciudad', filtroActivo.ciudad)     
-      }
-      if (filtroActivo.zona) {
-        params.append('zona', filtroActivo.zona)     
-      }
-      if (filtroActivo.empresa) {
-        params.append('empresa', filtroActivo.empresa)     
-      }    
-      if (params.toString()) {
-        url += `?${params.toString()}`
-      }
+      if (filtroActivo.ciudad) params.append("ciudad", filtroActivo.ciudad)
+      if (filtroActivo.zona) params.append("zona", filtroActivo.zona)
+      if (filtroActivo.empresa) params.append("empresa", filtroActivo.empresa)
+      if (params.toString()) url += `?${params.toString()}`
     }
     return url
   }
 
-  // ✅ BOTÓN RESERVAR - VA A /bodegas/${id} (para reservar)
+  // DESTINO UNIFICADO: usar la misma URL para la card y para el botón de reservar
+  const destinoUrl = generateUrlWithFilters(`/bodegas/${id}`)
+
+  // ✅ Botón Reservar -> misma URL que la tarjeta (reserva)
   const handleReserve = (e) => {
     e.stopPropagation()
     if (!canNavigate) return
-    
-    const urlWithFilters = generateUrlWithFilters(`/bodegas/${id}`)
-    navigate(urlWithFilters, { state: { warehouse } })
+    navigate(destinoUrl, { state: { warehouse, sede: sedeFinal, empresa: empresaObj, minis: minisToRender } })
   }
 
-  // ✅ CLICK EN CARD - VA A /perfil-bodegas/${id} (para ver perfil)
-  const handleCardClick = () => {
+  // ✅ Click en la card -> /perfil-bodegas/${id}
+  // Ignorar clicks que vienen de botones/links/inputs/iconos para evitar navegación accidental
+  const handleCardClick = (e) => {
+    // si no hay id no navegamos
     if (!canNavigate) return
-    
-    const urlWithFilters = generateUrlWithFilters(`/bodegas/${id}`)
-    navigate(urlWithFilters, { state: { warehouse } })
+    const target = e?.target
+    // si el click proviene de un enlace, botón, input, svg o elemento que contenga aria-label, no navegamos
+    if (target && target.closest && target.closest('a, button, input, label, svg')) {
+      return
+    }
+    // navegación principal: misma URL de reserva
+    navigate(destinoUrl, { state: { warehouse, sede: sedeFinal, empresa: empresaObj, minis: minisToRender } })
   }
 
   const handleLinkClick = (e) => {
     e.stopPropagation()
   }
 
-  // ✅ GENERAR URL PARA EL LINK DEL PERFIL
-  const perfilUrl = generateUrlWithFilters(`/perfil-bodegas/${id}`)
+  // ✅ URL del perfil para el <Link>
+  const perfilUrl = canNavigate ? generateUrlWithFilters(`/perfil-bodegas/${id}`) : "#"
+
+  // Debug: inspeccionar valores usados para el título
+  console.log("[WarehouseCard] sedeObj:", sedeObj, "sedeFetched:", sedeFetched, "sedeFinal:", sedeFinal, "displayedSedeName:", displayedSedeName)
 
   return (
-    <div 
+    <div
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow w-full max-w-[500px] flex flex-col cursor-pointer"
-      onClick={handleCardClick}
+      onClick={(e) => handleCardClick(e)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') handleCardClick(ev) }}
     >
       {/* Imagen */}
       <div className="relative h-40 sm:h-56">
-        <img
-          src={image || "https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop"}
-          alt={name}
-          loading="lazy"
-          className="w-full h-full object-cover"
-        />
+        <img src={image} alt={name} loading="lazy" className="w-full h-full object-cover" />
         {priceRange.min > 0 && (
           <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md">
             <div className="text-xs font-semibold text-[#2C3A61]">
-              {priceRange.min === priceRange.max 
+              {priceRange.min === priceRange.max
                 ? formatPrice(priceRange.min)
-                : `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`
-              }
+                : `${formatPrice(priceRange.min)} - ${formatPrice(priceRange.max)}`}
             </div>
             <div className="text-xs text-gray-600">COP /mes</div>
           </div>
@@ -99,34 +179,48 @@ export function WarehouseCard({ warehouse = {}, filtroActivo = null }) {
       <div className="p-4 sm:p-5 flex flex-col flex-1">
         <div className="mb-2 sm:mb-3">
           <div className="flex items-center justify-between mb-1 sm:mb-2">
-            {/* ✅ LINK DEL NOMBRE - VA AL PERFIL */}
+            {/* ✅ Link del nombre -> Perfil */}
             <Link
               to={perfilUrl}
-              className="font-semibold text-base sm:text-lg text-[#2C3A61] line-clamp-1 underline decoration-2 underline-offset-4 hover:text-[#4B799B] transition-colors"
-              title="Ir al perfil de la compañía"
+              className="font-semibold text-base sm:text-lg text-[#2C3A61] line-clamp-1"
+              title={`Ir a reserva de ${displayedSedeName}`}
               onClick={handleLinkClick}
             >
-              {name}
+              {displayedSedeName}
             </Link>
+
+            {/* Dirección debajo del título (preferir dirección de la sede) */}
+            <div className="flex items-center justify-start gap-2 mt-1 text-sm text-gray-600">
+              <svg className="h-4 w-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M21 10c0 6-9 12-9 12S3 16 3 10a9 9 0 1 1 18 0z" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="10" r="2" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span className="line-clamp-1">
+                {displayedDireccion || (displayedCity ? `${displayedCity}` : 'Dirección no disponible')}
+              </span>
+            </div>
+
+            {/* Nombre de la empresa debajo de la dirección */}
+            {empresaObj?.name && (
+              <div className="text-sm text-gray-500 mt-1 line-clamp-1">{empresaObj.name}</div>
+            )}
           </div>
 
-          {/* Mostrar rating real */}
+          {/* Rating real */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1">
               <Star className="h-4 w-4 text-yellow-400 fill-current" />
               <span className="text-xs sm:text-sm text-[#2C3A61] font-medium">
                 {loadingReviews ? "..." : Number(average).toFixed(1)}
               </span>
-              <span className="text-xs text-gray-500">
-                ({loadingReviews ? "..." : count} reseñas)
-              </span>
+              <span className="text-xs text-gray-500">({loadingReviews ? "..." : count} reseñas)</span>
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-1 mb-2 sm:mb-3">
           <MapPin className="h-4 w-4 text-gray-400" />
-          <span className="text-xs sm:text-sm text-[#2C3A61]">{location}</span>
+          <span className="text-xs sm:text-sm text-[#2C3A61]">{displayedCity}</span>
         </div>
 
         <div className="mb-3 sm:mb-4">
@@ -135,14 +229,16 @@ export function WarehouseCard({ warehouse = {}, filtroActivo = null }) {
             <span className="text-xs sm:text-sm font-medium text-[#2C3A61]">Tamaños disponibles:</span>
           </div>
           <div className="flex flex-wrap gap-1">
-            {sizes.length > 0 ? sizes.map((size, index) => (
-              <span
-                key={index}
-                className="px-2 py-1 bg-blue-50 border border-blue-200 rounded-md text-xs text-[#2C3A61]"
-              >
-                {size}
-              </span>
-            )) : (
+            {sizes && sizes.length > 0 ? (
+              sizes.map((size, index) => (
+                <span
+                  key={`${String(size)}-${index}`}
+                  className="px-2 py-1 bg-blue-50 border border-blue-200 rounded-md text-xs text-[#2C3A61]"
+                >
+                  {size}
+                </span>
+              ))
+            ) : (
               <span className="text-xs text-gray-500">Consultar tamaños disponibles</span>
             )}
           </div>
@@ -157,7 +253,7 @@ export function WarehouseCard({ warehouse = {}, filtroActivo = null }) {
             <div className="flex flex-wrap gap-1">
               {features.slice(0, 2).map((feature, index) => (
                 <span
-                  key={index}
+                  key={`${String(feature)}-${index}`}
                   className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-md text-xs text-[#2C3A61]"
                 >
                   <Shield className="h-3 w-3" />
@@ -165,9 +261,7 @@ export function WarehouseCard({ warehouse = {}, filtroActivo = null }) {
                 </span>
               ))}
               {features.length > 2 && (
-                <span className="text-xs px-2 py-1 text-[#2C3A61]">
-                  +{features.length - 2} más
-                </span>
+                <span className="text-xs px-2 py-1 text-[#2C3A61]">+{features.length - 2} más</span>
               )}
             </div>
           </div>
@@ -179,9 +273,11 @@ export function WarehouseCard({ warehouse = {}, filtroActivo = null }) {
             aria-label={`Reservar ${name}`}
             disabled={!canNavigate}
             onClick={handleReserve}
-            className={`w-full py-2 sm:py-2.5 px-4 rounded-md text-xs sm:text-sm font-medium transition-colors
-              ${canNavigate ? "bg-[#4B799B] hover:bg-[#3b5f7a] text-white" : "bg-gray-200 text-gray-400 cursor-not-allowed"}
-            `}
+            className={`w-full py-2 sm:py-2.5 px-4 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+              canNavigate
+                ? "bg-[#4B799B] hover:bg-[#3b5f7a] text-white"
+                : "bg-gray-200 text-gray-400 cursor-not-allowed"
+            }`}
           >
             Reservar ahora
           </button>
@@ -190,5 +286,3 @@ export function WarehouseCard({ warehouse = {}, filtroActivo = null }) {
     </div>
   )
 }
-
-export default WarehouseCard

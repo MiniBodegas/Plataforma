@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { HeroSection, FilterSidebar, WarehouseCard } from '../../components/index'
 import { useWarehouses } from '../../hooks/useWarehouses'
+import { useSedes } from '../../hooks/useSedes'
 
 export function BodegaScreen() {
   const [searchParams] = useSearchParams()
@@ -26,6 +27,16 @@ export function BodegaScreen() {
   const maxMetrajeParam = searchParams.get('maxMetraje')
   
   const { warehouses, loading, error, refetch } = useWarehouses()
+  const empresaId = (warehouses && warehouses.length > 0) ? (warehouses[0].empresa_id || warehouses[0].id) : null
+  const { sedes, miniPorSede, loading: loadingSedes, error: errorSedes } = useSedes({ empresaId, includeMinis: true })
+
+  // Debug: ver qué trae useSedes
+  useEffect(() => {
+    console.log("[Bodegas] useSedes -> empresaId:", empresaId)
+    console.log("[Bodegas] sedes:", sedes)
+    console.log("[Bodegas] miniPorSede keys:", Object.keys(miniPorSede || {}))
+    console.log("[Bodegas] loadingSedes:", loadingSedes, "errorSedes:", errorSedes)
+  }, [empresaId, sedes, miniPorSede, loadingSedes, errorSedes])
 
   // ✅ APLICAR FILTROS DE URL AL SIDEBAR - MÁS FLEXIBLE
   useEffect(() => {
