@@ -8,9 +8,6 @@ export function CardBodegas({
   descripcion = "",
   contenido = "",
   imagen = null,
-  direccion = "",
-  ciudad = "",
-  zona = "",
   precioMensual = "",
   cantidad = 1,
   maxCantidad = 99,
@@ -19,9 +16,6 @@ export function CardBodegas({
   onMetrajeChange,
   onDescripcionChange,
   onContenidoChange,    
-  onDireccionChange,
-  onCiudadChange,
-  onZonaChange,
   onPrecioMensualChange,
   onCantidadChange,
   onNombrePersonalizadoChange // ✅ NUEVO: callback para nombre personalizado
@@ -30,9 +24,6 @@ export function CardBodegas({
   const [editDescripcion, setEditDescripcion] = useState(false);
   const [editContenido, setEditContenido] = useState(false);
   const [editPrecio, setEditPrecio] = useState(false);
-  const [editDireccion, setEditDireccion] = useState(false);
-  const [editCiudad, setEditCiudad] = useState(false);
-  const [editZona, setEditZona] = useState(false);
   const [editNombrePersonalizado, setEditNombrePersonalizado] = useState(false); // ✅ NUEVO: estado para editar nombre
   const [flipped, setFlipped] = useState(false);
   const [imagenError, setImagenError] = useState(false);
@@ -385,88 +376,7 @@ export function CardBodegas({
               )}
             </div>
 
-            {/* Dirección */}
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-[#2C3A61] mb-2">Dirección:</label>
-              {editDireccion ? (
-                <textarea
-                  value={direccion}
-                  onChange={e => onDireccionChange && onDireccionChange(e.target.value)}
-                  className="w-full p-2 rounded bg-white text-[#2C3A61] border text-sm resize-none"
-                  rows="3"
-                  onBlur={() => setEditDireccion(false)}
-                  autoFocus
-                  placeholder="Calle 123 #45-67, Edificio A, Local 101"
-                />
-              ) : (
-                <div
-                  className="w-full p-2 rounded bg-gray-50 text-[#2C3A61] border cursor-pointer hover:bg-gray-100 transition text-sm min-h-[60px] flex items-center"
-                  onClick={() => setEditDireccion(true)}
-                  title={direccion || "Ingresa la dirección completa"}
-                >
-                  <span className="truncate w-full">
-                    {direccion || "Ingresa la dirección completa de la mini bodega"}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Ciudad */}
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-[#2C3A61] mb-2">Ciudad:</label>
-              {editCiudad ? (
-                <input
-                  type="text"
-                  value={ciudad}
-                  onChange={e => onCiudadChange && onCiudadChange(e.target.value)}
-                  className="w-full p-2 rounded bg-white text-[#2C3A61] border text-sm"
-                  onBlur={() => setEditCiudad(false)}
-                  autoFocus
-                  placeholder="Bogotá"
-                />
-              ) : (
-                <div
-                  className="w-full p-2 rounded bg-gray-50 text-[#2C3A61] border cursor-pointer hover:bg-gray-100 transition text-sm"
-                  onClick={() => setEditCiudad(true)}
-                  title={ciudad || "Selecciona la ciudad"}
-                >
-                  <span className="truncate w-full">
-                    {ciudad || "Selecciona la ciudad"}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Zona */}
-            <div className="mb-4"> {/* ✅ CAMBIÉ mb-6 a mb-4 para dar espacio */}
-              <label className="block text-sm font-semibold text-[#2C3A61] mb-2">Zona:</label>
-              {editZona ? (
-                <select
-                  value={zona}
-                  onChange={e => onZonaChange && onZonaChange(e.target.value)}
-                  className="w-full p-2 rounded bg-white text-[#2C3A61] border text-sm"
-                  onBlur={() => setEditZona(false)}
-                  autoFocus
-                >
-                  <option value="">Selecciona una zona</option>
-                  <option value="Norte">Norte</option>
-                  <option value="Sur">Sur</option>
-                  <option value="Este">Este</option>
-                  <option value="Oeste">Oeste</option>
-                  <option value="Centro">Centro</option>
-                </select>
-              ) : (
-                <div
-                  className="w-full p-2 rounded bg-gray-50 text-[#2C3A61] border cursor-pointer hover:bg-gray-100 transition text-sm"
-                  onClick={() => setEditZona(true)}
-                  title={zona || "Selecciona la zona"}
-                >
-                  <span className="truncate w-full">
-                    {zona || "Selecciona la zona"}
-                  </span>
-                </div>
-              )}
-            </div>
+            {/* Dirección/ciudad/zona removidos - sólo detalles y nombre personalizado */}
           </div>
 
           {/* Botón volver */}
