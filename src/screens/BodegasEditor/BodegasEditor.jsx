@@ -247,10 +247,24 @@ export function BodegaEditorProveedorScreen() {
         return;
       }
       
+      // --- Reemplazado: no forzar una sede global para todas las mini bodegas ---
+      // Validar: si hay mini bodegas sin sede, requiere selectedSede
+      const miniSinSede = miniBodegas.filter(b => !(b.sede_id || b.sede));
+      if (miniSinSede.length > 0 && !selectedSede?.id) {
+        mostrarMensaje('error', '❌ Selecciona o crea una sede para las nuevas mini bodegas');
+        setGuardandoTodo(false);
+        return;
+      }
+
       for (let i = 0; i < miniBodegas.length; i++) {
         const b = miniBodegas[i];
+
+        // Para cada bodega, usar su sede existente si la tiene,
+        // si no, asignar la sede seleccionada (solo para nuevas o sin sede).
+        const sedeIdForThis = b.sede_id || (selectedSede?.id || null);
+
         if (b.id && idsEnDB.includes(b.id)) {
-          // actualizar
+          // actualizar: NO sobrescribir sede si la bodega ya tiene sede_id
           const imagenUrl = b.imagen && typeof b.imagen !== "string" ? await uploadFile(b.imagen, "mini-bodegas") : (b.imagen || null);
           const payload = {
             metraje: b.metraje,
@@ -263,19 +277,24 @@ export function BodegaEditorProveedorScreen() {
             cantidad: parseInt(b.cantidad, 10) || 1,
             nombre_personalizado: b.nombre_personalizado || null,
             imagen_url: imagenUrl,
-            sede_id: sedeIdToUse,
             disponible: true,
             orden: i,
             updated_at: new Date().toISOString()
           };
+
+          // Solo incluir sede_id en el update si la bodega NO tenía sede previamente
+          if (!b.sede_id && sedeIdForThis) {
+            payload.sede_id = sedeIdForThis;
+          }
+
           const { error } = await supabase.from("mini_bodegas").update(payload).eq("id", b.id);
           if (error) throw error;
         } else {
-          // nueva
+          // nueva: asignar empresa y sede (sedeIdForThis debe existir por la validación previa si es necesario)
           const imagenUrl = b.imagen && typeof b.imagen !== "string" ? await uploadFile(b.imagen, "mini-bodegas") : (b.imagen || null);
           const payload = {
             empresa_id: empresaData.id,
-            sede_id: sedeIdToUse,
+            sede_id: sedeIdForThis,
             metraje: b.metraje,
             descripcion: b.descripcion,
             contenido: b.contenido,
@@ -298,7 +317,20 @@ export function BodegaEditorProveedorScreen() {
       // Si quieres mantener guardado global aquí, reintroduce la lógica correspondiente.
       
       // recargar datos desde hook
+      const prevSedeId = selectedSede?.id || null;
       await refresh();
+
+      // re-seleccionar la misma sede (si existía) para evitar salto de UI
+      if (prevSedeId) {
+        try {
+          const { data: sedeData } = await supabase.from("sedes").select("*").eq("id", prevSedeId).single();
+          setSelectedSede(sedeData || null);
+        } catch (e) {
+          console.warn("No se pudo re-cargar la sede previa:", e);
+          setSelectedSede(null);
+        }
+      }
+
       setPerfilCompleto(true);
       mostrarMensaje("success", "✅ Perfil guardado correctamente");
     } catch (error) {
