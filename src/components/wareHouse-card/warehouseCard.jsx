@@ -183,28 +183,18 @@ export function WarehouseCard({
             <Link
               to={perfilUrl}
               className="font-semibold text-base sm:text-lg text-[#2C3A61] line-clamp-1"
-              title={`Ir a reserva de ${displayedSedeName}`}
+              title={`Ir a reserva de ${displayedSedeName}${displayedCity ? ` · ${displayedCity}` : ''}`}
               onClick={handleLinkClick}
             >
-              {displayedSedeName}
+              {displayedSedeName}{displayedCity ? ` · ${displayedCity}` : ''}
             </Link>
 
-            {/* Dirección debajo del título (preferir dirección de la sede) */}
-            <div className="flex items-center justify-start gap-2 mt-1 text-sm text-gray-600">
-              <svg className="h-4 w-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M21 10c0 6-9 12-9 12S3 16 3 10a9 9 0 1 1 18 0z" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="12" cy="10" r="2" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <span className="line-clamp-1">
-                {displayedDireccion || (displayedCity ? `${displayedCity}` : 'Dirección no disponible')}
-              </span>
-            </div>
-
-            {/* Nombre de la empresa debajo de la dirección */}
-            {empresaObj?.name && (
+            {/* Nombre de la empresa debajo del título */}
+           
+          </div>
+           {empresaObj?.name && (
               <div className="text-sm text-gray-500 mt-1 line-clamp-1">{empresaObj.name}</div>
             )}
-          </div>
 
           {/* Rating real */}
           <div className="flex items-center justify-between">
