@@ -1,14 +1,12 @@
 import { useNavigate } from 'react-router-dom';
+import useSedes from '../hooks/useSedes';
 
 export function PerfilCard({ warehouse, availableSizes, miniBodegas }) {
   const navigate = useNavigate();
 
-  // DEBUG: Ver qué datos llegan
-  console.log('🏢 PerfilCard recibió:', {
-    warehouse,
-    miniBodegas,
-    hasMiniBodegas: miniBodegas?.length > 0
-  });
+  // Traer sedes reales de la empresa usando useSedes
+  const empresaIdToFetch = warehouse?.id || warehouse?.empresa_id || null;
+  const { sedes: sedesHook = [] } = useSedes({ empresaId: empresaIdToFetch, includeMinis: false });
 
   // Agrupar mini bodegas por sede/ubicación
   const agruparPorSede = (bodegas) => {
@@ -17,9 +15,12 @@ export function PerfilCard({ warehouse, availableSizes, miniBodegas }) {
     const sedesMap = new Map();
 
     bodegas.forEach(bodega => {
-      // Crear clave única para cada sede usando ciudad + zona
+      // Buscar nombre real de la sede si existe en sedesHook
+      const sedeObj = sedesHook.find(s => 
+        s.ciudad === bodega.ciudad && s.zona === bodega.zona
+      );
+      const sedeNombre = sedeObj?.nombre || `${bodega.zona} - ${bodega.ciudad}`;
       const sedeKey = `${bodega.ciudad}-${bodega.zona}`;
-      const sedeNombre = `${bodega.zona} - ${bodega.ciudad}`;
 
       if (!sedesMap.has(sedeKey)) {
         sedesMap.set(sedeKey, {
@@ -37,7 +38,7 @@ export function PerfilCard({ warehouse, availableSizes, miniBodegas }) {
       const sede = sedesMap.get(sedeKey);
       sede.bodegas.push(bodega);
       sede.totalBodegas++;
-      
+
       // Calcular rango de metraje
       const metraje = parseFloat(bodega.metraje) || 0;
       if (metraje > 0) {
@@ -57,59 +58,36 @@ export function PerfilCard({ warehouse, availableSizes, miniBodegas }) {
   // Generar sedes desde datos reales o usar datos por defecto
   const sedes = miniBodegas && miniBodegas.length > 0 
     ? agruparPorSede(miniBodegas)
-    : [
-        {
-          key: "default-1",
-          title: `${warehouse?.zone || 'Sede Principal'} - ${warehouse?.city || 'Ciudad'}`,
-          description: `${warehouse?.name || 'Esta empresa'} cuenta con múltiples mini bodegas en esta ubicación. Disponible en varios tamaños para satisfacer tus necesidades de almacenamiento.`,
-          image: "https://images.unsplash.com/photo-1611967164521-abae8fba4668?q=80&w=735&auto=format&fit=crop",
-          ciudad: warehouse?.city || 'Ciudad',
-          zona: warehouse?.zone || 'Zona',
-          bodegas: [],
-          totalBodegas: 0
-        }
-      ];
-
-  console.log('📍 Sedes generadas:', sedes);
+    : (
+      sedesHook.length > 0
+        ? sedesHook.map(sede => ({
+            key: sede.id,
+            title: sede.nombre,
+            ciudad: sede.ciudad,
+            zona: sede.zona,
+            bodegas: [],
+            totalBodegas: 0,
+            image: "https://images.unsplash.com/photo-1611967164521-abae8fba4668?q=80&w=735&auto=format&fit=crop",
+            description: `${warehouse?.name || 'Esta empresa'} cuenta con múltiples mini bodegas en ${sede.nombre}.`,
+            rangoMetrajeTexto: 'Metraje por consultar'
+          }))
+        : [
+            {
+              key: "default-1",
+              title: `${warehouse?.zone || 'Sede Principal'} - ${warehouse?.city || 'Ciudad'}`,
+              ciudad: warehouse?.city || 'Ciudad',
+              zona: warehouse?.zone || 'Zona',
+              bodegas: [],
+              totalBodegas: 0,
+              image: "https://images.unsplash.com/photo-1611967164521-abae8fba4668?q=80&w=735&auto=format&fit=crop",
+              description: `${warehouse?.name || 'Esta empresa'} cuenta con múltiples mini bodegas en esta ubicación. Disponible en varios tamaños para satisfacer tus necesidades de almacenamiento.`,
+              rangoMetrajeTexto: 'Metraje por consultar'
+            }
+          ]
+    );
 
   const handleExplorar = (sede) => {
-    console.log("Explorando sede:", sede.title);
-    
-    // Opción 1: Navegar a la página de búsqueda con parámetros de URL
-    const searchParams = new URLSearchParams({
-      empresa: warehouse?.name || '',
-      ciudad: sede.ciudad || '',
-      zona: sede.zona || '',
-      empresaId: warehouse?.id || ''
-    });
-    
-    navigate(`/bodegas?${searchParams.toString()}`);
-
-    // Opción 2: Si tienes una página de búsqueda que acepta state
-    // navigate('/search', {
-    //   state: {
-    //     filtros: {
-    //       empresa: warehouse?.name,
-    //       ciudad: sede.ciudad,
-    //       zona: sede.zona,
-    //       empresaId: warehouse?.id,
-    //       mostrarSoloEmpresa: true
-    //     },
-    //     sede: sede
-    //   }
-    // });
-
-    // Opción 3: Si quieres ir a BodegasDisponibles con filtros
-    // navigate('/bodegas-disponibles', {
-    //   state: {
-    //     filtrosIniciales: {
-    //       empresaId: warehouse?.id,
-    //       ciudad: sede.ciudad,
-    //       zona: sede.zona,
-    //       empresa: warehouse?.name
-    //     }
-    //   }
-    // });
+    navigate(`/bodegas/${warehouse?.id}?ciudad=${encodeURIComponent(sede.ciudad || '')}`);
   };
 
   return (
@@ -144,6 +122,7 @@ export function PerfilCard({ warehouse, availableSizes, miniBodegas }) {
                   }}
                 />
                 
+                {/* Título con nombre real de la sede */}
                 <h3 className="font-semibold text-gray-900 mb-3 text-center text-xl" style={{ color: "#2C3A61" }}>
                   {sede.title}
                 </h3>
