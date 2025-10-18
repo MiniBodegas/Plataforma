@@ -86,3 +86,5 @@ export * from './BodegasList'
 export * from './Sedes/CrearSede'
 export * from './Sedes/SedesGrip'
 export * from './Sedes/MiniBodegasInSede'
+
+export * from './ReservaCardUsuario'

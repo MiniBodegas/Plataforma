@@ -1,37 +1,14 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { ReservaCard, NavBarProveedores } from "../../components";
+import { ReservaCardUsuario } from "../../components";
+import { useReservasUsuario } from "../../hooks/useReservasUsuario";
 
 export function BodegasUsuario() {
   const navigate = useNavigate();
+  const { reservas, miniBodegas, loading } = useReservasUsuario();
 
-  const [reservas, setReservas] = useState([
-    {
-      id: 1,
-      titulo: "Mini bodega de 10 m³",
-      sede: "Sede Yumbo",
-      estado: "activa",
-      imagen: "https://images.unsplash.com/photo-1611967164521-abae8fba4668?w=400",
-    },
-    {
-      id: 2,
-      titulo: "Bodega de 25 m³",
-      sede: "Sede Palmira",
-      estado: "procesando",
-      imagen: "https://images.unsplash.com/photo-1618220179428-22790b461013?w=400",
-    },
-    {
-      id: 3,
-      titulo: "Mini bodega de 15 m³",
-      sede: "Sede Yumbo",
-      estado: "rechazada",
-      imagen: "https://images.unsplash.com/photo-1535957998253-26ae1ef29506?w=400",
-    },
-  ]);
-
-  const reservasActivas = reservas.filter((r) => r.estado === "activa");
-  const reservasProcesando = reservas.filter((r) => r.estado === "procesando");
+  const reservasActivas = reservas.filter((r) => r.estado === "aceptada");
+  const reservasProcesando = reservas.filter((r) => r.estado === "pendiente");
   const reservasRechazadas = reservas.filter((r) => r.estado === "rechazada");
 
   const handleBack = () => {
@@ -44,9 +21,21 @@ export function BodegasUsuario() {
         {titulo}
       </h3>
       <div className="space-y-4">
-        {reservasArray.length > 0 ? (
+        {loading ? (
+          <div className="text-center text-gray-400">Cargando...</div>
+        ) : reservasArray.length > 0 ? (
           reservasArray.map((reserva) => (
-            <ReservaCard key={reserva.id} reserva={reserva} />
+            <ReservaCardUsuario
+              key={reserva.id}
+              reserva={{
+                ...reserva,
+                miniBodegaNombre: miniBodegas[reserva.mini_bodega_id]?.nombre || "Mini bodega",
+                miniBodegaMetraje: miniBodegas[reserva.mini_bodega_id]?.metraje || "",
+                miniBodegaCiudad: miniBodegas[reserva.mini_bodega_id]?.ciudad || "",
+                miniBodegaZona: miniBodegas[reserva.mini_bodega_id]?.zona || "",
+                miniBodegaDireccion: miniBodegas[reserva.mini_bodega_id]?.direccion || "",
+              }}
+            />
           ))
         ) : (
           <div className="bg-gray-50 rounded-xl p-6 text-center border border-gray-200">
@@ -60,7 +49,6 @@ export function BodegasUsuario() {
   return (
     <div className="min-h-screen bg-white px-6 py-10">
       <div className="max-w-4xl mx-auto">
-        
         {/* Flecha de regreso */}
         <div className="mb-4">
           <button
@@ -73,7 +61,8 @@ export function BodegasUsuario() {
 
         {/* Nombre usuario */}
         <h2 className="text-2xl md:text-3xl font-bold text-[#2C3A61] text-center my-8">
-          Juan Esteban Ramirez Perdomo
+          {/* Puedes traer el nombre real del usuario si lo tienes */}
+          Mi perfil
         </h2>
 
         {/* Título principal */}

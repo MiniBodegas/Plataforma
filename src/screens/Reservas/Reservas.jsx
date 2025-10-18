@@ -222,15 +222,26 @@ export function Reservas() {
       </div>
       <div className="space-y-4">
         {reservasArray.length > 0 ? (
-          reservasArray.map(reserva => (
-            <ReservaCard
-              key={reserva.id}
-              reserva={reserva}
-              onAceptar={handleAceptar}
-              onRechazar={handleRechazar}
-              disabled={procesando}
-            />
-          ))
+          reservasArray.map(reserva => {
+            const bodega = bodegas.find(b => b.id === reserva.mini_bodega_id) || {};
+            return (
+              <ReservaCard
+                key={reserva.id}
+                reserva={{
+                  ...reserva,
+                  miniBodegaNombre: bodega.nombre_personalizado || bodega.descripcion || "Mini bodega",
+                  miniBodegaMetraje: bodega.metraje || "",
+                  miniBodegaCiudad: bodega.ciudad || "",
+                  miniBodegaZona: bodega.zona || "",
+                  miniBodegaDireccion: bodega.direccion || "",
+                  precio_mensual: bodega.precio || "",
+                }}
+                onAceptar={handleAceptar}
+                onRechazar={handleRechazar}
+                disabled={procesando}
+              />
+            );
+          })
         ) : (
           <div className="bg-gray-50 rounded-xl p-8 text-center border-2 border-dashed border-gray-300">
             <div className="text-gray-400 text-4xl mb-3">📋</div>
