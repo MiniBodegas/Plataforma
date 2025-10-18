@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export function Carrousel({ images = [], title = "Galería de imágenes" }) {
+export function Carrousel({ images = [], title = "Galería de imágenes", sede = null }) {
   // Convertir URLs simples a objetos con estructura esperada
   const formatImages = (imageUrls) => {
     if (!imageUrls || imageUrls.length === 0) return [];
@@ -44,12 +44,15 @@ export function Carrousel({ images = [], title = "Galería de imágenes" }) {
     setCurrent((prev) => (prev === 0 ? carouselImages.length - 1 : prev - 1));
   };
 
+  // Título: usar nombre de la sede si está disponible, si no, el prop title
+  const displayedTitle = sede?.nombre || title;
+
   return (
     <div className="w-full max-w-7xl mx-auto mt-20 bg-white px-4">
       {/* Título principal */}
       <div className="text-center mb-6">
         <h2 className="text-2xl md:text-3xl font-bold text-[#2C3A61]">
-          {title}
+          {displayedTitle}
         </h2>
         <p className="text-gray-600 mt-2">
           {carouselImages.length}{" "}

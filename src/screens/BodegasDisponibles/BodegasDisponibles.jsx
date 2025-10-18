@@ -3,22 +3,55 @@ import { ArrowLeft } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { Carrousel, MapaBodegas, CompanyDescription, SizeCardReserved, TestimonialsSection } from "../../components/index"
 import { useWarehouseDetail } from "../../hooks/useWarehouseDetail"
+import { useEffect, } from "react"
+import useSedes from "../../hooks/useSedes"
 
 export function BodegasDisponibles() {
   const { id } = useParams()
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" })
+  }, [id])
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { warehouse, loading, error } = useWarehouseDetail(id)
 
-  // ✅ OBTENER PARÁMETROS DE FILTRADO DE LA URL
-  const ciudadFiltro = searchParams.get('ciudad')
-  const zonaFiltro = searchParams.get('zona') 
-
+  // Handler para volver atrás
   const handleBack = () => {
-    navigate(-1)
+    if (window.history.length > 2) {
+      navigate(-1)
+    } else {
+      navigate("/")
+    }
   }
 
-  // Validar que el ID existe
+  // Hooks SIEMPRE antes de cualquier return
+  const ciudadFiltro = searchParams.get('ciudad')
+  const zonaFiltro = searchParams.get('zona')
+
+  // Selección de sedeFinal usando solo useSedes (sin fetch manual)
+  const empresaIdToFetch = warehouse?.empresa_id || warehouse?.id || null
+  const sedeIdFromParams = searchParams.get('sede') || searchParams.get('sedeId') || null
+  const ciudadFromParams = searchParams.get('ciudad') || null
+  const { sedes: sedesHook = [] } = useSedes({ empresaId: empresaIdToFetch, includeMinis: false })
+
+  // Construir candidatas y elegir sedeFinal (igual que en CompanyDescription, pero solo con useSedes)
+  const rawCandidates = Array.isArray(sedesHook) ? [...sedesHook] : []
+
+  let sedeFinal = null
+  if (sedeIdFromParams) {
+    sedeFinal = rawCandidates.find(s => String(s?.id) === String(sedeIdFromParams)) || null
+  }
+  if (!sedeFinal && ciudadFromParams) {
+    sedeFinal =
+      rawCandidates.find(s => s?.direccion && String(s.ciudad).toLowerCase() === String(ciudadFromParams).toLowerCase()) ||
+      rawCandidates.find(s => String(s.ciudad).toLowerCase() === String(ciudadFromParams).toLowerCase()) ||
+      null
+  }
+  if (!sedeFinal) {
+    sedeFinal = rawCandidates.find(s => s?.direccion) || rawCandidates.find(s => s?.principal) || rawCandidates[0] || null
+  }
+
+  // Ahora sí, los returns condicionales
   if (!id) {
     return (
       <div className="min-h-screen bg-white">
@@ -152,7 +185,7 @@ export function BodegasDisponibles() {
       {/* ✅ COMPONENTES CON DATOS FILTRADOS */}
       <Carrousel 
         images={warehouse.images}
-        title={warehouse.name}
+        sede={sedeFinal}
       />
       
       <CompanyDescription 
@@ -163,6 +196,7 @@ export function BodegasDisponibles() {
         features={warehouse.features}
         rating={warehouse.rating}
         reviewCount={warehouse.reviewCount}
+        sede={sedeFinal}
       />
       
       <SizeCardReserved 

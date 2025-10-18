@@ -178,12 +178,9 @@ export function CompanyDescription({
     <section className="max-w-6xl mx-auto px-4 py-10 bg-gray-50 rounded-2xl shadow-lg mt-10 mb-10 p-8">
       {/* Encabezado */}
       <div className="text-center mb-8">
-        <Link
-          to={`/perfil-bodegas/${sedeFinal?.id ?? warehouse?.id}`}
-          className="text-3xl font-bold text-gray-800 hover:text-[#2C3A61] transition-colors duration-200 cursor-pointer inline-block underline decoration-2 underline-offset-4 hover:decoration-[#2C3A61]">
+        <h3 className="text-3xl font-bold text-gray-800 hover:text-[#2C3A61] transition-colors duration-200 cursor-pointer hover:decoration-[#2C3A61]">
           {displayedTitle}
-        </Link>
-
+        </h3>
         {/* Dirección debajo del título (desde useSedes / sedeFinal) */}
         <div className="flex items-center justify-center gap-2 mt-2">
           <MapPin className="h-5 w-5 text-gray-500" />
@@ -193,10 +190,11 @@ export function CompanyDescription({
         </div>
 
         {/* Nombre de la empresa debajo de la dirección */}
+        
         {warehouse?.name && (
-          <div className="text-sm text-gray-500 mt-1">
+          <Link to ={`/perfil-bodegas/${warehouse.id}`} className="text-sm text-gray-500 mt-1 inline-block underline decoration-2 underline-offset-4">
             {warehouse.name}
-          </div>
+          </Link>
         )}
 
         {/* ⭐️ Sistema de calificación */}
