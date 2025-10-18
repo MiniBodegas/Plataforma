@@ -12,7 +12,7 @@ export function CompletarPerfil() {
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
 
-  const BUCKET = "Avatars"; // <-- verifica el nombre exacto de tu bucket
+  const BUCKET = "Avatars";
 
   const handleFotoChange = (e) => {
     const file = e.target.files[0];
@@ -90,7 +90,7 @@ export function CompletarPerfil() {
             <h2 className="text-2xl font-bold mb-4">¡Bienvenido/a!</h2>
             <p className="mb-4">
               Antes de continuar, por favor completa tu perfil.<br />
-              Solo te pediremos tu nombre y una foto de perfil (opcional).<br />
+              Solo te pediremos tu nombre.<br />
               ¡Muchas gracias por ser parte de MiniBodegas!
             </p>
             <button

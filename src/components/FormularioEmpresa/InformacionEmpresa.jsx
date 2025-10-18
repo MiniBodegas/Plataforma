@@ -11,8 +11,9 @@ export function InformacionEmpresa({ formData, user, loading, handleInputChange 
           </label>
           <input
             type="text"
-            value={formData.nombreEmpresa}
-            onChange={(e) => handleInputChange('nombreEmpresa', e.target.value)}
+            name="nombreEmpresa"
+            value={formData.nombreEmpresa ?? ""}
+            onChange={handleInputChange}
             className="w-full h-12 rounded-lg border border-gray-300 px-4 bg-white text-black
                       focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
             placeholder="Ingresa el nombre de tu empresa"
@@ -26,8 +27,9 @@ export function InformacionEmpresa({ formData, user, loading, handleInputChange 
           </label>
           <input
             type="text"
-            value={formData.ciudad}
-            onChange={(e) => handleInputChange('ciudad', e.target.value)}
+            name="ciudad"
+            value={formData.ciudad ?? ""}
+            onChange={handleInputChange}
             className="w-full h-12 rounded-lg border border-gray-300 px-4 bg-white text-black
                       focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
             placeholder="Ciudad donde opera la empresa"
@@ -40,8 +42,9 @@ export function InformacionEmpresa({ formData, user, loading, handleInputChange 
             Descripción <span className="text-red-500">*</span>
           </label>
           <textarea
-            value={formData.descripcion}
-            onChange={(e) => handleInputChange('descripcion', e.target.value)}
+            name="descripcion"
+            value={formData.descripcion ?? ""}
+            onChange={handleInputChange}
             rows="3"
             className="w-full rounded-lg border border-gray-300 px-4 py-3 bg-white text-black
                       focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
@@ -72,8 +75,9 @@ export function InformacionEmpresa({ formData, user, loading, handleInputChange 
           </label>
           <input
             type="tel"
-            value={formData.telefono}
-            onChange={(e) => handleInputChange('telefono', e.target.value)}
+            name="telefono"
+            value={formData.telefono ?? ""}
+            onChange={handleInputChange}
             className="w-full h-12 rounded-lg border border-gray-300 px-4 bg-white text-black
                       focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
             placeholder="Teléfono fijo de la empresa"
@@ -87,8 +91,9 @@ export function InformacionEmpresa({ formData, user, loading, handleInputChange 
           </label>
           <input
             type="text"
-            value={formData.direccionPrincipal}
-            onChange={(e) => handleInputChange('direccionPrincipal', e.target.value)}
+            name="direccionPrincipal"
+            value={formData.direccionPrincipal ?? ""}
+            onChange={handleInputChange}
             className="w-full h-12 rounded-lg border border-gray-300 px-4 bg-white text-black
                       focus:ring-2 focus:ring-[#4B799B] focus:border-[#4B799B] outline-none"
             placeholder="Dirección principal de la empresa (obligatorio)"

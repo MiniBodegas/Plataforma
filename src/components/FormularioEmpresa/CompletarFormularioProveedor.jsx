@@ -1,5 +1,6 @@
+import { useEffect } from "react";
 import { useCompletarFormulario } from "../../hooks/useCompletarFormulario";
-import { InformacionEmpresa,  InformacionRepresentante, DocumentosLegales } from "../index";
+import { InformacionEmpresa, DocumentosLegales } from "../index";
 
 export function CompletarFormularioProveedor() {
   const {
@@ -15,6 +16,17 @@ export function CompletarFormularioProveedor() {
     handleInputChange,
     handleFileChange
   } = useCompletarFormulario();
+
+  // Elimina este useEffect:
+  // useEffect(() => {
+  //   if (empresaExistente) {
+  //     setFormData({
+  //       ...empresaExistente,
+  //       correo_contacto: empresaExistente.correo_contacto || "",
+  //       // ...otros campos...
+  //     });
+  //   }
+  // }, [empresaExistente]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
@@ -33,18 +45,34 @@ export function CompletarFormularioProveedor() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* InformacionEmpresa SIN nombre legal */}
           <InformacionEmpresa 
             formData={formData}
             user={user}
             loading={loading}
             handleInputChange={handleInputChange}
+            hideNombreLegal={true}
           />
 
-          <InformacionRepresentante 
-            formData={formData}
-            loading={loading}
-            handleInputChange={handleInputChange}
-          />
+          {/* Input obligatorio para correo de contacto distinto al de registro */}
+          <div className="mb-6">
+            <label htmlFor="correo_contacto" className="block text-sm font-medium text-gray-700 mb-2">
+              Correo de contacto de la empresa <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="email"
+              id="correo_contacto"
+              name="correo_contacto"
+              required
+              value={formData.correo_contacto || ""}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#2C3A61] focus:border-[#2C3A61] outline-none"
+              placeholder="ejemplo@empresa.com"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Este correo debe ser diferente al que usaste para registrarte como usuario.
+            </p>
+          </div>
 
           <DocumentosLegales 
             archivos={archivos}
