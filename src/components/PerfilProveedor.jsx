@@ -13,7 +13,7 @@ const opciones = [
   {
     nombre: "Reservas y transacciones",
     tipo: "ruta",
-    ruta: "/",
+    ruta: "/mis-bodegas",
   },
   {
     nombre: "Mi perfil",

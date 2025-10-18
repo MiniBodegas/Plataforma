@@ -167,17 +167,6 @@ export function Header({ tipo }) {
                 <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-[#2C3A61] transition-all duration-300 group-hover:w-full"></span>
               </button>
 
-              {/* Dashboard solo visible para proveedores logueados */}
-              {user && user?.user_metadata?.user_type === 'proveedor' && (
-                <Link
-                  to="/mis-bodegas"
-                  className="text-base font-medium relative group whitespace-nowrap"
-                >
-                  Dashboard
-                  <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-[#2C3A61] transition-all duration-300 group-hover:w-full"></span>
-                </Link>
-              )}
-
               {/* Mostrar diferentes botones según el estado de autenticación para proveedores */}
               {user && user?.user_metadata?.user_type === 'proveedor' ? (
                 <div className="flex items-center space-x-4">
@@ -313,17 +302,6 @@ export function Header({ tipo }) {
               >
                 {loadingPerfil ? 'Verificando...' : 'Crea tu mini bodega'}
               </button>
-
-              {/* Dashboard solo visible para proveedores logueados en mobile */}
-              {user && user?.user_metadata?.user_type === 'proveedor' && (
-                <Link
-                  to="/mis-bodegas"
-                  className="text-base font-medium py-2 px-3 rounded hover:bg-gray-50 transition-colors duration-200"
-                  onClick={closeMenu}
-                >
-                  Dashboard
-                </Link>
-              )}
 
               {/* Menú mobile para proveedores */}
               {user && user?.user_metadata?.user_type === 'proveedor' ? (
