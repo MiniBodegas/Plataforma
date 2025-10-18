@@ -33,6 +33,7 @@ export function Reservas() {
   const [editando, setEditando] = useState(null);
   const [motivo, setMotivo] = useState('');
   const [procesandoBodega, setProcesandoBodega] = useState(null);
+  const [popup, setPopup] = useState({ open: false, mensaje: '', tipo: 'info' });
 
   // ✅ ACEPTAR → notificar a USUARIO: "tu reserva ha sido aceptada"
   const handleAceptar = async (id) => {
@@ -416,6 +417,23 @@ export function Reservas() {
             {bodegas.length === 0 && (
               <div className="text-center py-8 text-gray-500">No tienes mini bodegas registradas</div>
             )}
+          </div>
+        )}
+
+        {popup.open && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-lg shadow-lg p-6 min-w-[300px] text-center">
+              <div className={`mb-4 text-3xl ${popup.tipo === 'error' ? 'text-red-500' : 'text-green-500'}`}>
+                {popup.tipo === 'error' ? '❌' : '✅'}
+              </div>
+              <div className="mb-4 text-lg">{popup.mensaje}</div>
+              <button
+                onClick={() => setPopup({ open: false, mensaje: '', tipo: 'info' })}
+                className="bg-[#4B799B] text-white px-6 py-2 rounded-lg hover:bg-[#3b5f7a]"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         )}
       </div>

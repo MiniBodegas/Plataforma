@@ -174,7 +174,7 @@ export function MisBodegas() {
                 <select
                   value={filtroSede}
                   onChange={(e) => setFiltroSede(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2C3A61] focus:border-[#2C3A61] outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#2C3A61] focus:border-[#2C3A61] outline-none"
                 >
                   <option value="todas">Todas las ubicaciones</option>
                   {sedesUnicas.map(sede => (
@@ -191,7 +191,7 @@ export function MisBodegas() {
                 <select
                   value={filtroEstado}
                   onChange={(e) => setFiltroEstado(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2C3A61] focus:border-[#2C3A61] outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#2C3A61] focus:border-[#2C3A61] outline-none"
                 >
                   <option value="todos">Todos los estados</option>
                   <option value="disponible">Disponible</option>
@@ -210,7 +210,7 @@ export function MisBodegas() {
                   placeholder="Ingresa dirección..."
                   value={busquedaDireccion}
                   onChange={(e) => setBusquedaDireccion(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2C3A61] focus:border-[#2C3A61] outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#2C3A61] focus:border-[#2C3A61] outline-none"
                 />
               </div>
             </div>
