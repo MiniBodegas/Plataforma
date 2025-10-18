@@ -1,4 +1,7 @@
+import { useNavigate } from "react-router-dom";
+
 export function CitiesSection() {
+  const navigate = useNavigate();
   const cities = [
     {
       name: "Bogotá",
@@ -16,7 +19,12 @@ export function CitiesSection() {
       name: "Cartagena",
       image: "https://i0.wp.com/travelandleisure-es.com/wp-content/uploads/2024/01/Cartagena_Colombia.jpg?fit=2258%2C1717&ssl=1",
     },
-  ]
+  ];
+
+  const handleCityClick = (cityName) => {
+    // Redirige a la búsqueda filtrando por ciudad
+    navigate(`/bodegas?ciudad=${encodeURIComponent(cityName)}`);
+  };
 
   return (
     <section className="py-16 bg-white">
@@ -28,8 +36,14 @@ export function CitiesSection() {
           {cities.map((city) => (
             <div
               key={city.name}
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow flex flex-col"
+              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow flex flex-col cursor-pointer"
               style={{ color: "#2C3A61" }}
+              onClick={() => handleCityClick(city.name)}
+              tabIndex={0}
+              role="button"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") handleCityClick(city.name);
+              }}
             >
               <img src={city.image || "/placeholder.svg"} alt={city.name} className="w-full h-80 object-cover" />
               <div className="p-4 flex-1 flex items-center justify-center">
@@ -42,6 +56,7 @@ export function CitiesSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }
+
 export default CitiesSection;
