@@ -210,8 +210,8 @@ export function BodegasDisponibles() {
         zone={warehouse.zone}
         address={warehouse.address}
         bodegas={warehouseConFiltros.miniBodegas}
-        className="max-w-6xl mx-auto rounded-2xl overflow-hidden shadow-lg"
-        height="600px"
+        className="max-w-5xl mx-auto rounded-2xl overflow-hidden shadow-lg"
+        height="500px"
       />
 
       <TestimonialsSection />
