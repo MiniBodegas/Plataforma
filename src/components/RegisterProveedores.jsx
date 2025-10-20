@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { supabase } from "../lib/supabase"; // Asegúrate de importar tu instancia
 
 export function RegisterProveedores() {
   const [showPassword, setShowPassword] = useState(false);
@@ -34,20 +35,31 @@ export function RegisterProveedores() {
     setMessage('');
 
     try {
-      const { data, error } = await signUp(formData.email, formData.password, {
-        user_type: "proveedor"
-      });
+      // 1. Registrar usuario en Supabase Auth con metadata
+      const { data, error } = await signUp(
+        formData.email,
+        formData.password,
+        { user_type: "proveedor" }
+      );
 
       if (error) {
         setError(error.message);
-      } else {
-        setMessage('¡Cuenta creada exitosamente! Revisa tu correo para confirmar tu cuenta.');
-        setTimeout(() => {
-          navigate('/login-proveedores');
-        }, 3000);
+        setLoading(false);
+        return;
       }
+
+      setMessage('¡Cuenta creada exitosamente! Revisa tu correo para confirmar tu cuenta.');
+
+      // 2. (Opcional) Insertar en tabla usuarios (si tienes RLS, esto solo funcionará tras login)
+      // 3. (NO INSERTES en empresas aquí, hazlo tras el primer login)
+
+      // Redirige después de unos segundos
+      setTimeout(() => {
+        navigate('/login-proveedores');
+      }, 3000);
+
     } catch (err) {
-      setError('Ocurrió un error inesperado');
+      setError('Error inesperado al registrar');
     } finally {
       setLoading(false);
     }

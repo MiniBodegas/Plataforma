@@ -35,13 +35,49 @@ export function LoginProveedores() {
       // Verifica si el usuario tiene user_type, si no, actualízalo
       const user = data.user;
       if (!user.user_metadata?.user_type) {
-        // Solo puedes actualizar metadata desde el frontend para el usuario actual
         const { error: updateError } = await supabase.auth.updateUser({
           data: { user_type: "proveedor" }
         });
         if (updateError) {
           console.error("Error actualizando metadata:", updateError);
         }
+      }
+
+      // Crear usuario en la tabla usuarios si no existe
+      const { data: usuario, error: usuarioError } = await supabase
+        .from("usuarios")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!usuario) {
+        await supabase
+          .from("usuarios")
+          .insert([
+            {
+              id: user.id,
+              email: user.email,
+              tipo: "proveedor"
+            }
+          ]);
+      }
+
+      // Crear empresa si no existe
+      const { data: empresa, error: empresaError } = await supabase
+        .from("empresas")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!empresa) {
+        await supabase
+          .from("empresas")
+          .insert([
+            {
+              user_id: user.id,
+              nombre: "Empresa sin nombre"
+            }
+          ]);
       }
 
       // ✅ ESTABLECER TIPO DE USUARIO

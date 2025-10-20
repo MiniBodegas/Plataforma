@@ -16,11 +16,9 @@ export function useCompletarFormulario() {
     ciudad: "",
     direccionPrincipal: "",
     correo_contacto: "",
-    nombreRepresentante: "",
-    celular: "",
     nit: "",
     pais: "",
-    nombre_legal: "",
+  
   });
 
   const [archivos, setArchivos] = useState({
@@ -65,11 +63,8 @@ export function useCompletarFormulario() {
           ciudad: empresa.ciudad || "",
           direccionPrincipal: empresa.direccion_principal || "",
           correo_contacto: empresa.correo_contacto || "", // <- clave
-          nombreRepresentante: empresa.nombre_representante || "",
-          celular: empresa.celular || "",
           nit: empresa.nit || "",
           pais: empresa.pais || "",
-          nombre_legal: empresa.nombre_legal || "",
         }));
 
         await verificarArchivosExistentes(empresa.id);
@@ -110,8 +105,6 @@ export function useCompletarFormulario() {
       { campo: "descripcion", mensaje: "La descripción es obligatoria" },
       { campo: "ciudad", mensaje: "La ciudad es obligatoria" },
       { campo: "direccionPrincipal", mensaje: "La dirección principal es obligatoria" },
-      { campo: "nombreRepresentante", mensaje: "El nombre del representante es obligatorio" },
-      { campo: "celular", mensaje: "El celular es obligatorio" },
       { campo: "correo_contacto", mensaje: "El correo de contacto es obligatorio" },
     ];
 
@@ -160,7 +153,6 @@ export function useCompletarFormulario() {
         correo_contacto: (formData.correo_contacto ?? "").trim(), // <- guardado
         ciudad: (formData.ciudad ?? "").trim(),
         direccion_principal: (formData.direccionPrincipal ?? "").trim(),
-        nombre_representante: (formData.nombreRepresentante ?? "").trim(),
         celular: (formData.celular ?? "").trim(),
         user_id: user.id,
         updated_at: new Date().toISOString(),
@@ -176,12 +168,15 @@ export function useCompletarFormulario() {
         empresaData.created_at = new Date().toISOString();
         empresaData.rating = "0.0";
 
-        const { data: nuevaEmpresa, error } = await supabase
+        const { error } = await supabase
           .from("empresas")
-          .insert([empresaData])
-          .select()
-          .single();
-
+          .insert([
+            {
+              ...formData,
+              user_id: user.id,
+              // celular: formData.celular, // ELIMINAR
+            },
+          ]);
         if (error) throw error;
         empresaId = nuevaEmpresa.id;
         setUserTypeManually("proveedor");
