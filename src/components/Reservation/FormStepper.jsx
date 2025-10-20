@@ -6,9 +6,6 @@ import { useNotifications } from '../../hooks/useNotifications';
 import { supabase } from '../../lib/supabase';
 import { PopUp as ConfirmationPopup } from "./PopUp";
 
-
-
-
 import { AuthStep, 
   PersonalInfoStep, 
   DateSelectionStep, 

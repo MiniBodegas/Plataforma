@@ -9,8 +9,8 @@ export function LoginProveedores() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [formData, setFormData] = useState({
-    Email: "",
-    Contraseña: ""
+    email: "",
+    password: ""
   })
 
   const { signIn } = useAuth()
@@ -22,9 +22,9 @@ export function LoginProveedores() {
     setLoading(true)
 
     try {
-      console.log('🔐 Intentando login como proveedor con:', formData.Email)
+      console.log('🔐 Intentando login como proveedor con:', formData.email, formData.password)
       
-      const { data, error } = await signIn(formData.Email, formData.Contraseña)
+      const { data, error } = await signIn(formData.email, formData.password)
       
       if (error) {
         console.error('❌ Error en signIn:', error)
@@ -33,22 +33,6 @@ export function LoginProveedores() {
       }
 
       console.log('✅ Login exitoso, verificando si es proveedor...')
-
-      // ✅ CAMBIAR DE 'proveedores' A 'empresas'
-      const { data: empresa, error: empresaError } = await supabase
-        .from('empresas')
-        .select('*')
-        .eq('email', formData.Email)
-        .single()
-
-      if (empresaError || !empresa) {
-        console.error('❌ No se encontró empresa:', empresaError)
-        setError('Este email no está registrado como proveedor. Usa el login de clientes.')
-        
-        // ✅ CERRAR SESIÓN SI NO ES PROVEEDOR
-        await supabase.auth.signOut()
-        return
-      }
 
       console.log('✅ Empresa verificada:', empresa.nombre)
 
@@ -116,8 +100,8 @@ export function LoginProveedores() {
                 id="email"
                 type="email"
                 placeholder="Escribe tu email"
-                value={formData.Email}
-                onChange={(e) => handleInputChange("Email", e.target.value)}
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
                 disabled={loading}
                 className="w-full h-12 rounded-2xl border border-gray-300 px-4 
                           bg-white text-gray-900 
@@ -136,8 +120,8 @@ export function LoginProveedores() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Escribe tu contraseña"
-                  value={formData.Contraseña}
-                  onChange={(e) => handleInputChange("Contraseña", e.target.value)}
+                  value={formData.password}
+                  onChange={(e) => handleInputChange("password", e.target.value)}
                   disabled={loading}
                   className="w-full h-12 rounded-2xl border border-gray-300 px-4 pr-12
                             bg-white text-gray-900 

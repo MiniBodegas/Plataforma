@@ -18,7 +18,7 @@ function isSameDay(a, b) {
 
 const WEEKDAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
-export function DateSelectionStep({ fechaInicio, handleFechaChange }) {
+export function DateSelectionStep({ fechaInicio, handleFechaChange, reservas = [], totalBodegas = 1 }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Solo una vez aquí
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
@@ -66,6 +66,12 @@ export function DateSelectionStep({ fechaInicio, handleFechaChange }) {
     }
   };
 
+  // Cuenta reservas por fecha
+  const reservasPorFecha = reservas.reduce((acc, r) => {
+    acc[r.fecha] = (acc[r.fecha] || 0) + 1;
+    return acc;
+  }, {});
+
   return (
     <div className="max-w-xs mx-auto bg-white rounded-xl shadow p-4">
       <div className="flex items-center justify-between mb-2">
@@ -108,6 +114,8 @@ export function DateSelectionStep({ fechaInicio, handleFechaChange }) {
             const isToday = isSameDay(date, today);
             const isSelected = selectedDate && isSameDay(date, selectedDate);
             const isPast = date < today;
+            const reservasEnDia = reservasPorFecha[localDateString] || 0;
+            const isFull = reservasEnDia >= totalBodegas;
 
             return (
               <button
@@ -115,11 +123,12 @@ export function DateSelectionStep({ fechaInicio, handleFechaChange }) {
                 className={`w-8 h-8 rounded-full transition
                   ${isSelected ? "bg-[#4B799B] text-white font-bold" : ""}
                   ${isToday && !isSelected ? "border border-[#4B799B]" : ""}
-                  ${isPast ? "text-gray-300 cursor-not-allowed" : "hover:bg-[#e6f0fa]"} 
+                  ${(isPast || isFull) ? "text-gray-300 cursor-not-allowed bg-gray-100" : "hover:bg-[#e6f0fa]"} 
                 `}
-                disabled={isPast}
+                disabled={isPast || isFull}
                 onClick={() => handleDayClick(day)}
                 type="button"
+                title={isFull ? "Sin bodegas disponibles" : undefined}
               >
                 {day}
               </button>
