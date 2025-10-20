@@ -32,13 +32,8 @@ export function LoginProveedores() {
         return
       }
 
-      console.log('✅ Login exitoso, verificando si es proveedor...')
-
-      console.log('✅ Empresa verificada:', empresa.nombre)
-
-      // ✅ ESTABLECER TIPO DE USUARIO Y DATOS DE LA EMPRESA
+      // ✅ ESTABLECER TIPO DE USUARIO
       localStorage.setItem('userType', 'proveedor')
-      localStorage.setItem('empresaData', JSON.stringify(empresa)) // Cambiar de proveedorData a empresaData
 
       // ✅ REDIRIGIR
       const redirectPath = localStorage.getItem('redirectAfterLogin')
