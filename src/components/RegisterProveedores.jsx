@@ -34,7 +34,10 @@ export function RegisterProveedores() {
     setMessage('');
 
     try {
-      const { error } = await signUp(formData.email, formData.password);
+      const { data, error } = await signUp(formData.email, formData.password, {
+        user_type: "proveedor"
+      });
+
       if (error) {
         setError(error.message);
       } else {

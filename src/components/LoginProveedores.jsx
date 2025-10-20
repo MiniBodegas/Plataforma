@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Eye, EyeOff } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
-import { supabase } from "../lib/supabase"
+import { supabase } from "../lib/supabase"; // Asegúrate de importar tu instancia
 
 export function LoginProveedores() {
   const [showPassword, setShowPassword] = useState(false)
@@ -30,6 +30,18 @@ export function LoginProveedores() {
         console.error('❌ Error en signIn:', error)
         setError(error.message)
         return
+      }
+
+      // Verifica si el usuario tiene user_type, si no, actualízalo
+      const user = data.user;
+      if (!user.user_metadata?.user_type) {
+        // Solo puedes actualizar metadata desde el frontend para el usuario actual
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: { user_type: "proveedor" }
+        });
+        if (updateError) {
+          console.error("Error actualizando metadata:", updateError);
+        }
       }
 
       // ✅ ESTABLECER TIPO DE USUARIO
