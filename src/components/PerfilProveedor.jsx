@@ -111,8 +111,6 @@ export function PerfilProveedor() {
       const camposObligatorios = [
         'nombre',
         'ciudad',
-        'nombre_representante', 
-        'celular'
       ];
 
       console.log('📝 Verificando campos obligatorios:', camposObligatorios);

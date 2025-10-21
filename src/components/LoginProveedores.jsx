@@ -75,7 +75,8 @@ export function LoginProveedores() {
           .insert([
             {
               user_id: user.id,
-              nombre: "Empresa sin nombre"
+              nombre: "Empresa sin nombre",
+              email: user.email
             }
           ]);
       }

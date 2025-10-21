@@ -45,8 +45,6 @@ export function useVerificarPerfilCompleto() {
         'descripcion', 
         'ciudad', 
         'direccion_principal', 
-        'nombre_representante', 
-        'celular',
         'camara_comercio',
         'rut'
       ];

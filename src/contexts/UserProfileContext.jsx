@@ -130,20 +130,19 @@ export function UserProfileProvider({ children }) {
     if (!empresa) return false;
     
     const requiredFields = [
-      'nombre',
-      'descripcion', 
-      'ciudad',
-      'direccion_principal',
-      'nombre_representante',
-      'celular',
+  
       'camara_comercio',
+      'correo_contacto',
       'rut'
     ];
-
-    return requiredFields.every(field => {
+    for (const field of requiredFields) {
       const value = empresa[field];
-      return value && value.toString().trim() !== '';
-    });
+      if (!value || value.toString().trim() === '') {
+        console.log('Campo faltante o vacío:', field, value);
+        return false;
+      }
+    }
+    return true;
   };
 
   const hasMinibodegas = () => {
