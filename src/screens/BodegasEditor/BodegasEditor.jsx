@@ -170,10 +170,6 @@ export function BodegaEditorProveedorScreen() {
       if (!user) { mostrarMensaje("error", "No autenticado"); setGuardandoTodo(false); return; }
       if (!empresaNombre || empresaNombre.trim() === "") { mostrarMensaje("error", "Nombre de empresa requerido"); setGuardandoTodo(false); return; }
 
-      // validar al menos una bodega con campos completos
-      const validas = miniBodegas.filter(b => b.metraje && b.descripcion && b.contenido && b.direccion && b.ciudad && b.zona && b.precio_mensual);
-      if (validas.length === 0) { mostrarMensaje("error", "Completa al menos una mini bodega"); setGuardandoTodo(false); return; }
-
       mostrarMensaje("info", "Guardando empresa...", 10000);
 
       // Empresa: crear o actualizar (usar empresaNombre)

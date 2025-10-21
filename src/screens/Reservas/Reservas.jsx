@@ -328,94 +328,109 @@ export function Reservas() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <h4 className="font-semibold text-green-800">Disponibles</h4>
-                <p className="text-2xl font-bold text-green-600">{bodegas.filter(b => b.disponible).length}</p>
-              </div>
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <h4 className="font-semibold text-red-800">No Disponibles</h4>
-                <p className="text-2xl font-bold text-red-600">{bodegas.filter(b => !b.disponible).length}</p>
-              </div>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-semibold text-blue-800">Total</h4>
-                <p className="text-2xl font-bold text-blue-600">{bodegas.length}</p>
-              </div>
-            </div>
+            {/* Filtrar solo bodegas de la empresa actual */}
+            {empresaId && (
+              <>
+                {/*
+                  Creamos un array filtrado para usarlo en todos los lugares de la sección
+                */}
+                {(() => {
+                  const bodegasEmpresa = bodegas.filter(b => b.empresa_id === empresaId);
 
-            <div className="space-y-4">
-              {bodegas.map(bodega => (
-                <div key={bodega.id} className="bg-white border rounded-lg p-4 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-4">
-                        <h4 className="font-semibold text-lg">
-                          {bodega.metraje}m³ - {bodega.ciudad}
-                        </h4>
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          bodega.disponible ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                        }`}>
-                          {bodega.disponible ? 'Disponible' : 'No Disponible'}
-                        </span>
-                      </div>
-                      <div className="mt-2 text-sm text-gray-600">
-                        <p>📍 {bodega.zona} - {bodega.ciudad}</p>
-                        <p>💰 ${Number(bodega.precio_mensual).toLocaleString()}/mes</p>
-                        {!bodega.disponible && bodega.motivo_no_disponible && (
-                          <p className="text-red-600 mt-1">
-                            <AlertCircle className="inline h-4 w-4 mr-1" />
-                            {bodega.motivo_no_disponible}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {editando === bodega.id ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            placeholder="Motivo (opcional)"
-                            value={motivo}
-                            onChange={(e) => setMotivo(e.target.value)}
-                            className="px-2 py-1 border rounded text-sm w-48"
-                          />
-                          <button
-                            onClick={() => handleCambiarDisponibilidad(bodega.id, !bodega.disponible)}
-                            disabled={procesandoBodega === bodega.id}
-                            className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 disabled:opacity-50 flex items-center gap-1"
-                          >
-                            {procesandoBodega === bodega.id ? (
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                            ) : (
-                              <Check className="h-4 w-4" />
-                            )}
-                            {bodega.disponible ? 'Deshabilitar' : 'Habilitar'}
-                          </button>
-                          <button
-                            onClick={() => { setEditando(null); setMotivo(''); }}
-                            className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
+                  return (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                          <h4 className="font-semibold text-green-800">Disponibles</h4>
+                          <p className="text-2xl font-bold text-green-600">{bodegasEmpresa.filter(b => b.disponible).length}</p>
                         </div>
-                      ) : (
-                        <button
-                          onClick={() => { setEditando(bodega.id); setMotivo(bodega.motivo_no_disponible || ''); }}
-                          className="px-3 py-1 bg-[#4B799B] text-white rounded text-sm hover:bg-[#3b5f7a] flex items-center gap-1"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                          {bodega.disponible ? 'Deshabilitar' : 'Habilitar'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                          <h4 className="font-semibold text-red-800">No Disponibles</h4>
+                          <p className="text-2xl font-bold text-red-600">{bodegasEmpresa.filter(b => !b.disponible).length}</p>
+                        </div>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <h4 className="font-semibold text-blue-800">Total</h4>
+                          <p className="text-2xl font-bold text-blue-600">{bodegasEmpresa.length}</p>
+                        </div>
+                      </div>
 
-            {bodegas.length === 0 && (
-              <div className="text-center py-8 text-gray-500">No tienes mini bodegas registradas</div>
+                      <div className="space-y-4">
+                        {bodegasEmpresa.map(bodega => (
+                          <div key={bodega.id} className="bg-white border rounded-lg p-4 shadow-sm">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-4">
+                                  <h4 className="font-semibold text-lg">
+                                    {bodega.metraje}m³ - {bodega.ciudad}
+                                  </h4>
+                                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                    bodega.disponible ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                  }`}>
+                                    {bodega.disponible ? 'Disponible' : 'No Disponible'}
+                                  </span>
+                                </div>
+                                <div className="mt-2 text-sm text-gray-600">
+                                  <p>📍 {bodega.zona} - {bodega.ciudad}</p>
+                                  <p>💰 ${Number(bodega.precio_mensual).toLocaleString()}/mes</p>
+                                  {!bodega.disponible && bodega.motivo_no_disponible && (
+                                    <p className="text-red-600 mt-1">
+                                      <AlertCircle className="inline h-4 w-4 mr-1" />
+                                      {bodega.motivo_no_disponible}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {editando === bodega.id ? (
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="text"
+                                      placeholder="Motivo (opcional)"
+                                      value={motivo}
+                                      onChange={(e) => setMotivo(e.target.value)}
+                                      className="px-2 py-1 border rounded text-sm w-48"
+                                    />
+                                    <button
+                                      onClick={() => handleCambiarDisponibilidad(bodega.id, !bodega.disponible)}
+                                      disabled={procesandoBodega === bodega.id}
+                                      className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 disabled:opacity-50 flex items-center gap-1"
+                                    >
+                                      {procesandoBodega === bodega.id ? (
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                      ) : (
+                                        <Check className="h-4 w-4" />
+                                      )}
+                                      {bodega.disponible ? 'Deshabilitar' : 'Habilitar'}
+                                    </button>
+                                    <button
+                                      onClick={() => { setEditando(null); setMotivo(''); }}
+                                      className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => { setEditando(bodega.id); setMotivo(bodega.motivo_no_disponible || ''); }}
+                                    className="px-3 py-1 bg-[#4B799B] text-white rounded text-sm hover:bg-[#3b5f7a] flex items-center gap-1"
+                                  >
+                                    <Edit3 className="h-4 w-4" />
+                                    {bodega.disponible ? 'Deshabilitar' : 'Habilitar'}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {bodegasEmpresa.length === 0 && (
+                        <div className="text-center py-8 text-gray-500">No tienes mini bodegas registradas</div>
+                      )}
+                    </>
+                  );
+                })()}
+              </>
             )}
           </div>
         )}
