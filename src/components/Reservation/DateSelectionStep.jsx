@@ -18,7 +18,14 @@ function isSameDay(a, b) {
 
 const WEEKDAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
-export function DateSelectionStep({ fechaInicio, handleFechaChange, reservas = [], totalBodegas = 1 }) {
+export function DateSelectionStep({
+  fechaInicio,
+  handleFechaChange,
+  reservas = [],
+  totalBodegas = 1,
+  empresaId,
+  bodegaId
+}) {
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Solo una vez aquí
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
@@ -66,11 +73,20 @@ export function DateSelectionStep({ fechaInicio, handleFechaChange, reservas = [
     }
   };
 
-  // Cuenta reservas por fecha
-  const reservasPorFecha = reservas.reduce((acc, r) => {
+  // Filtra reservas por empresa y bodega si se proveen los IDs
+  const reservasFiltradas = reservas.filter(r =>
+    (!empresaId || r.empresa_id === empresaId) &&
+    (!bodegaId || r.bodega_id === bodegaId)
+  );
+
+  // Cuenta reservas por fecha SOLO de la empresa y bodega seleccionada
+  const reservasPorFecha = reservasFiltradas.reduce((acc, r) => {
     acc[r.fecha] = (acc[r.fecha] || 0) + 1;
     return acc;
   }, {});
+
+  // ¿La bodega está llena para todos los días futuros?
+  const bodegaLlena = Object.values(reservasPorFecha).reduce((acc, count) => acc + count, 0) >= totalBodegas;
 
   return (
     <div className="max-w-xs mx-auto bg-white rounded-xl shadow p-4">
@@ -109,7 +125,12 @@ export function DateSelectionStep({ fechaInicio, handleFechaChange, reservas = [
           .map((_, i) => {
             const day = i + 1;
             const date = new Date(currentYear, currentMonth, day);
-            date.setHours(0, 0, 0, 0); // Normaliza la hora
+            date.setHours(0, 0, 0, 0);
+
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, "0");
+            const dd = String(date.getDate()).padStart(2, "0");
+            const localDateString = `${yyyy}-${mm}-${dd}`;
 
             const isToday = isSameDay(date, today);
             const isSelected = selectedDate && isSameDay(date, selectedDate);
@@ -117,18 +138,21 @@ export function DateSelectionStep({ fechaInicio, handleFechaChange, reservas = [
             const reservasEnDia = reservasPorFecha[localDateString] || 0;
             const isFull = reservasEnDia >= totalBodegas;
 
+            // Si la bodega está llena, bloquea todos los días futuros
+            const bloquearPorBodegaLlena = bodegaLlena && date >= today;
+
             return (
               <button
                 key={day}
                 className={`w-8 h-8 rounded-full transition
                   ${isSelected ? "bg-[#4B799B] text-white font-bold" : ""}
                   ${isToday && !isSelected ? "border border-[#4B799B]" : ""}
-                  ${(isPast || isFull) ? "text-gray-300 cursor-not-allowed bg-gray-100" : "hover:bg-[#e6f0fa]"} 
+                  ${(isPast || isFull || bloquearPorBodegaLlena) ? "text-gray-300 cursor-not-allowed bg-gray-100" : "hover:bg-[#e6f0fa]"} 
                 `}
-                disabled={isPast || isFull}
+                disabled={isPast || isFull || bloquearPorBodegaLlena}
                 onClick={() => handleDayClick(day)}
                 type="button"
-                title={isFull ? "Sin bodegas disponibles" : undefined}
+                title={isFull || bloquearPorBodegaLlena ? "Sin bodegas disponibles" : undefined}
               >
                 {day}
               </button>
