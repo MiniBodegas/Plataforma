@@ -5,12 +5,12 @@ export function NavBarProveedores() {
 
   const navItems = [
     {
-      path: '/instalaciones',
+      path: '',
       label: 'Instalaciones',
       icon: '🏭'
     },
     {
-      path: '/bodegas',
+      path: '',
       label: 'Bodegas',
       icon: '🏬'
     },
