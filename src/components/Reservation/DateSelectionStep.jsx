@@ -73,20 +73,53 @@ export function DateSelectionStep({
     }
   };
 
-  // Filtra reservas por empresa y bodega si se proveen los IDs
+  // Debug: Ver todas las reservas que llegan al componente
+  console.log("Todas las reservas recibidas:", reservas);
+  console.log("bodegaId recibido:", bodegaId, "empresaId recibido:", empresaId);
+
+  // 1. Filtra reservas activas de la bodega y empresa
   const reservasFiltradas = reservas.filter(r =>
+    r.estado === "aceptada" &&
     (!empresaId || r.empresa_id === empresaId) &&
-    (!bodegaId || r.bodega_id === bodegaId)
+    (!bodegaId || r.mini_bodega_id === bodegaId)
   );
 
-  // Cuenta reservas por fecha SOLO de la empresa y bodega seleccionada
+  // Debug: Ver reservas filtradas por bodega y empresa
+  console.log("Reservas filtradas:", reservasFiltradas.map(r => ({
+    id: r.id,
+    mini_bodega_id: r.mini_bodega_id,
+    empresa_id: r.empresa_id,
+    estado: r.estado,
+    fecha_inicio: r.fecha_inicio,
+    fecha_fin: r.fecha_fin
+  })));
+
+  // 2. Cuenta cuántas reservas activas indefinidas hay (sin fecha_fin)
+  const reservasIndefinidas = reservasFiltradas.filter(r => !r.fecha_fin);
+
+  // 3. Si el número de reservas indefinidas es igual o mayor al total de bodegas, bloquear todo el calendario
+  const bloquearTodo = reservasIndefinidas.length >= totalBodegas;
+
+  // 4. Si no, bloquear solo los días reservados (por fecha_inicio y fecha_fin si existiera)
   const reservasPorFecha = reservasFiltradas.reduce((acc, r) => {
-    acc[r.fecha] = (acc[r.fecha] || 0) + 1;
+    // Si la reserva es indefinida, marca todos los días desde fecha_inicio en adelante como ocupados
+    if (!r.fecha_fin) {
+      // No hacemos nada aquí, ya que bloquearTodo será true y bloqueará todo el calendario
+    } else {
+      // Si tiene fecha_fin, marca el rango como ocupado
+      let inicio = new Date(r.fecha_inicio);
+      let fin = new Date(r.fecha_fin);
+      while (inicio <= fin) {
+        const yyyy = inicio.getFullYear();
+        const mm = String(inicio.getMonth() + 1).padStart(2, "0");
+        const dd = String(inicio.getDate()).padStart(2, "0");
+        const localDateString = `${yyyy}-${mm}-${dd}`;
+        acc[localDateString] = (acc[localDateString] || 0) + 1;
+        inicio.setDate(inicio.getDate() + 1);
+      }
+    }
     return acc;
   }, {});
-
-  // ¿La bodega está llena para todos los días futuros?
-  const bodegaLlena = Object.values(reservasPorFecha).reduce((acc, count) => acc + count, 0) >= totalBodegas;
 
   return (
     <div className="max-w-xs mx-auto bg-white rounded-xl shadow p-4">
@@ -135,11 +168,35 @@ export function DateSelectionStep({
             const isToday = isSameDay(date, today);
             const isSelected = selectedDate && isSameDay(date, selectedDate);
             const isPast = date < today;
+
+            // Bloquear todos los días desde la fecha_inicio de una reserva aceptada indefinida
+            const indefinida = reservasFiltradas.find(r => r.estado === "aceptada" && !r.fecha_fin);
+            let bloquearPorIndefinida = false;
+            if (indefinida) {
+              const inicio = new Date(indefinida.fecha_inicio);
+              inicio.setHours(0, 0, 0, 0);
+              if (date >= inicio) {
+                bloquearPorIndefinida = true;
+              }
+            }
+
+            // Si bloquearTodo es true, bloquea todos los días futuros
+            if ((bloquearTodo && date >= today) || bloquearPorIndefinida) {
+              return (
+                <button
+                  key={day}
+                  className={`w-8 h-8 rounded-full text-gray-300 cursor-not-allowed bg-gray-100`}
+                  disabled
+                  title="Sin bodegas disponibles"
+                >
+                  {day}
+                </button>
+              );
+            }
+
+            // Si no, bloquea solo los días donde el número de reservas alcanza el total de bodegas
             const reservasEnDia = reservasPorFecha[localDateString] || 0;
             const isFull = reservasEnDia >= totalBodegas;
-
-            // Si la bodega está llena, bloquea todos los días futuros
-            const bloquearPorBodegaLlena = bodegaLlena && date >= today;
 
             return (
               <button
@@ -147,12 +204,12 @@ export function DateSelectionStep({
                 className={`w-8 h-8 rounded-full transition
                   ${isSelected ? "bg-[#4B799B] text-white font-bold" : ""}
                   ${isToday && !isSelected ? "border border-[#4B799B]" : ""}
-                  ${(isPast || isFull || bloquearPorBodegaLlena) ? "text-gray-300 cursor-not-allowed bg-gray-100" : "hover:bg-[#e6f0fa]"} 
+                  ${(isPast || isFull) ? "text-gray-300 cursor-not-allowed bg-gray-100" : "hover:bg-[#e6f0fa]"}
                 `}
-                disabled={isPast || isFull || bloquearPorBodegaLlena}
+                disabled={isPast || isFull}
                 onClick={() => handleDayClick(day)}
                 type="button"
-                title={isFull || bloquearPorBodegaLlena ? "Sin bodegas disponibles" : undefined}
+                title={isFull ? "Sin bodegas disponibles" : undefined}
               >
                 {day}
               </button>

@@ -5,6 +5,7 @@ import { useCreateReservation } from '../../hooks/useCreateReservation';
 import { useNotifications } from '../../hooks/useNotifications';
 import { supabase } from '../../lib/supabase';
 import { PopUp as ConfirmationPopup } from "./PopUp";
+import { useReservasByEmpresa } from '../../hooks/useReservasByEmpresa';
 
 import { AuthStep, 
   PersonalInfoStep, 
@@ -20,6 +21,7 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
   const navigate = useNavigate();
   const { createReservation, loading: creatingReservation, error } = useCreateReservation();
   const { crearNotificacion } = useNotifications();
+  const { reservas, loading: loadingReservas } = useReservasByEmpresa();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [showLogin, setShowLogin] = useState(false);
@@ -275,6 +277,8 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
     if (authError) setAuthError('');
   };
 
+  const totalBodegas = reservationData.bodegaSeleccionada?.cantidad || 1; // Ajusta el campo según tu modelo
+
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
       {/* Popup de Confirmación */}
@@ -328,6 +332,10 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
 
         {currentStep === 3 && (
           <DateSelectionStep
+            reservas={reservas}
+            bodegaId={reservationData.bodegaSeleccionada?.id}
+            empresaId={reservationData.bodegaSeleccionada?.empresa_id}
+            totalBodegas={totalBodegas}
             fechaInicio={formData.fechaInicio}
             handleFechaChange={(e) => handleFormChange('fechaInicio', e.target.value)}
           />
