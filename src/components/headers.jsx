@@ -109,13 +109,9 @@ export function Header({ tipo }) {
                 Calcula tu espacio
                 <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-[#2C3A61] transition-all duration-300 group-hover:w-full"></span>
               </Link>
-
-              {/* Mostrar diferentes botones según el estado de autenticación */}
               {user ? (
                 <div className="flex items-center space-x-4">
-                  {/* Campana de notificaciones antes del botón de perfil */}
                   <NotificationBell />
-                  
                   <Link 
                     to="/perfil-user"
                     className="flex items-center gap-2 px-4 py-2 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
@@ -155,7 +151,6 @@ export function Header({ tipo }) {
 
           {tipo === "proveedor" && (
             <>
-              {/* Botón "Crea tu mini bodega" con verificación de perfil */}
               <button
                 onClick={() => handleProtectedLink('/bodega-editor-proveedor', '/login-proveedores')}
                 disabled={loadingPerfil}
@@ -166,13 +161,9 @@ export function Header({ tipo }) {
                 {loadingPerfil ? 'Verificando...' : 'Crea tu mini bodega'}
                 <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-[#2C3A61] transition-all duration-300 group-hover:w-full"></span>
               </button>
-
-              {/* Mostrar diferentes botones según el estado de autenticación para proveedores */}
               {user && user?.user_metadata?.user_type === 'proveedor' ? (
                 <div className="flex items-center space-x-4">
-                  {/* Campana de notificaciones antes del botón de perfil */}
                   <NotificationBell />
-                  
                   <Link 
                     to="/perfil-proveedor"
                     className="flex items-center gap-2 px-3 lg:px-4 py-2 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
@@ -181,13 +172,7 @@ export function Header({ tipo }) {
                     <User className="h-4 w-4" />
                     Mi Perfil
                   </Link>
-                  <button 
-                    onClick={handleLogout}
-                    className="px-3 lg:px-4 py-2 rounded font-semibold bg-[#2C3A61] text-white 
-                    hover:bg-[#1e2a47] transition-colors duration-300 whitespace-nowrap text-sm lg:text-base"
-                  >
-                    Cerrar Sesión
-                  </button>
+                  {/* Botón de cerrar sesión eliminado para proveedores en desktop */}
                 </div>
               ) : (
                 <div className="flex items-center space-x-3">
@@ -241,15 +226,11 @@ export function Header({ tipo }) {
               >
                 Calcula tu espacio
               </Link>
-
-              {/* Menú mobile para usuarios */}
               {user ? (
                 <>
-                  {/* Campana de notificaciones independiente en versión móvil */}
                   <div className="px-3 py-2">
                     <NotificationBell />
                   </div>
-                  
                   <Link 
                     to="/perfil-user"
                     className="flex items-center gap-2 px-4 py-3 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
@@ -292,7 +273,6 @@ export function Header({ tipo }) {
 
           {tipo === "proveedor" && (
             <>
-              {/* Botón mobile "Crea tu mini bodega" con verificación */}
               <button
                 onClick={() => handleProtectedLink('/bodega-editor-proveedor', '/login-proveedores')}
                 disabled={loadingPerfil}
@@ -302,15 +282,11 @@ export function Header({ tipo }) {
               >
                 {loadingPerfil ? 'Verificando...' : 'Crea tu mini bodega'}
               </button>
-
-              {/* Menú mobile para proveedores */}
               {user && user?.user_metadata?.user_type === 'proveedor' ? (
-                <>
-                  {/* Campana de notificaciones independiente en versión móvil */}
+                <div>
                   <div className="px-3 py-2">
                     <NotificationBell />
                   </div>
-                
                   <Link 
                     to="/perfil-proveedor"
                     className="flex items-center gap-2 px-4 py-3 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
@@ -320,14 +296,8 @@ export function Header({ tipo }) {
                     <User className="h-4 w-4" />
                     Mi Perfil
                   </Link>
-                  <button 
-                    onClick={handleLogout}
-                    className="px-4 py-3 rounded font-semibold bg-[#2C3A61] text-white 
-                    hover:bg-[#1e2a47] transition-colors duration-300 text-center w-full"
-                  >
-                    Cerrar Sesión
-                  </button>
-                </>
+                  {/* Botón de cerrar sesión eliminado para proveedores en mobile */}
+                </div>
               ) : (
                 <>
                   <Link 
