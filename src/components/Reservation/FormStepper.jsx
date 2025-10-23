@@ -6,23 +6,22 @@ import { useNotifications } from '../../hooks/useNotifications';
 import { supabase } from '../../lib/supabase';
 import { PopUp as ConfirmationPopup } from "./PopUp";
 import { useReservasByEmpresa } from '../../hooks/useReservasByEmpresa';
-
-import { AuthStep, 
-  PersonalInfoStep, 
-  DateSelectionStep, 
+import {
+  AuthStep,
+  PersonalInfoStep,
+  DateSelectionStep,
   ServicesStep,
   ProgressSteps,
   StepNavigation,
-  }
-  from '../index';
+} from '../index';
 
 export function FormStepper({ onDataChange, reservationData, onReservationSuccess }) {
   const { user, signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { createReservation, loading: creatingReservation, error } = useCreateReservation();
   const { crearNotificacion } = useNotifications();
-  const { reservas, loading: loadingReservas } = useReservasByEmpresa();
-  
+  const { reservas, refetch } = useReservasByEmpresa();
+
   const [currentStep, setCurrentStep] = useState(1);
   const [showLogin, setShowLogin] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -39,6 +38,13 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
     nombre: '',
     ...reservationData
   });
+
+  // Refetch reservas al entrar al paso del calendario
+  useEffect(() => {
+    if (currentStep === 3) {
+      refetch();
+    }
+  }, [currentStep, refetch]);
 
   // Verificar si el usuario ya está logueado al montar el componente
   useEffect(() => {
@@ -62,26 +68,22 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
 
   // Navegación entre pasos
   const nextStep = () => {
-    // Validaciones por paso antes de avanzar
     if (currentStep === 1 && !user) {
       setAuthError('Debes iniciar sesión o registrarte para continuar');
       return;
     }
-    
     if (currentStep === 2) {
       if (!formData.tipoDocumento || !formData.numeroDocumento || !formData.numeroCelular) {
         setAuthError('Por favor completa todos los campos requeridos');
         return;
       }
     }
-
     if (currentStep === 3) {
       if (!formData.fechaInicio) {
         setAuthError('Por favor selecciona una fecha de inicio');
         return;
       }
     }
-
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
       setAuthError('');
@@ -98,26 +100,22 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
   // Funciones de autenticación
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    
     if (!formData.email || !formData.password) {
       setAuthError('Por favor completa todos los campos');
       return;
     }
-
     setLoading(true);
     setAuthError('');
-
     try {
       const { error } = await signIn(formData.email, formData.password);
-      
       if (error) {
-        setAuthError(error.message === 'Invalid login credentials' 
-          ? 'Credenciales incorrectas. Verifica tu email y contraseña.' 
+        setAuthError(error.message === 'Invalid login credentials'
+          ? 'Credenciales incorrectas. Verifica tu email y contraseña.'
           : error.message);
       } else {
         setCurrentStep(2);
       }
-    } catch (err) {
+    } catch {
       setAuthError('Ocurrió un error inesperado');
     } finally {
       setLoading(false);
@@ -126,51 +124,61 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
 
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
-    
     if (!formData.nombre || !formData.email || !formData.password) {
       setAuthError('Por favor completa todos los campos');
       return;
     }
-
     if (formData.password.length < 6) {
       setAuthError('La contraseña debe tener al menos 6 caracteres');
       return;
     }
-
     setLoading(true);
     setAuthError('');
-
     try {
       const { error } = await signUp(formData.email, formData.password, {
         full_name: formData.nombre,
         user_type: 'usuario'
       });
-
       if (error) {
         setAuthError(error.message);
       } else {
         setCurrentStep(2);
       }
-    } catch (err) {
+    } catch {
       setAuthError('Ocurrió un error inesperado');
     } finally {
       setLoading(false);
     }
   };
 
-  // Función para confirmar reserva
+  // Confirmar reserva con validación de disponibilidad
   const handleConfirmReservation = async () => {
-    // Validar que todos los campos estén completos
     const requiredFields = ['tipoDocumento', 'numeroDocumento', 'numeroCelular', 'fechaInicio'];
     const missingFields = requiredFields.filter(field => !formData[field]);
-
     if (missingFields.length > 0) {
       setAuthError(`Por favor completa los siguientes campos: ${missingFields.join(', ')}`);
       return;
     }
-
     if (!reservationData?.bodegaSeleccionada) {
       setAuthError('No hay una bodega seleccionada');
+      return;
+    }
+
+    // Refresca reservas antes de validar
+    await refetch();
+
+    // Validar disponibilidad antes de crear la reserva
+    const bodegaId = reservationData.bodegaSeleccionada?.id;
+    const totalBodegas = Number(reservationData.bodegaSeleccionada?.cantidad ?? 1);
+
+    const ocupadas = reservas.filter(r =>
+      String(r.mini_bodega_id) === String(bodegaId) &&
+      r.estado?.toLowerCase() === "aceptada" &&
+      (!r.fecha_fin || new Date(r.fecha_fin) >= new Date())
+    ).length;
+
+    if (ocupadas >= totalBodegas) {
+      setAuthError("Lo sentimos, esta bodega ya está reservada. Intenta con otra.");
       return;
     }
 
@@ -186,26 +194,19 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
     const result = await createReservation(dataToSend);
 
     if (result.success) {
-      // Notificar éxito al componente padre
       if (onReservationSuccess) {
         onReservationSuccess(reservationData.bodegaSeleccionada);
       }
-      
-      // Intentar enviar notificación
       try {
         await enviarNotificacionProveedor(result, reservationData.bodegaSeleccionada, user);
       } catch (error) {
         console.error("Error al enviar notificación:", error);
       }
-      
-      // Mostrar popup
       setShowConfirmationPopup(true);
-      
-      // Redirigir después de 5 segundos
       setTimeout(() => {
         setShowConfirmationPopup(false);
-        navigate('/', { 
-          state: { 
+        navigate('/', {
+          state: {
             reservaConfirmada: true,
             bodegaReservada: reservationData.bodegaSeleccionada
           }
@@ -216,38 +217,20 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
     }
   };
 
-  // Función optimizada para enviar notificación al propietario correcto
+  // Notificación al propietario
   const enviarNotificacionProveedor = async (reserva, bodega, usuario) => {
     try {
-      // Verificaciones iniciales
-      if (!bodega || !bodega.empresa_id) {
-        console.error("❌ No se puede enviar notificación: falta empresa_id");
-        return false;
-      }
-      
-      console.log("⏳ Buscando propietario para la empresa ID:", bodega.empresa_id);
-      
-      // Consultar directamente la tabla empresas para obtener el user_id asociado
+      if (!bodega || !bodega.empresa_id) return false;
       const { data: empresa, error: empresaError } = await supabase
         .from('empresas')
         .select('user_id, nombre')
         .eq('id', bodega.empresa_id)
         .single();
-      
-      if (empresaError || !empresa?.user_id) {
-        console.error("❌ No se encontró el propietario de la empresa:", empresaError);
-        return false;
-      }
-      
-      console.log("✓ Propietario encontrado:", empresa.user_id);
-      
-      // Obtener nombre de bodega de manera segura
+      if (empresaError || !empresa?.user_id) return false;
       const nombreBodega = bodega.nombre || bodega.titulo || bodega.descripcion || "Mini Bodega";
       const nombreEmpresa = empresa.nombre || "la empresa";
-      
-      // Crear notificación para el propietario
-      const resultado = await crearNotificacion({
-        user_id: empresa.user_id, // ID del usuario propietario
+      return await crearNotificacion({
+        user_id: empresa.user_id,
         empresa_id: bodega.empresa_id,
         tipo: 'nueva_reserva',
         titulo: '¡Nueva solicitud de reserva!',
@@ -255,15 +238,11 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
         reserva_id: reserva.id || reserva.reservaId,
         leida: false
       });
-      
-      return resultado.success;
-    } catch (error) {
-      console.error("❌ Error inesperado al enviar notificación:", error);
+    } catch {
       return false;
     }
   };
 
-  // Definir la lista de pasos
   const steps = [
     { number: 1, title: showLogin ? "Inicio de sesión" : "Registro", completed: currentStep > 1 },
     { number: 2, title: "Información Personal", completed: currentStep > 2 },
@@ -271,23 +250,19 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
     { number: 4, title: "Servicios y Confirmación", completed: currentStep > 4 },
   ];
 
-  // Simplificar manejo de inputs
   const handleInputChange = (field) => (event) => {
     handleFormChange(field, event.target.value);
     if (authError) setAuthError('');
   };
 
-  const totalBodegas = reservationData.bodegaSeleccionada?.cantidad || 1; // Ajusta el campo según tu modelo
-
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
-      {/* Popup de Confirmación */}
       {showConfirmationPopup && (
         <ConfirmationPopup
           onClose={() => {
             setShowConfirmationPopup(false);
-            navigate('/', { 
-              state: { 
+            navigate('/', {
+              state: {
                 reservaConfirmada: true,
                 bodegaReservada: reservationData.bodegaSeleccionada
               }
@@ -296,18 +271,15 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
           bodegaData={reservationData.bodegaSeleccionada}
         />
       )}
-      
-      {/* Progress Steps */}
+
       <ProgressSteps steps={steps} currentStep={currentStep} />
 
-      {/* Mensaje de error */}
       {authError && (
         <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
           {authError}
         </div>
       )}
 
-      {/* Step Content */}
       <div className="mb-6">
         {currentStep === 1 && (
           <AuthStep
@@ -333,9 +305,9 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
         {currentStep === 3 && (
           <DateSelectionStep
             reservas={reservas}
-            bodegaId={reservationData.bodegaSeleccionada?.id}
             empresaId={reservationData.bodegaSeleccionada?.empresa_id}
-            totalBodegas={totalBodegas}
+            bodegaId={reservationData.bodegaSeleccionada?.id}
+            totalBodegas={Number(reservationData.bodegaSeleccionada?.cantidad ?? 1)}
             fechaInicio={formData.fechaInicio}
             handleFechaChange={(e) => handleFormChange('fechaInicio', e.target.value)}
           />
@@ -350,7 +322,6 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
         )}
       </div>
 
-      {/* Navigation Buttons */}
       <StepNavigation
         currentStep={currentStep}
         totalSteps={steps.length}
