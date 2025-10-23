@@ -3,33 +3,38 @@ import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { Loader2, Building2 } from "lucide-react";
 import { CrearSede } from "../../components/Sedes/CrearSede";
+import { CarruselImagenes } from "../../components/index";
 
 export function SedesEditorScreen() {
   const { user } = useAuth();
   const [empresaId, setEmpresaId] = useState(null);
   const [todasSedes, setTodasSedes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [popupSede, setPopupSede] = useState(null);
+  const [empresa, setEmpresa] = useState(null);
+  const [miniBodegas, setMiniBodegas] = useState([]);
 
-  // Obtener empresaId del usuario actual
+  // Obtener empresaId y datos de empresa
   useEffect(() => {
     const fetchEmpresaId = async () => {
       if (!user) return;
       const { data } = await supabase
         .from("empresas")
-        .select("id")
+        .select("id, nombre")
         .eq("user_id", user.id)
         .single();
       if (data?.id) setEmpresaId(data.id);
+      setEmpresa(data);
     };
     fetchEmpresaId();
   }, [user]);
 
-  // Traer solo las sedes de la empresa activa
+  // Traer sedes de la empresa activa
   useEffect(() => {
     const fetchTodasSedes = async () => {
       if (!empresaId) return;
       setLoading(true);
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("sedes")
         .select("*")
         .eq("empresa_id", empresaId)
@@ -40,6 +45,19 @@ export function SedesEditorScreen() {
     if (empresaId) fetchTodasSedes();
   }, [empresaId]);
 
+  // Traer minibodegas vinculadas a la sede seleccionada
+  useEffect(() => {
+    const fetchMiniBodegas = async () => {
+      if (!popupSede) return setMiniBodegas([]);
+      const { data } = await supabase
+        .from("minibodegas")
+        .select("*")
+        .eq("sede_id", popupSede.id);
+      setMiniBodegas(data || []);
+    };
+    if (popupSede) fetchMiniBodegas();
+  }, [popupSede]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -48,6 +66,74 @@ export function SedesEditorScreen() {
       </div>
     );
   }
+
+  // Pop-up modularizado
+  const PopupSede = ({ sede, onClose }) => {
+    let imagenes = [];
+    try {
+      if (sede.imagen_url) {
+        imagenes = JSON.parse(sede.imagen_url);
+        if (!Array.isArray(imagenes)) imagenes = [imagenes];
+      }
+    } catch {
+      imagenes = [];
+    }
+    return (
+      <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full flex flex-col md:flex-row overflow-hidden">
+          {/* Carrusel a la izquierda */}
+          <div className="md:w-1/2 w-full p-6 flex items-center justify-center bg-blue-50">
+            <CarruselImagenes imagenes={imagenes} />
+          </div>
+          {/* Info sede a la derecha */}
+          <div className="md:w-1/2 w-full p-8 flex flex-col gap-4">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-2xl font-bold text-[#2C3A61]">{sede.nombre}</h3>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-[#2C3A61] text-2xl font-bold"
+                title="Cerrar"
+              >
+                ×
+              </button>
+            </div>
+            <div>
+              <span className="font-semibold text-[#2C3A61]">Empresa:</span>{" "}
+              <span>{empresa?.nombre || "Sin nombre"}</span>
+            </div>
+            <div>
+              <span className="font-semibold text-[#2C3A61]">Dirección:</span>{" "}
+              <span>{sede.direccion || "Sin dirección"}</span>
+            </div>
+            <div>
+              <span className="font-semibold text-[#2C3A61]">Ciudad:</span>{" "}
+              <span>{sede.ciudad}</span>
+            </div>
+            <div>
+              <span className="font-semibold text-[#2C3A61]">Teléfono:</span>{" "}
+              <span>{sede.telefono || "Sin teléfono"}</span>
+            </div>
+            <div>
+              <span className="font-semibold text-[#2C3A61]">Descripción:</span>{" "}
+              <span>{sede.descripcion || "Sin descripción"}</span>
+            </div>
+            <div>
+              <span className="font-semibold text-[#2C3A61]">MiniBodegas vinculadas:</span>
+              {miniBodegas.length === 0 ? (
+                <span className="ml-2 text-gray-500">Ninguna</span>
+              ) : (
+                <ul className="ml-2 list-disc">
+                  {miniBodegas.map((mb) => (
+                    <li key={mb.id} className="text-gray-700">{mb.nombre}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#e6f0fa] to-[#f8fafc] py-10">
@@ -61,7 +147,7 @@ export function SedesEditorScreen() {
           <h2 className="text-xl font-semibold mb-4 text-[#2C3A61]">Agregar nueva sede</h2>
           <CrearSede
             empresaId={empresaId}
-            onCreate={() => window.location.reload()} // refresca para ver la nueva sede
+            onCreate={() => window.location.reload()}
           />
         </div>
         {/* Lista de todas las sedes de la empresa activa */}
@@ -77,8 +163,9 @@ export function SedesEditorScreen() {
               {todasSedes.map((sede) => (
                 <li
                   key={sede.id}
-                  className="border rounded-xl p-6 bg-blue-50/30 shadow-sm transition hover:shadow-lg md:col-span-2 w-full"
+                  className="border rounded-xl p-6 bg-blue-50/30 shadow-sm transition hover:shadow-lg cursor-pointer"
                   style={{ minWidth: "100%", maxWidth: "100%" }}
+                  onClick={() => setPopupSede(sede)}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <div className="font-semibold text-lg text-[#2C3A61]">{sede.nombre}</div>
@@ -100,6 +187,10 @@ export function SedesEditorScreen() {
             </ul>
           )}
         </div>
+        {/* Popup sede */}
+        {popupSede && (
+          <PopupSede sede={popupSede} onClose={() => setPopupSede(null)} />
+        )}
       </div>
     </div>
   );

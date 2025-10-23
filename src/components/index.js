@@ -88,3 +88,5 @@ export * from './Sedes/SedesGrip'
 export * from './Sedes/MiniBodegasInSede'
 
 export * from './ReservaCardUsuario'
+
+export * from './CarruselImagenes'

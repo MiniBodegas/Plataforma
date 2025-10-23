@@ -37,23 +37,22 @@ export function CrearSede({ empresaId, onCreate, className }) {
     let imagenes_urls = [];
 
     try {
+      let sedeFolder = `${empresaId}-${Date.now()}`;
       // Subir imágenes si hay
       if (imagenes.length > 0) {
         for (const imagen of imagenes) {
           const fileExt = imagen.name.split(".").pop();
-          const fileName = `${Date.now()}-${Math.random()
-            .toString(36)
-            .substring(2, 8)}.${fileExt}`;
+          const fileName = `${sedeFolder}/${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
           const { error: uploadError } = await supabase
             .storage
-            .from("sedes")
+            .from("Sedes")
             .upload(fileName, imagen, { cacheControl: "3600", upsert: false });
 
           if (uploadError) throw uploadError;
 
           const { data: publicUrlData } = supabase
             .storage
-            .from("sedes")
+            .from("Sedes")
             .getPublicUrl(fileName);
 
           imagenes_urls.push(publicUrlData.publicUrl);
