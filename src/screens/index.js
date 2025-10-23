@@ -24,3 +24,5 @@ export * from './PerfilFormProveedor/PerfilFormProveedor'
 export * from './BodegasEditor/BodegasEditor'
 
 export * from './ReservaConfirmada/ReservaConfirmada'
+
+export * from './SedesEditor/SedesEditorScreen'

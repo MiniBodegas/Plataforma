@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Trash2, Save, Loader2, CheckCircle, AlertTriangle } from "lucide-react";
+import { Save, Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useProveedorProfile } from "../../hooks/useProveedorProfile";

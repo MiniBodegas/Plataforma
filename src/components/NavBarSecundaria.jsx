@@ -5,7 +5,7 @@ export function NavBarProveedores() {
 
   const navItems = [
     {
-      path: '',
+      path: '/sedes-editor',
       label: 'Sedes',
       icon: '🏭'
     },
