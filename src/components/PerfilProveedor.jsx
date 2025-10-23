@@ -50,7 +50,7 @@ export function PerfilProveedor() {
   const [empresa, setEmpresa] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth(); // Obtener authLoading
+  const { user, loading: authLoading, signOut } = useAuth();
 
   useEffect(() => {
     console.log('🚀 PerfilProveedor useEffect ejecutado');
@@ -66,7 +66,7 @@ export function PerfilProveedor() {
     // Si auth terminó de cargar pero no hay usuario, redirigir a login
     if (!authLoading && !user) {
       console.log('❌ No hay usuario después de cargar auth, redirigiendo a login...');
-      navigate('/login-proveedor'); // o la ruta que uses para login de proveedores
+      navigate('/home-proveedor'); // o la ruta que uses para login de proveedores
       return;
     }
     
@@ -149,6 +149,12 @@ export function PerfilProveedor() {
     }
   };
 
+  // Lógica para cerrar sesión
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/home-proveedor');
+  };
+
   console.log('🎨 Renderizando PerfilProveedor - AuthLoading:', authLoading, 'Loading:', loading, 'Empresa:', empresa);
 
   // Mostrar loading mientras auth está cargando O mientras verificamos empresa
@@ -218,7 +224,7 @@ export function PerfilProveedor() {
       {/* Botón de cerrar sesión */}
       <div className="p-6">
         <button 
-          onClick={() => navigate('/login-proveedor')}
+          onClick={handleLogout}
           className="w-full h-12 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
         >
           Cerrar sesión
