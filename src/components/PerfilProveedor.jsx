@@ -43,91 +43,33 @@ export function PerfilProveedor() {
   const { user, loading: authLoading, signOut } = useAuth();
 
   useEffect(() => {
-    console.log('🚀 PerfilProveedor useEffect ejecutado');
-    console.log('👤 Usuario actual:', user);
-    console.log('⏳ Auth loading:', authLoading);
-    
-    // NO hacer nada si auth está cargando
-    if (authLoading) {
-      console.log('⏳ Auth aún cargando, esperando...');
-      return;
-    }
-    
-    // Si auth terminó de cargar pero no hay usuario, redirigir a login
+    if (authLoading) return;
     if (!authLoading && !user) {
-      console.log('❌ No hay usuario después de cargar auth, redirigiendo a login...');
-      navigate('/home-proveedor'); // o la ruta que uses para login de proveedores
+      navigate('/home-proveedor');
       return;
     }
-    
-    // Si hay usuario, verificar información
     if (user) {
-      verificarInformacionCompleta();
+      cargarEmpresa();
     }
-  }, [user, authLoading]); // Agregar authLoading como dependencia
+  }, [user, authLoading]);
 
-  const verificarInformacionCompleta = async () => {
-    console.log('🔍 Iniciando verificación de información completa...');
-    
+  // Solo carga la empresa, sin redirección por datos incompletos
+  const cargarEmpresa = async () => {
     if (!user) {
-      console.log('❌ No hay usuario en verificarInformacionCompleta');
       setLoading(false);
       return;
     }
-    
     try {
-      console.log('📡 Consultando empresa para user_id:', user.id);
-      
-      const { data: empresaData, error } = await supabase
+      const { data: empresaData } = await supabase
         .from('empresas')
         .select('*')
         .eq('user_id', user.id)
         .single();
-        
-      console.log('📊 Resultado consulta empresa:');
-      console.log('  - Data:', empresaData);
-      console.log('  - Error:', error);
-        
-      if (error || !empresaData) {
-        console.log('❌ No se encontró empresa o hubo error, redirigiendo al formulario...');
-        navigate('/completar-formulario-proveedor');
-        return;
-      }
-
-      // Verificar si las columnas existen
-      console.log('🔍 Verificando columnas existentes:', Object.keys(empresaData));
-
-      // VALIDACIÓN COMPLETA - todos los campos obligatorios
-      const camposObligatorios = [
-        'nombre',
-        'ciudad',
-      ];
-
-      console.log('📝 Verificando campos obligatorios:', camposObligatorios);
-
-      const informacionIncompleta = camposObligatorios.some(campo => {
-        const valor = empresaData[campo];
-        const estaVacio = !valor || (typeof valor === 'string' && valor.trim() === '');
-        console.log(`  - ${campo}: "${valor}" (vacío: ${estaVacio})`);
-        return estaVacio;
-      });
-
-      console.log('📋 Información incompleta:', informacionIncompleta);
-
-      if (informacionIncompleta) {
-        console.log('❌ Información incompleta, redirigiendo al formulario...');
-        navigate('/completar-formulario-proveedor');
-        return;
-      }
-
-      console.log('✅ Información completa, mostrando perfil');
       setEmpresa(empresaData);
     } catch (error) {
-      console.error('💥 Error verificando empresa:', error);
-      navigate('/completar-formulario-proveedor');
+      setEmpresa(null);
     } finally {
       setLoading(false);
-      console.log('⏳ Loading establecido a false');
     }
   };
 
@@ -139,13 +81,11 @@ export function PerfilProveedor() {
     }
   };
 
-  // Lógica para cerrar sesión
   const handleLogout = async () => {
     await signOut();
     navigate('/home-proveedor');
   };
 
-  // Mostrar loading mientras auth está cargando O mientras verificamos empresa
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -157,10 +97,9 @@ export function PerfilProveedor() {
     );
   }
 
-  // Si llegamos aquí, significa que auth cargó, hay usuario y empresa válida
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-gray-50">
-      <div className="px-6 py-6">
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="px-6 py-6 flex-1 flex flex-col">
         {/* Header */}
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-[#2C3A61] mb-2">
@@ -178,7 +117,7 @@ export function PerfilProveedor() {
         <ChecklistProgreso />
 
         {/* Opciones del menú */}
-        <div className="space-y-4">
+        <div className="space-y-4 mb-4 flex-1">
           {opciones.map((opcion, idx) => (
             <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden bg-white">
               <button
@@ -199,6 +138,7 @@ export function PerfilProveedor() {
                   </svg>
                 )}
               </button>
+              
               {opcion.tipo === "desplegable" && open === idx && (
                 <div className="bg-gray-50 border-t border-gray-200">
                   {opcion.contenido}
@@ -206,17 +146,13 @@ export function PerfilProveedor() {
               )}
             </div>
           ))}
+          <button 
+            onClick={handleLogout}
+            className="w-full h-12 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
+          >
+            Cerrar sesión
+          </button>
         </div>
-      </div>
-
-      {/* Botón de cerrar sesión */}
-      <div className="p-6">
-        <button 
-          onClick={handleLogout}
-          className="w-full h-12 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
-        >
-          Cerrar sesión
-        </button>
       </div>
     </div>
   );
