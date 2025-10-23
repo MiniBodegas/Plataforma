@@ -31,8 +31,7 @@ export function AuthProvider({ children }) {
 
     // Escuchar cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔐 Auth event:', event);
+      async (session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -57,7 +56,6 @@ export function AuthProvider({ children }) {
         return { data: null, error };
       }
 
-      console.log('✅ Login exitoso:', data);
       return { data, error: null };
       
     } catch (error) {

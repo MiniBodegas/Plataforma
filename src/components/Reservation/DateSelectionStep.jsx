@@ -17,19 +17,13 @@ function isSameDay(a, b) {
 
 const WEEKDAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
-/**
- * Bloqueo por **stock total**:
- * - Cuenta cuántas reservas 'aceptada' existen para el mini_bodega_id seleccionado.
- * - Si ocupadas >= totalBodegas (cantidad de esa mini-bodega), se bloquean todos los días >= hoy.
- * - No usamos fecha_fin ni mapas por día.
- */
 export function DateSelectionStep({
   fechaInicio,
   handleFechaChange,
   reservas = [],
-  totalBodegas = 1,   // pasar Number(bodegaSeleccionada.cantidad)
+  totalBodegas = 1,
   empresaId,
-  bodegaId            // pasar bodegaSeleccionada.id
+  bodegaId
 }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -77,8 +71,6 @@ export function DateSelectionStep({
   const aceptadasEstaBodega = reservas.filter((r) => {
     const aceptada = r?.estado?.toLowerCase?.() === "aceptada";
     const bodegaOk = !bodegaId || String(r.mini_bodega_id) === String(bodegaId);
-    // Si quieres ignorar empresaId para depurar, comenta la siguiente línea:
-    // const empresaOk = !empresaId || r.empresa_id === empresaId;
     let activa = true;
     if (r.fecha_fin) {
       const fin = new Date(r.fecha_fin);
@@ -86,7 +78,6 @@ export function DateSelectionStep({
       if (fin < today) activa = false;
     }
     if (aceptada && bodegaOk && activa) {
-      console.log("Reserva contada:", r);
       return true;
     }
     return false;
@@ -96,17 +87,6 @@ export function DateSelectionStep({
   const ocupadas = aceptadasEstaBodega.length;
   const stock = Number(totalBodegas || 1);
   const bloquearTodo = ocupadas >= stock;
-
-  console.log({
-    aceptadasEstaBodega,
-    stock,
-    ocupadas: aceptadasEstaBodega.length,
-    bloquearTodo: aceptadasEstaBodega.length >= stock
-  });
-  console.log("Reservas recibidas:", reservas);
-  console.log("bodegaId:", bodegaId, typeof bodegaId);
-
-  reservas.forEach(r => console.log("Estado reserva:", r.estado));
 
   return (
     <div className="max-w-xs mx-auto bg-white rounded-xl shadow p-4">
@@ -182,12 +162,6 @@ export function DateSelectionStep({
           );
         })}
       </div>
-
-      {/* Debug opcional:
-      <pre className="text-[10px] mt-2 text-gray-500">
-        {JSON.stringify({ ocupadas, stock, bloquearTodo }, null, 2)}
-      </pre>
-      */}
     </div>
   );
 }

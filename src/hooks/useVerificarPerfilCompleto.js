@@ -4,19 +4,16 @@ import { useAuth } from "../contexts/AuthContext";
 import { ProfileService } from "../services/ProfileService";
 
 export function useVerificarPerfilCompleto() {
-  const { user, loading: authLoading, isProveedor } = useAuth(); // ✅ Agregar isProveedor
+  const { user, loading: authLoading, isProveedor } = useAuth();
   const [perfilCompleto, setPerfilCompleto] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!authLoading && user) {
-      // ✅ SOLO ejecutar para proveedores
       if (isProveedor()) {
         verificarPerfil();
       } else {
-        // ✅ Para usuarios normales, no verificar empresa
-        console.log('ℹ️ Usuario es cliente, no necesita verificación de empresa');
-        setPerfilCompleto(true); // Los clientes siempre tienen "perfil completo"
+        setPerfilCompleto(true);
         setLoading(false);
       }
     } else if (!authLoading && !user) {
@@ -28,17 +25,12 @@ export function useVerificarPerfilCompleto() {
   const verificarPerfil = async () => {
     try {
       setLoading(true);
-      console.log('🔍 useVerificarPerfilCompleto: Verificando perfil de PROVEEDOR para:', user.id);
-      
       const empresa = await ProfileService.getEmpresaByUserId(user.id);
 
       if (!empresa) {
-        console.log('ℹ️ Proveedor no tiene empresa creada');
         setPerfilCompleto(false);
         return;
       }
-
-      console.log('✅ Empresa encontrada, verificando campos...');
 
       const camposObligatorios = [
         'nombre', 
@@ -54,10 +46,8 @@ export function useVerificarPerfilCompleto() {
         return valor && valor.toString().trim() !== '';
       });
 
-      console.log('📊 Perfil de proveedor completo:', completo);
       setPerfilCompleto(completo);
     } catch (error) {
-      console.error('❌ Error verificando perfil de proveedor:', error);
       setPerfilCompleto(false);
     } finally {
       setLoading(false);

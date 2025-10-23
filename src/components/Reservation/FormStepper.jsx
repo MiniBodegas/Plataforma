@@ -199,8 +199,8 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
       }
       try {
         await enviarNotificacionProveedor(result, reservationData.bodegaSeleccionada, user);
-      } catch (error) {
-        console.error("Error al enviar notificación:", error);
+      } catch {
+        // Silenciar error de notificación
       }
       setShowConfirmationPopup(true);
       setTimeout(() => {

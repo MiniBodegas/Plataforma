@@ -16,25 +16,15 @@ export function Reservation() {
     bodegaSeleccionada: null,
   });
 
-  // ✅ DEBUG: Ver qué datos llegan de la navegación
-  console.log('🔍 Reservation - Datos de navegación:', {
-    locationState: location.state,
-    bodegaSeleccionada: location.state?.bodegaSeleccionada
-  });
-
   // Obtener datos de la bodega desde la navegación
   useEffect(() => {
     if (location.state && location.state.bodegaSeleccionada) {
       // Crear una copia con el campo empresa_id estandarizado
       const bodega = location.state.bodegaSeleccionada;
-      
-      // Asegurar que tenemos empresa_id (usar la versión correcta del campo)
       const empresa_id = bodega.empresa_id || bodega.empresaId || null;
-      
       if (!empresa_id) {
-        console.error('ADVERTENCIA: La bodega seleccionada no tiene ID de empresa');
+        // No log, solo advertencia silenciosa
       }
-      
       setReservationData(prev => ({
         ...prev,
         bodegaSeleccionada: {
@@ -42,9 +32,6 @@ export function Reservation() {
           empresa_id: empresa_id // Estandarizar el nombre del campo
         }
       }));
-      
-      // Log para debugging
-      console.log('ID de empresa establecido:', empresa_id);
     }
   }, [location.state]);
 
@@ -56,12 +43,12 @@ export function Reservation() {
     }));
   };
 
-  // ✅ EXTRAER Y PROCESAR DATOS DE LA BODEGA SELECCIONADA
+  // EXTRAER Y PROCESAR DATOS DE LA BODEGA SELECCIONADA
   const bodegaInfo = reservationData.bodegaSeleccionada;
 
-  // ✅ CREAR WAREHOUSE PARA COMPANYDESCRIPTION (IGUAL QUE EN BODEGAS DISPONIBLES)
+  // CREAR WAREHOUSE PARA COMPANYDESCRIPTION (IGUAL QUE EN BODEGAS DISPONIBLES)
   const warehouse = bodegaInfo ? {
-    id: bodegaInfo.empresa_id || bodegaInfo.empresaId || bodegaInfo.id, // Priorizar empresa_id
+    id: bodegaInfo.empresa_id || bodegaInfo.empresaId || bodegaInfo.id,
     name: bodegaInfo.name || "Empresa sin nombre",
     city: bodegaInfo.city || "Ciudad no disponible",
     zone: bodegaInfo.zone || "Zona no disponible", 
@@ -78,8 +65,7 @@ export function Reservation() {
     reviewCount: bodegaInfo.reviewCount || 25,
     images: bodegaInfo.image ? [bodegaInfo.image] : [],
     companyImage: bodegaInfo.image,
-    // ✅ DATOS ESPECÍFICOS DE LA BODEGA SELECCIONADA
-    totalBodegas: 1, // Solo la bodega seleccionada
+    totalBodegas: 1,
     availableSizes: bodegaInfo.tamaño ? [bodegaInfo.tamaño] : [],
     priceRange: bodegaInfo.precio ? {
       min: bodegaInfo.precio,
@@ -97,20 +83,9 @@ export function Reservation() {
     }] : []
   } : null;
 
-  console.log('✅ Reservation - Warehouse creado:', {
-    warehouse: warehouse ? {
-      name: warehouse.name,
-      city: warehouse.city,
-      zone: warehouse.zone,
-      totalBodegas: warehouse.totalBodegas,
-      priceRange: warehouse.priceRange
-    } : null
-  });
-
-  // En el componente donde seleccionas una bodega (por ejemplo, BodegaCard)
   const handleSelectBodega = (bodega) => {
     if (!bodega.empresa_id) {
-      console.error('La bodega seleccionada no tiene ID de empresa');
+      // No log, solo advertencia silenciosa
     }
     setReservationData({
       ...reservationData,
@@ -118,16 +93,9 @@ export function Reservation() {
     });
   };
 
-  // Añade este log al final de Reservation.jsx
-  console.log('Datos finales de reserva:', {
-    bodegaId: reservationData.bodegaSeleccionada?.id,
-    empresaId: reservationData.bodegaSeleccionada?.empresa_id,
-    // otros campos relevantes
-  });
-
   return (
     <>
-      {/* ✅ MISMO COMPANYDESCRIPTION QUE EN BODEGAS DISPONIBLES */}
+      {/* MISMO COMPANYDESCRIPTION QUE EN BODEGAS DISPONIBLES */}
       {warehouse && (
         <CompanyDescription 
           warehouse={warehouse}
@@ -141,16 +109,16 @@ export function Reservation() {
       )}
       
       <section className="max-w-[1400px] mx-auto px-6 py-8">
-        {/* ✅ TÍTULO DINÁMICO CON DATOS REALES */}
+        {/* TÍTULO DINÁMICO CON DATOS REALES */}
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold mb-2" style={{ color: "#2C3A61" }}>
             {warehouse?.name || "Empresa sin nombre"}
           </h2>
         </div>
 
-        {/* ✅ LAYOUT DE DOS COLUMNAS - POSICIONES CAMBIADAS */}
+        {/* LAYOUT DE DOS COLUMNAS - POSICIONES CAMBIADAS */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 xl:gap-12">
-          {/* ✅ Columna izquierda - FormStepper (antes derecha) */}
+          {/* Columna izquierda - FormStepper */}
           <div className="order-1 lg:order-1">
             <FormStepper 
               onDataChange={handleFormDataChange} 
@@ -158,13 +126,13 @@ export function Reservation() {
             />
           </div>
 
-          {/* ✅ Columna derecha - ReservationCard (antes izquierda) */}
+          {/* Columna derecha - ReservationCard */}
           <div className="order-2 lg:order-2">
             <ReservationCard reservationData={reservationData} />
           </div>
         </div>
 
-        {/* ✅ MENSAJE SI NO HAY DATOS */}
+        {/* MENSAJE SI NO HAY DATOS */}
         {!bodegaInfo && (
           <div className="text-center mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
             <p className="text-yellow-700 text-lg mb-2">
