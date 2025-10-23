@@ -6,7 +6,7 @@ export function NavBarProveedores() {
   const navItems = [
     {
       path: '',
-      label: 'Instalaciones',
+      label: 'Sedes',
       icon: '🏭'
     },
     {
@@ -15,20 +15,25 @@ export function NavBarProveedores() {
       icon: '🏬'
     },
     {
-      path: '/mis-bodegas',
-      label: 'Reservas',
-      icon: '📋'
-    },
-    {
       path: '/mis-mini-bodegas',
       label: 'Mis mini bodegas',
       icon: '🏢'
     },
     {
-      path: '/perfil-proveedor',
-      label: 'Balance y Perfil',
-      icon: '👤'
+      path: '/mis-bodegas',
+      label: 'Reservas',
+      icon: '📋'
     },
+    {
+      path: '/balance',
+      label: 'Balance',
+      icon: '💰'
+    },
+    {
+      path: '/perfil-proveedor',
+      label: 'Perfil',
+      icon: '👤'
+    }
   ];
 
   const isActive = (path) => location.pathname === path;
