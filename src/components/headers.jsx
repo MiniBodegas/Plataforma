@@ -165,12 +165,12 @@ export function Header({ tipo }) {
                 <div className="flex items-center space-x-4">
                   <NotificationBell />
                   <Link 
-                    to="/perfil-proveedor"
+                    to="/mis-mini-bodegas"
                     className="flex items-center gap-2 px-3 lg:px-4 py-2 rounded font-semibold border border-[#2C3A61] bg-white text-[#2C3A61] 
                     hover:bg-[#2C3A61] hover:text-white transition-colors duration-300 whitespace-nowrap text-sm lg:text-base"
                   >
                     <User className="h-4 w-4" />
-                    Mi Perfil
+                    Mis Bodegas
                   </Link>
                   {/* Botón de cerrar sesión eliminado para proveedores en desktop */}
                 </div>

@@ -6,16 +6,6 @@ import { ChecklistProgreso } from "./index";
 
 const opciones = [
   {
-    nombre: "Mis bodegas",
-    tipo: "ruta",
-    ruta: "/mis-mini-bodegas",
-  },
-  {
-    nombre: "Reservas y transacciones",
-    tipo: "ruta",
-    ruta: "/mis-bodegas",
-  },
-  {
     nombre: "Mi perfil",
     tipo: "ruta",
     ruta: "/completar-formulario-proveedor",
@@ -154,8 +144,6 @@ export function PerfilProveedor() {
     await signOut();
     navigate('/home-proveedor');
   };
-
-  console.log('🎨 Renderizando PerfilProveedor - AuthLoading:', authLoading, 'Loading:', loading, 'Empresa:', empresa);
 
   // Mostrar loading mientras auth está cargando O mientras verificamos empresa
   if (authLoading || loading) {

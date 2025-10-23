@@ -5,6 +5,16 @@ export function NavBarProveedores() {
 
   const navItems = [
     {
+      path: '/instalaciones',
+      label: 'Instalaciones',
+      icon: '🏭'
+    },
+    {
+      path: '/bodegas',
+      label: 'Bodegas',
+      icon: '🏬'
+    },
+    {
       path: '/mis-bodegas',
       label: 'Reservas',
       icon: '📋'
@@ -15,10 +25,10 @@ export function NavBarProveedores() {
       icon: '🏢'
     },
     {
-      path: '/balance',
-      label: 'Balance',
-      icon: '⚙️'
-    }
+      path: '/perfil-proveedor',
+      label: 'Balance y Perfil',
+      icon: '👤'
+    },
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -42,13 +52,6 @@ export function NavBarProveedores() {
             >
               <span className="text-lg">{item.icon}</span>
               <span>{item.label}</span>
-              
-              {/* Indicador de notificaciones para Reservas */}
-              {item.path === '/reservas' && (
-                <span className="ml-1 px-2 py-1 bg-red-500 text-white text-xs rounded-full">
-                  2
-                </span>
-              )}
             </Link>
           ))}
         </div>

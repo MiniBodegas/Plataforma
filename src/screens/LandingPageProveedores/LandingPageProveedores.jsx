@@ -24,18 +24,6 @@ export function LandingPageProveedores() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Debug simplificado - solo en desarrollo
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('👤 Auth status:', { 
-        userId: user?.id, 
-        userType: user?.user_metadata?.user_type,
-        loading,
-        pageLoading 
-      });
-    }
-  }, [user, loading, pageLoading]);
-
   // Mostrar loading mientras se resuelve la autenticación O el pageLoading
   if (pageLoading || loading) {
     return (
