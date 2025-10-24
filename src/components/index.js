@@ -90,3 +90,5 @@ export * from './Sedes/MiniBodegasInSede'
 export * from './ReservaCardUsuario'
 
 export * from './CarruselImagenes'
+
+export * from './PopupSede'
