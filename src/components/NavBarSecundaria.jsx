@@ -10,7 +10,7 @@ export function NavBarProveedores() {
       icon: '🏭'
     },
     {
-      path: '',
+      path: '/mini-bodegas-editor/:sedeId',
       label: 'Bodegas',
       icon: '🏬'
     },

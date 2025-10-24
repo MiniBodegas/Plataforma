@@ -22,7 +22,7 @@ const opciones = [
   {
     nombre: "Planes y facturación",
     tipo: "ruta",
-    ruta: "/completar-formulario-proveedor",
+    ruta: "",
   },
   {
     nombre: "Centro de ayuda",

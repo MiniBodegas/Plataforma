@@ -402,17 +402,6 @@ export function BodegaEditorProveedorScreen() {
             onImagenesChange={setImagenesDescripcion}
           />
         </div>
-
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-center mb-6 text-[#2C3A61]">🏷️ Sedes y Mini Bodegas</h2>
-          <SedesGrid empresaId={empresaId} onSelectSede={(s) => setSelectedSede(s)} />
-        </div>
-
-        <div className="flex justify-center mt-8">
-          <button className={`font-bold px-8 py-3 rounded-xl shadow transition-all duration-200 text-lg flex items-center justify-center min-w-[300px] ${guardandoTodo ? "bg-gray-400 cursor-not-allowed" : "bg-[#2C3A61] text-white hover:bg-[#4B799B] hover:scale-105"}`} onClick={handleGuardarTodo} disabled={guardandoTodo}>
-            {guardandoTodo ? (<><Loader2 className="animate-spin h-5 w-5 mr-3" />Guardando...</>) : (<><Save className="h-5 w-5 mr-3" />{perfilCompleto ? "Actualizar Perfil" : "Guardar Todo"}</>)}
-          </button>
-        </div>
       </div>
     </div>
   );

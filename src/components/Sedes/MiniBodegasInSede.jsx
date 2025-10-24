@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { BodegasList } from "../BodegasList";
 import { CardBodegas } from "../index";
 
 export function MiniBodegasInSede({ sede, onChange, autoOpenAdd = false, onOpened, horizontal = false }) {
@@ -192,8 +191,8 @@ export function MiniBodegasInSede({ sede, onChange, autoOpenAdd = false, onOpene
                     onDragEnd={handleDragEnd}
                   >
                     {/* padding interno mayor para despegar card del borde */}
-                    <div className="p-6 h-full flex items-start justify-center">
-                      <div className="w-full max-w-[420px] flex flex-col">
+                    <div className="px-10 w-full h-full flex items-start justify-center">
+                      <div className="w-full flex flex-col">
                         <div className="flex-1 overflow-hidden">
                           <div className="w-full h-full overflow-hidden break-words">
                             <div className="p-3 bg-transparent w-full h-full box-border">
@@ -225,7 +224,12 @@ export function MiniBodegasInSede({ sede, onChange, autoOpenAdd = false, onOpene
                           </div>
                         </div>
                         <div className="mt-3 flex justify-center">
-                          <button onClick={() => handleEliminar(idx)} className="text-red-600 text-sm">Eliminar</button>
+                          <button
+                            onClick={() => handleEliminar(idx)}
+                            className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-semibold text-base shadow transition"
+                          >
+                            🗑️ Eliminar
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -247,7 +251,7 @@ export function MiniBodegasInSede({ sede, onChange, autoOpenAdd = false, onOpene
                     onDragEnd={handleDragEnd}
                   >
                     {/* wrapper: padding interno para despegar la CardBodegas del borde */}
-                    <div className="p-4 w-full h-full flex items-start justify-center">
+                    <div className="pr-2 w-full h-full flex items-start justify-center">
                       <div className="w-full flex flex-col">
                         <div className="flex-1 overflow-hidden">
                           <div className="p-3 w-full h-full overflow-hidden break-words">
@@ -280,8 +284,13 @@ export function MiniBodegasInSede({ sede, onChange, autoOpenAdd = false, onOpene
                             </div>
                           </div>
                         </div>
-                        <div className="mt-2 flex items-center justify-between gap-2">
-                          <button onClick={() => handleEliminar(idx)} className="text-red-600 text-sm">Eliminar</button>
+                        <div className="mt-3 flex justify-center">
+                          <button
+                            onClick={() => handleEliminar(idx)}
+                            className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-semibold text-base shadow transition"
+                          >
+                            🗑️ Eliminar
+                          </button>
                         </div>
                       </div>
                     </div>

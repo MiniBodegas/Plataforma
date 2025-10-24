@@ -26,3 +26,5 @@ export * from './BodegasEditor/BodegasEditor'
 export * from './ReservaConfirmada/ReservaConfirmada'
 
 export * from './SedesEditor/SedesEditorScreen'
+
+export * from './MiniBodegas/MiniBodegasEditorScreen'

@@ -23,7 +23,8 @@ import {
   PerfilProveedorScreen,
   BodegaEditorProveedorScreen,
   ReservaConfirmada,
-  SedesEditorScreen
+  SedesEditorScreen,
+  MiniBodegasEditorScreen
 } from '../screens/index';
 
 // ====================== 
@@ -93,6 +94,7 @@ export const AppRouter = () => {
         <Route path="/bodega-editor-proveedor" element={<BodegaEditorProveedorScreen />} />
         <Route path="/completar-formulario-proveedor" element={<CompletarFormularioProveedor />} />
         <Route path="/sedes-editor" element={<SedesEditorScreen />} />
+        <Route path="/mini-bodegas-editor/:sedeId" element={<MiniBodegasEditorScreen />} />
 
 
 

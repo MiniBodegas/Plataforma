@@ -114,76 +114,81 @@ export function SedesGrid({ empresaId, onSelectSede, selectedSedeId, onExpandCha
   };
 
   return (
-    <div className="space-y-4">
-      {/* lista vertical: cada sede en su tarjeta (una abajo de otra) */}
-      <div className="flex flex-col gap-4">
-        {sedes.map((s) => (
-          <div
-            id={`sede-${s.id}`}
-            key={s.id}
-            onDragOver={(e) => e.preventDefault()}
-            onDragEnter={() => handleDragEnter(s.id)}
-            onDragLeave={() => handleDragLeave()}
-            onDrop={(e) => handleDropOnSede(e, s)}
-            className={`w-full p-4 rounded-lg border bg-white shadow-sm transition-all ${expandedId === s.id ? "ring-2 ring-[#4B799B]" : ""} ${dragOverId === s.id ? "bg-blue-50 ring-2 ring-blue-300" : ""}`}
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-semibold text-[#2C3A61]">
-                  {s.nombre || s.ciudad}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {s.ciudad}
-                  {s.direccion ? ` · ${s.direccion}` : ""}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleToggle(s)}
-                    className="text-sm px-3 py-1 rounded bg-[#eef6fb] text-[#2C3A61]"
-                  >
-                    {expandedId === s.id ? "Cerrar" : "Abrir"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(s)}
-                    className="text-sm px-3 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200"
-                    title="Eliminar sede"
-                  >
-                    Eliminar
-                  </button>
-                </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {sedes.map((s) => (
+        <div
+          id={`sede-${s.id}`}
+          key={s.id}
+          onDragOver={(e) => e.preventDefault()}
+          onDragEnter={() => handleDragEnter(s.id)}
+          onDragLeave={() => handleDragLeave()}
+          onDrop={(e) => handleDropOnSede(e, s)}
+          className={`w-full px-8 py-6 rounded-lg border bg-white shadow-sm transition-all
+            ${expandedId === s.id ? "ring-2 ring-[#4B799B]" : ""}
+            ${dragOverId === s.id ? "border-2 border-blue-400 bg-blue-50" : ""}`}
+          style={{
+            transition: "border 0.2s, background 0.2s",
+            zIndex: dragOverId === s.id ? 10 : 1
+          }}
+        >
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="font-semibold text-[#2C3A61]">
+                {s.nombre || s.ciudad}
+              </h3>
+              <p className="text-sm text-gray-600">
+                {s.ciudad}
+                {s.direccion ? ` · ${s.direccion}` : ""}
+              </p>
+            </div>
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleToggle(s)}
+                  className="text-sm px-3 py-1 rounded bg-[#eef6fb] text-[#2C3A61]"
+                >
+                  {expandedId === s.id ? "Cerrar" : "Abrir"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(s)}
+                  className="text-sm px-3 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200"
+                  title="Eliminar sede"
+                >
+                  Eliminar
+                </button>
               </div>
             </div>
-
-            {expandedId === s.id && (
-              <div className="mt-3">
-                {/* cuando la sede está abierta, mostrar mini bodegas en formato horizontal */}
-                {/* Mostrar mini bodegas en formato VERTICAL dentro de la sede */}
-                <MiniBodegasInSede
-                  sede={s}
-                  onChange={load}
-                  autoOpenAdd={justCreatedId === s.id}
-                  onOpened={() => setJustCreatedId(null)}
-                  horizontal={false} // <-- cambiar a false (o quitar) para layout vertical
-                />
-              </div>
-            )}
           </div>
-        ))}
 
-        {/* Card Crear Sede */}
-        <div className="w-full p-4 rounded-lg border-dashed border-2 border-[#4B799B] bg-white">
-          <div className="w-full">
-            <h4 className="font-medium text-[#2C3A61] mb-2">Crear nueva sede</h4>
-            <CrearSede empresaId={empresaId} onCreate={handleCreate} />
-          </div>
+          {expandedId === s.id && (
+            <div className="mt-3">
+              <MiniBodegasInSede
+                sede={s}
+                onChange={load}
+                autoOpenAdd={justCreatedId === s.id}
+                onOpened={() => setJustCreatedId(null)}
+                horizontal={false}
+              />
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* Card Crear Sede */}
+      <div className="w-full p-4 rounded-lg border-dashed border-2 border-[#4B799B] bg-white flex flex-col justify-center">
+        <div className="w-full">
+          <h4 className="font-medium text-[#2C3A61] mb-2">Crear nueva sede</h4>
+          <CrearSede empresaId={empresaId} onCreate={handleCreate} />
         </div>
       </div>
 
-      {loading && <p className="text-sm text-gray-500 mt-2">Cargando sedes...</p>}
+      {loading && (
+        <div className="col-span-2">
+          <p className="text-sm text-gray-500 mt-2">Cargando sedes...</p>
+        </div>
+      )}
     </div>
   );
 }
