@@ -1,133 +1,90 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
-export function useProveedorDashboard() {
+/**
+ * Detecta la empresa del usuario (empresas.user_id = currentUserId),
+ * carga todas las mini_bodegas y expone actualizarDisponibilidad.
+ */
+export function useProveedorDashboard(currentUserId) {
   const [bodegas, setBodegas] = useState([]);
+  const [empresaId, setEmpresaId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [empresaId, setEmpresaId] = useState(null);
 
-  useEffect(() => {
-    // ✅ SIEMPRE CARGAR TODAS LAS BODEGAS, SIN FILTROS
-    fetchTodasLasBodegas();
+  const fetchEmpresaId = useCallback(async () => {
+    if (!currentUserId) return null;
+    const { data, error } = await supabase
+      .from('empresas')
+      .select('id')
+      .eq('user_id', currentUserId)
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    return data?.id || null;
+  }, [currentUserId]);
+
+  const fetchTodasLasBodegas = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('mini_bodegas')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
   }, []);
 
-  const fetchTodasLasBodegas = async () => {
+  const refetch = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      console.log('🔍 Cargando TODAS las bodegas (sin filtros)...');
-      
-      // ✅ CONSULTA SIN FILTROS - OBTENER TODAS LAS BODEGAS
-      const { data, error: supabaseError } = await supabase
-        .from('mini_bodegas')
-        .select('*')
-        .order('created_at', { ascending: false });
 
-      if (supabaseError) {
-        console.error('❌ Error en consulta:', supabaseError);
-        throw supabaseError;
-      }
+      const empId = await fetchEmpresaId();
+      setEmpresaId(empId);
 
-      console.log('✅ TODAS las bodegas obtenidas:', {
-        total: data?.length || 0,
-        disponibles: data?.filter(b => b.disponible).length || 0,
-        noDisponibles: data?.filter(b => !b.disponible).length || 0,
-        primerasBodegas: data?.slice(0, 3).map(b => ({
-          id: b.id,
-          metraje: b.metraje,
-          ciudad: b.ciudad,
-          disponible: b.disponible,
-          empresa_id: b.empresa_id
-        }))
-      });
-
-      setBodegas(data || []);
+      const todas = await fetchTodasLasBodegas();
+      setBodegas(todas);
     } catch (err) {
-      console.error('❌ Error fetchTodasLasBodegas:', err);
+      console.error('❌ useProveedorDashboard refetch:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchEmpresaId, fetchTodasLasBodegas]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   const actualizarDisponibilidad = async (bodegaId, disponible, motivo = null) => {
     try {
-      console.log('🔄 Actualizando disponibilidad:', { bodegaId, disponible, motivo });
-      
-      const updateData = { 
-        disponible: disponible,
-        updated_at: new Date().toISOString()
+      const updateData = {
+        disponible,
+        updated_at: new Date().toISOString(),
+        motivo_no_disponible: disponible ? null : (motivo ?? null),
       };
 
-      // ✅ AGREGAR MOTIVO SI EXISTE LA COLUMNA
-      if (motivo !== null && motivo !== undefined) {
-        updateData.motivo_no_disponible = motivo;
-      } else if (disponible) {
-        updateData.motivo_no_disponible = null;
-      }
-
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('mini_bodegas')
         .update(updateData)
-        .eq('id', bodegaId)
-        .select();
+        .eq('id', bodegaId);
 
-      if (error) {
-        // Si hay error con motivo_no_disponible, intentar sin ese campo
-        if (error.message.includes('motivo_no_disponible')) {
-          console.log('⚠️ Columna motivo_no_disponible no existe, actualizando solo disponible...');
-          
-          const { data: data2, error: error2 } = await supabase
-            .from('mini_bodegas')
-            .update({ 
-              disponible: disponible,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', bodegaId)
-            .select();
+      if (error) throw error;
 
-          if (error2) throw error2;
-
-          // Actualizar estado local
-          setBodegas(prev => prev.map(bodega => 
-            bodega.id === bodegaId 
-              ? { ...bodega, disponible, updated_at: new Date().toISOString() }
-              : bodega
-          ));
-          
-          return true;
-        }
-        
-        throw error;
-      }
-
-      // Actualizar estado local
-      setBodegas(prev => prev.map(bodega => 
-        bodega.id === bodegaId 
-          ? { 
-              ...bodega, 
-              disponible, 
-              motivo_no_disponible: disponible ? null : motivo,
-              updated_at: new Date().toISOString()
-            }
-          : bodega
+      setBodegas(prev => prev.map(b =>
+        b.id === bodegaId ? { ...b, ...updateData } : b
       ));
-      
       return true;
-    } catch (error) {
-      console.error('❌ Error actualizando disponibilidad:', error);
-      throw error;
+    } catch (e) {
+      console.error('❌ actualizarDisponibilidad:', e);
+      throw e;
     }
   };
 
   return {
-    bodegas, // ✅ TODAS las bodegas (disponibles y no disponibles)
+    bodegas,
+    empresaId,     // ✅ ahora se expone el id de la empresa detectada
     loading,
     error,
-    empresaId: null, // No necesitamos filtrar por empresa
-    refetch: fetchTodasLasBodegas,
-    actualizarDisponibilidad
+    refetch,
+    actualizarDisponibilidad,
   };
 }

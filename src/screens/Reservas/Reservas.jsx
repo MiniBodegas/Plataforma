@@ -12,6 +12,7 @@ export function Reservas() {
   const navigate = useNavigate();
   const { crearNotificacion } = useNotifications();
 
+  // Reservas (si quieres, pásale empresaId a este hook)
   const {
     reservas,
     loading: loadingReservas,
@@ -19,29 +20,25 @@ export function Reservas() {
     actualizarEstadoReserva
   } = useReservasByEmpresa();
 
+  // 👉 detecta empresa del usuario y trae mini_bodegas
   const {
     bodegas,
     loading: loadingBodegas,
     error: errorBodegas,
     actualizarDisponibilidad,
     empresaId
-  } = useProveedorDashboard();
+  } = useProveedorDashboard(user?.id);
 
   const [procesando, setProcesando] = useState(false);
   const [vistaActual, setVistaActual] = useState('reservas'); // 'reservas' | 'disponibilidad'
-
   const [editando, setEditando] = useState(null);
   const [motivo, setMotivo] = useState('');
   const [procesandoBodega, setProcesandoBodega] = useState(null);
   const [popup, setPopup] = useState({ open: false, mensaje: '', tipo: 'info' });
 
-  // ✅ ACEPTAR → notificar a USUARIO: "tu reserva ha sido aceptada"
   const handleAceptar = async (id) => {
     setProcesando(true);
     try {
-      console.log('✅ Aceptando reserva:', id);
-      console.log('🏢 ID de empresa actual:', empresaId);
-      
       const resultado = await actualizarEstadoReserva(id, 'aceptada');
       if (!resultado.success) {
         alert(`Error al aceptar la reserva: ${resultado.error}`);
@@ -49,19 +46,15 @@ export function Reservas() {
       }
       const r = reservas.find(res => res.id === id);
       if (r?.user_id) {
-        // Usar directamente el empresa_id de la reserva
-        // que viene de la base de datos
-        const empresa = r.empresa_id || empresaId;
-        console.log('🏢 ID de empresa a usar en notificación:', empresa);
-        
+        const empresa = r.empresa_id || empresaId || null;
         await crearNotificacion({
           user_id: r.user_id,
           tipo: 'reserva_aceptada',
           titulo: '¡Reserva aceptada!',
-          mensaje: `Tu reserva ha sido ACEPTADA. ${r?.mini_bodegas?.nombre || r?.mini_bodegas?.zona ? `Bodega en zona "${r.mini_bodegas.zona || 'N/A'}" - ${r.mini_bodegas.ciudad || 'N/A'}". ` : ''}Revisa los detalles en tu panel.`,
+          mensaje: `Tu reserva ha sido ACEPTADA. ${r?.mini_bodegas?.zona ? `Zona "${r.mini_bodegas.zona}" - ${r.mini_bodegas.ciudad || 'N/A'}. ` : ''}Revisa los detalles en tu panel.`,
           reserva_id: id,
-          empresa_id: empresa, // Usar directamente el empresa_id de la reserva
-          emisor_id: user.id // AÑADIR ESTA LÍNEA para incluir quién envía la notificación
+          empresa_id: empresa,
+          emisor_id: user.id
         });
       }
       alert('✅ Reserva aceptada exitosamente.');
@@ -73,13 +66,9 @@ export function Reservas() {
     }
   };
 
-  // ✅ RECHAZAR → notificar a USUARIO: "tu reserva ha sido rechazada" (+ motivo si hay)
   const handleRechazar = async (id, motivoRechazo = null) => {
     setProcesando(true);
     try {
-      console.log('❌ Rechazando reserva:', { id, motivoRechazo });
-      console.log('🏢 ID de empresa actual:', empresaId); // Verificar valor
-      
       const resultado = await actualizarEstadoReserva(id, 'rechazada', motivoRechazo);
       if (!resultado.success) {
         alert(`Error al rechazar la reserva: ${resultado.error}`);
@@ -87,19 +76,15 @@ export function Reservas() {
       }
       const r = reservas.find(res => res.id === id);
       if (r?.user_id) {
-        // Usar directamente el empresa_id de la reserva
-        // que viene de la base de datos
-        const empresa = r.empresa_id || empresaId;
-        console.log('🏢 ID de empresa a usar en notificación:', empresa);
-        
+        const empresa = r.empresa_id || empresaId || null;
         await crearNotificacion({
           user_id: r.user_id,
           tipo: 'reserva_rechazada',
           titulo: 'Reserva rechazada',
           mensaje: `Tu reserva ha sido RECHAZADA.${motivoRechazo ? ` Motivo: ${motivoRechazo}` : ''}`,
           reserva_id: id,
-          empresa_id: empresa, // Usar directamente el empresa_id de la reserva
-          emisor_id: user.id // AÑADIR ESTA LÍNEA para incluir quién envía la notificación
+          empresa_id: empresa,
+          emisor_id: user.id
         });
       }
       alert('❌ Reserva rechazada exitosamente.');
@@ -154,16 +139,11 @@ export function Reservas() {
         <div className="max-w-6xl mx-auto">
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-8 text-center">
             <div className="text-yellow-600 text-4xl mb-3">🔐</div>
-            <h3 className="text-yellow-800 text-lg font-semibold mb-2">
-              Necesitas iniciar sesión
-            </h3>
-            <p className="text-yellow-600 mb-4">
-              Para acceder al dashboard de proveedores necesitas estar logueado.
-            </p>
+            <h3 className="text-yellow-800 text-lg font-semibold mb-2">Necesitas iniciar sesión</h3>
+            <p className="text-yellow-600 mb-4">Para acceder al dashboard de proveedores necesitas estar logueado.</p>
             <button
               onClick={() => navigate('/login')}
-              className="bg-[#4B799B] text-white px-6 py-2 rounded-lg hover:bg-[#3b5f7a]"
-            >
+              className="bg-[#4B799B] text-white px-6 py-2 rounded-lg hover:bg-[#3b5f7a]">
               Iniciar Sesión
             </button>
           </div>
@@ -176,9 +156,7 @@ export function Reservas() {
     return (
       <div className="min-h-screen bg-white px-6 py-8">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-[#2C3A61] mb-8 text-center">
-            Mis mini bodegas
-          </h2>
+          <h2 className="text-3xl font-bold text-[#2C3A61] mb-8 text-center">Mis mini bodegas</h2>
         </div>
         <NavBarProveedores />
         <div className="flex justify-center items-center py-20">
@@ -195,9 +173,7 @@ export function Reservas() {
     return (
       <div className="min-h-screen bg-white px-6 py-8">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-[#2C3A61] mb-8 text-center">
-            Mis mini bodegas
-          </h2>
+          <h2 className="text-3xl font-bold text-[#2C3A61] mb-8 text-center">Mis mini bodegas</h2>
         </div>
         <NavBarProveedores />
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
@@ -224,7 +200,11 @@ export function Reservas() {
       <div className="space-y-4">
         {reservasArray.length > 0 ? (
           reservasArray.map(reserva => {
-            const bodega = bodegas.find(b => b.id === reserva.mini_bodega_id) || {};
+            // 🔎 Bodega que coincide con la reserva y pertenece a la empresa actual (si existe empresaId)
+            const bodega = empresaId
+              ? bodegas.find(b => b.id === reserva.mini_bodega_id && b.empresa_id === empresaId) || {}
+              : bodegas.find(b => b.id === reserva.mini_bodega_id) || {};
+
             return (
               <ReservaCard
                 key={reserva.id}
@@ -235,7 +215,7 @@ export function Reservas() {
                   miniBodegaCiudad: bodega.ciudad || "",
                   miniBodegaZona: bodega.zona || "",
                   miniBodegaDireccion: bodega.direccion || "",
-                  precio_mensual: bodega.precio || "",
+                  precio_mensual: bodega.precio_mensual || "",
                 }}
                 onAceptar={handleAceptar}
                 onRechazar={handleRechazar}
@@ -246,9 +226,7 @@ export function Reservas() {
         ) : (
           <div className="bg-gray-50 rounded-xl p-8 text-center border-2 border-dashed border-gray-300">
             <div className="text-gray-400 text-4xl mb-3">📋</div>
-            <p className="text-gray-500 font-medium">
-              No hay reservas {titulo.toLowerCase()}
-            </p>
+            <p className="text-gray-500 font-medium">No hay reservas {titulo.toLowerCase()}</p>
             <p className="text-gray-400 text-sm mt-1">
               {titulo === 'Pendientes' && 'Las nuevas solicitudes de reserva aparecerán aquí'}
               {titulo === 'Aceptadas' && 'Las reservas que aceptes se mostrarán en esta sección'}
@@ -260,12 +238,12 @@ export function Reservas() {
     </div>
   );
 
+  const bodegasEmpresa = empresaId ? bodegas.filter(b => b.empresa_id === empresaId) : [];
+
   return (
     <div className="min-h-screen bg-white px-6 py-8">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl font-bold text-[#2C3A61] mb-8 text-center">
-          Mis mini bodegas
-        </h2>
+        <h2 className="text-3xl font-bold text-[#2C3A61] mb-8 text-center">Mis mini bodegas</h2>
         <NavBarProveedores />
 
         <div className="flex justify-center mb-8">
@@ -321,115 +299,110 @@ export function Reservas() {
         {vistaActual === 'disponibilidad' && (
           <div className="mt-8">
             <h3 className="text-2xl font-bold mb-6 text-[#2C3A61]">Gestión de Disponibilidad</h3>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <p className="text-blue-800 text-sm">
-                <strong>ℹ️ Nota:</strong> Aquí puedes habilitar/deshabilitar manualmente tus bodegas.
-                Los cambios en las reservas NO afectan automáticamente la disponibilidad.
-              </p>
-            </div>
 
-            {/* Filtrar solo bodegas de la empresa actual */}
+            {!empresaId && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <p className="text-yellow-800 text-sm">
+                  No encontramos una empresa asociada a tu usuario. Si eres proveedor,
+                  asegúrate de que exista un registro en <strong>empresas</strong> con tu <code>user_id</code>.
+                </p>
+              </div>
+            )}
+
             {empresaId && (
               <>
-                {/*
-                  Creamos un array filtrado para usarlo en todos los lugares de la sección
-                */}
-                {(() => {
-                  const bodegasEmpresa = bodegas.filter(b => b.empresa_id === empresaId);
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-green-800">Disponibles</h4>
+                    <p className="text-2xl font-bold text-green-600">
+                      {bodegasEmpresa.filter(b => b.disponible).length}
+                    </p>
+                  </div>
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-red-800">No Disponibles</h4>
+                    <p className="text-2xl font-bold text-red-600">
+                      {bodegasEmpresa.filter(b => !b.disponible).length}
+                    </p>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-blue-800">Total</h4>
+                    <p className="text-2xl font-bold text-blue-600">{bodegasEmpresa.length}</p>
+                  </div>
+                </div>
 
-                  return (
-                    <>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                          <h4 className="font-semibold text-green-800">Disponibles</h4>
-                          <p className="text-2xl font-bold text-green-600">{bodegasEmpresa.filter(b => b.disponible).length}</p>
-                        </div>
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                          <h4 className="font-semibold text-red-800">No Disponibles</h4>
-                          <p className="text-2xl font-bold text-red-600">{bodegasEmpresa.filter(b => !b.disponible).length}</p>
-                        </div>
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                          <h4 className="font-semibold text-blue-800">Total</h4>
-                          <p className="text-2xl font-bold text-blue-600">{bodegasEmpresa.length}</p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        {bodegasEmpresa.map(bodega => (
-                          <div key={bodega.id} className="bg-white border rounded-lg p-4 shadow-sm">
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-4">
-                                  <h4 className="font-semibold text-lg">
-                                    {bodega.metraje}m³ - {bodega.ciudad}
-                                  </h4>
-                                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                    bodega.disponible ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                  }`}>
-                                    {bodega.disponible ? 'Disponible' : 'No Disponible'}
-                                  </span>
-                                </div>
-                                <div className="mt-2 text-sm text-gray-600">
-                                  <p>📍 {bodega.zona} - {bodega.ciudad}</p>
-                                  <p>💰 ${Number(bodega.precio_mensual).toLocaleString()}/mes</p>
-                                  {!bodega.disponible && bodega.motivo_no_disponible && (
-                                    <p className="text-red-600 mt-1">
-                                      <AlertCircle className="inline h-4 w-4 mr-1" />
-                                      {bodega.motivo_no_disponible}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {editando === bodega.id ? (
-                                  <div className="flex items-center gap-2">
-                                    <input
-                                      type="text"
-                                      placeholder="Motivo (opcional)"
-                                      value={motivo}
-                                      onChange={(e) => setMotivo(e.target.value)}
-                                      className="px-2 py-1 border rounded text-sm w-48"
-                                    />
-                                    <button
-                                      onClick={() => handleCambiarDisponibilidad(bodega.id, !bodega.disponible)}
-                                      disabled={procesandoBodega === bodega.id}
-                                      className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 disabled:opacity-50 flex items-center gap-1"
-                                    >
-                                      {procesandoBodega === bodega.id ? (
-                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                      ) : (
-                                        <Check className="h-4 w-4" />
-                                      )}
-                                      {bodega.disponible ? 'Deshabilitar' : 'Habilitar'}
-                                    </button>
-                                    <button
-                                      onClick={() => { setEditando(null); setMotivo(''); }}
-                                      className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <button
-                                    onClick={() => { setEditando(bodega.id); setMotivo(bodega.motivo_no_disponible || ''); }}
-                                    className="px-3 py-1 bg-[#4B799B] text-white rounded text-sm hover:bg-[#3b5f7a] flex items-center gap-1"
-                                  >
-                                    <Edit3 className="h-4 w-4" />
-                                    {bodega.disponible ? 'Deshabilitar' : 'Habilitar'}
-                                  </button>
-                                )}
-                              </div>
-                            </div>
+                <div className="space-y-4">
+                  {bodegasEmpresa.map(bodega => (
+                    <div key={bodega.id} className="bg-white border rounded-lg p-4 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-4">
+                            <h4 className="font-semibold text-lg">
+                              {bodega.metraje}m³ - {bodega.ciudad}
+                            </h4>
+                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                              bodega.disponible ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            }`}>
+                              {bodega.disponible ? 'Disponible' : 'No Disponible'}
+                            </span>
                           </div>
-                        ))}
+                          <div className="mt-2 text-sm text-gray-600">
+                            <p>📍 {bodega.zona} - {bodega.ciudad}</p>
+                            <p>💰 ${Number(bodega.precio_mensual).toLocaleString()}/mes</p>
+                            {!bodega.disponible && bodega.motivo_no_disponible && (
+                              <p className="text-red-600 mt-1">
+                                <AlertCircle className="inline h-4 w-4 mr-1" />
+                                {bodega.motivo_no_disponible}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {editando === bodega.id ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                placeholder="Motivo (opcional)"
+                                value={motivo}
+                                onChange={(e) => setMotivo(e.target.value)}
+                                className="px-2 py-1 border rounded text-sm w-48"
+                              />
+                              <button
+                                onClick={() => handleCambiarDisponibilidad(bodega.id, !bodega.disponible)}
+                                disabled={procesandoBodega === bodega.id}
+                                className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 disabled:opacity-50 flex items-center gap-1"
+                              >
+                                {procesandoBodega === bodega.id ? (
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                  <Check className="h-4 w-4" />
+                                )}
+                                {bodega.disponible ? 'Deshabilitar' : 'Habilitar'}
+                              </button>
+                              <button
+                                onClick={() => { setEditando(null); setMotivo(''); }}
+                                className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => { setEditando(bodega.id); setMotivo(bodega.motivo_no_disponible || ''); }}
+                              className="px-3 py-1 bg-[#4B799B] text-white rounded text-sm hover:bg-[#3b5f7a] flex items-center gap-1"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                              {bodega.disponible ? 'Deshabilitar' : 'Habilitar'}
+                            </button>
+                          )}
+                        </div>
                       </div>
+                    </div>
+                  ))}
+                </div>
 
-                      {bodegasEmpresa.length === 0 && (
-                        <div className="text-center py-8 text-gray-500">No tienes mini bodegas registradas</div>
-                      )}
-                    </>
-                  );
-                })()}
+                {bodegasEmpresa.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">No tienes mini bodegas registradas</div>
+                )}
               </>
             )}
           </div>
@@ -444,8 +417,7 @@ export function Reservas() {
               <div className="mb-4 text-lg">{popup.mensaje}</div>
               <button
                 onClick={() => setPopup({ open: false, mensaje: '', tipo: 'info' })}
-                className="bg-[#4B799B] text-white px-6 py-2 rounded-lg hover:bg-[#3b5f7a]"
-              >
+                className="bg-[#4B799B] text-white px-6 py-2 rounded-lg hover:bg-[#3b5f7a]">
                 Cerrar
               </button>
             </div>
