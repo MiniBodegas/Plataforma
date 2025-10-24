@@ -1,6 +1,17 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 
+const CARACTERISTICAS_DEFAULT = [
+  "Acceso 24/7",
+  "Vigilancia",
+  "Parqueadero",
+  "Montacargas",
+  "Clima controlado",
+  "Zona de carga",
+  "Seguro incluido",
+  "Cámaras de seguridad"
+];
+
 export function CrearSede({ empresaId, onCreate, className }) {
   const [nombre, setNombre] = useState("Principal");
   const [direccion, setDireccion] = useState("");
@@ -12,6 +23,7 @@ export function CrearSede({ empresaId, onCreate, className }) {
   const [previews, setPreviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [caracteristicas, setCaracteristicas] = useState([]);
 
   // Manejar selección de múltiples imágenes
   const handleImagenesChange = (e) => {
@@ -68,6 +80,7 @@ export function CrearSede({ empresaId, onCreate, className }) {
         telefono: telefono?.trim() || null,
         principal: !!principal,
         imagen_url: imagenes_urls.length > 0 ? JSON.stringify(imagenes_urls) : null,
+        caracteristicas: caracteristicas.length > 0 ? caracteristicas : null,
         created_at: new Date().toISOString()
       };
 
@@ -199,6 +212,33 @@ export function CrearSede({ empresaId, onCreate, className }) {
                     className="rounded-lg border w-20 h-20 object-cover"
                   />
                 </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Características de la instalación */}
+          <div>
+            <label className="block text-sm font-semibold text-[#2C3A61] mb-2">
+              Características de la instalación
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {CARACTERISTICAS_DEFAULT.map((car, idx) => (
+                <label key={idx} className={`px-3 py-1 rounded-full border cursor-pointer text-sm
+                  ${caracteristicas.includes(car) ? "bg-[#2C3A61] text-white border-[#2C3A61]" : "bg-white text-[#2C3A61] border-[#2C3A61]"}`}>
+                  <input
+                    type="checkbox"
+                    className="hidden"
+                    checked={caracteristicas.includes(car)}
+                    onChange={() => {
+                      setCaracteristicas((prev) =>
+                        prev.includes(car)
+                          ? prev.filter((c) => c !== car)
+                          : [...prev, car]
+                      );
+                    }}
+                  />
+                  {car}
+                </label>
               ))}
             </div>
           </div>

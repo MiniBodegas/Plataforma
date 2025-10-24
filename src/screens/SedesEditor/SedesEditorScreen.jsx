@@ -118,6 +118,18 @@ export function SedesEditorScreen() {
               <span>{sede.descripcion || "Sin descripción"}</span>
             </div>
             <div>
+              <span className="font-semibold text-[#2C3A61]">Características:</span>{" "}
+              {sede.caracteristicas
+                ? (Array.isArray(sede.caracteristicas)
+                    ? sede.caracteristicas
+                    : JSON.parse(sede.caracteristicas)
+                  ).map((c, i) => (
+                    <span key={i} className="inline-block bg-blue-100 text-[#2C3A61] px-2 py-1 rounded-full text-xs mr-2 mb-1">{c}</span>
+                  ))
+                : <span className="text-gray-500">Sin características</span>
+              }
+            </div>
+            <div>
               <span className="font-semibold text-[#2C3A61]">MiniBodegas vinculadas:</span>
               {miniBodegas.length === 0 ? (
                 <span className="ml-2 text-gray-500">Ninguna</span>
