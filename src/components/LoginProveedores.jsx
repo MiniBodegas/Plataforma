@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Eye, EyeOff } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
@@ -13,8 +13,25 @@ export function LoginProveedores() {
     password: ""
   })
 
-  const { signIn } = useAuth()
+  const { signIn, user } = useAuth()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const checkEmpresaPlan = async () => {
+      if (!user) return;
+      // Busca la empresa del usuario
+      const { data, error } = await supabase
+        .from("empresas")
+        .select("plan")
+        .eq("user_id", user.id)
+        .single();
+      // Si no tiene plan, redirige a /planes
+      if (data && !data.plan) {
+        navigate("/planes");
+      }
+    };
+    checkEmpresaPlan();
+  }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -70,7 +87,7 @@ export function LoginProveedores() {
         .maybeSingle();
 
       if (!empresa) {
-        await supabase
+        const { data: nuevaEmpresa, error: nuevaEmpresaError } = await supabase
           .from("empresas")
           .insert([
             {
@@ -78,7 +95,21 @@ export function LoginProveedores() {
               nombre: "Empresa sin nombre",
               email: user.email
             }
-          ]);
+          ])
+          .select()
+          .single();
+
+        // Redirige a /planes justo después de crear la empresa
+        if (nuevaEmpresa) {
+          navigate("/planes");
+          return;
+        }
+      }
+
+      // Si la empresa ya existe, verifica el plan
+      if (empresa && !empresa.plan) {
+        navigate("/planes");
+        return;
       }
 
       // ✅ ESTABLECER TIPO DE USUARIO

@@ -55,7 +55,7 @@ export function RegisterProveedores() {
 
       // Redirige después de unos segundos
       setTimeout(() => {
-        navigate('/planes');
+        navigate('/login-proveedores');
       }, 3000);
 
     } catch (err) {

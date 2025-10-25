@@ -58,12 +58,6 @@ export function PlanesScreen() {
         Planes
       </h1>
       <Planes />
-      <button
-        className="mt-4 px-4 py-2 bg-[#2C3A61] text-white rounded"
-        onClick={() => handleObtener('plan1')}
-      >
-        Completar Formulario
-      </button>
     </div>
   );
 }

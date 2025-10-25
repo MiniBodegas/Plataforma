@@ -151,16 +151,6 @@ export function Header({ tipo }) {
 
           {tipo === "proveedor" && (
             <>
-              <button
-                onClick={() => handleProtectedLink('/bodega-editor-proveedor', '/login-proveedores')}
-                disabled={loadingPerfil}
-                className={`text-base font-medium relative group whitespace-nowrap cursor-pointer bg-transparent border-none p-0 text-[#2C3A61] ${
-                  loadingPerfil ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                {loadingPerfil ? 'Verificando...' : 'Crea tu mini bodega'}
-                <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-[#2C3A61] transition-all duration-300 group-hover:w-full"></span>
-              </button>
               {user && user?.user_metadata?.user_type === 'proveedor' ? (
                 <div className="flex items-center space-x-4">
                   <NotificationBell />
@@ -273,15 +263,6 @@ export function Header({ tipo }) {
 
           {tipo === "proveedor" && (
             <>
-              <button
-                onClick={() => handleProtectedLink('/bodega-editor-proveedor', '/login-proveedores')}
-                disabled={loadingPerfil}
-                className={`text-base font-medium py-2 px-3 rounded hover:bg-gray-50 transition-colors duration-200 text-left w-full bg-transparent border-none ${
-                  loadingPerfil ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                {loadingPerfil ? 'Verificando...' : 'Crea tu mini bodega'}
-              </button>
               {user && user?.user_metadata?.user_type === 'proveedor' ? (
                 <div>
                   <div className="px-3 py-2">

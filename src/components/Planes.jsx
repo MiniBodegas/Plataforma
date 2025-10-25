@@ -65,7 +65,7 @@ export function Planes() {
         return;
       }
       // Avanza solo si se guardó correctamente
-      navigate("/bodega-editor-proveedor");
+      navigate("/completar-formulario-proveedor");
     } catch (err) {
       setError("Error inesperado.");
     } finally {
