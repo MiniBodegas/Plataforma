@@ -136,7 +136,9 @@ export function MiniBodegasInSede({ sede, onChange, autoOpenAdd = false, onOpene
           nombre_personalizado: b.nombre_personalizado || null,
           imagen_url: imagenUrl || null,
           disponible: true,
-          orden: i
+          orden: i,
+          descripcion_adicional: b.descripcionAdicional || "", // <-- nuevo campo
+          ubicacion_interna: b.ubicacionInterna || ""         // <-- nuevo campo
         };
 
         if (b.id) {
@@ -208,6 +210,8 @@ export function MiniBodegasInSede({ sede, onChange, autoOpenAdd = false, onOpene
                                 cantidad={b.cantidad}
                                 maxCantidad={b.maxAmount ?? 99}
                                 nombrePersonalizado={b.nombre_personalizado ?? b.nombrePersonalizado}
+                                descripcionAdicional={b.descripcionAdicional ?? ""}
+                                ubicacionInterna={b.ubicacionInterna ?? ""}
                                 hideGuardarButton={true}
                                 onImagenChange={(img) => handleChangeField(idx, "imagen", img)}
                                 onMetrajeChange={(val) => handleChangeField(idx, "metraje", val)}
@@ -219,6 +223,8 @@ export function MiniBodegasInSede({ sede, onChange, autoOpenAdd = false, onOpene
                                 onPrecioMensualChange={(val) => handleChangeField(idx, "precio_mensual", val)}
                                 onCantidadChange={(val) => handleChangeField(idx, "cantidad", val)}
                                 onNombrePersonalizadoChange={(val) => handleChangeField(idx, "nombre_personalizado", val)}
+                                onDescripcionAdicionalChange={(val) => handleChangeField(idx, "descripcionAdicional", val)}
+                                onUbicacionInternaChange={(val) => handleChangeField(idx, "ubicacionInterna", val)}
                               />
                             </div>
                           </div>
@@ -269,6 +275,8 @@ export function MiniBodegasInSede({ sede, onChange, autoOpenAdd = false, onOpene
                                 cantidad={b.cantidad}
                                 maxCantidad={b.maxAmount ?? 99}
                                 nombrePersonalizado={b.nombre_personalizado ?? b.nombrePersonalizado}
+                                descripcionAdicional={b.descripcionAdicional ?? ""}
+                                ubicacionInterna={b.ubicacionInterna ?? ""}
                                 hideGuardarButton={true}
                                 onImagenChange={(img) => handleChangeField(idx, "imagen", img)}
                                 onMetrajeChange={(val) => handleChangeField(idx, "metraje", val)}
@@ -280,6 +288,8 @@ export function MiniBodegasInSede({ sede, onChange, autoOpenAdd = false, onOpene
                                 onPrecioMensualChange={(val) => handleChangeField(idx, "precio_mensual", val)}
                                 onCantidadChange={(val) => handleChangeField(idx, "cantidad", val)}
                                 onNombrePersonalizadoChange={(val) => handleChangeField(idx, "nombre_personalizado", val)}
+                                onDescripcionAdicionalChange={(val) => handleChangeField(idx, "descripcionAdicional", val)}
+                                onUbicacionInternaChange={(val) => handleChangeField(idx, "ubicacionInterna", val)}
                               />
                             </div>
                           </div>
