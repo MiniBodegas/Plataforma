@@ -271,7 +271,6 @@ export function FormStepper({ onDataChange, reservationData, onReservationSucces
           bodegaData={reservationData.bodegaSeleccionada}
         />
       )}
-
       <ProgressSteps steps={steps} currentStep={currentStep} />
 
       {authError && (
