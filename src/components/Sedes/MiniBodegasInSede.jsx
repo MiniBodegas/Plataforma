@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { CardBodegas } from "../index";
 
@@ -127,18 +127,17 @@ export function MiniBodegasInSede({ sede, onChange, autoOpenAdd = false, onOpene
           sede_id: sede.id,
           metraje: b.metraje || "",
           descripcion: b.descripcion || "",
-          contenido: b.contenido || "",
-          direccion: b.direccion || "",
-          ciudad: b.ciudad || "",
-          zona: b.zona || "",
           precio_mensual: parseFloat(b.precio_mensual) || 0,
           cantidad: parseInt(b.cantidad, 10) || 1,
           nombre_personalizado: b.nombre_personalizado || null,
           imagen_url: imagenUrl || null,
-          disponible: true,
+          disponible: b.disponible,
+          estado: b.disponible ? "activa" : "inhabilitada",
           orden: i,
-          descripcion_adicional: b.descripcionAdicional || "", // <-- nuevo campo
-          ubicacion_interna: b.ubicacionInterna || ""         // <-- nuevo campo
+          ubicacion_interna: b.ubicacionInterna ?? b.ubicacion_interna ?? "",
+          metros_cuadrados: b.metrosCuadrados ?? b.metros_cuadrados ?? null,
+          caracteristicas: b.caracteristicas ?? [],
+
         };
 
         if (b.id) {
@@ -157,6 +156,13 @@ export function MiniBodegasInSede({ sede, onChange, autoOpenAdd = false, onOpene
     } finally {
       setGuardando(false);
     }
+  };
+
+  const handleDisponibleChange = (idx, nuevoEstado) => {
+    const nuevasBodegas = [...bodegas];
+    nuevasBodegas[idx].disponible = nuevoEstado;
+    setBodegas(nuevasBodegas);
+    // Si guardas en la DB, hazlo aquí también
   };
 
   return (
@@ -210,21 +216,24 @@ export function MiniBodegasInSede({ sede, onChange, autoOpenAdd = false, onOpene
                                 cantidad={b.cantidad}
                                 maxCantidad={b.maxAmount ?? 99}
                                 nombrePersonalizado={b.nombre_personalizado ?? b.nombrePersonalizado}
-                                descripcionAdicional={b.descripcionAdicional ?? ""}
-                                ubicacionInterna={b.ubicacionInterna ?? ""}
+                                ubicacionInterna={b.ubicacionInterna ?? b.ubicacion_interna ?? ""}
                                 hideGuardarButton={true}
+                                disponible={b.disponible}
+                                metrosCuadrados={b.metrosCuadrados ?? b.metros_cuadrados ?? ""}
                                 onImagenChange={(img) => handleChangeField(idx, "imagen", img)}
                                 onMetrajeChange={(val) => handleChangeField(idx, "metraje", val)}
                                 onDescripcionChange={(val) => handleChangeField(idx, "descripcion", val)}
                                 onContenidoChange={(val) => handleChangeField(idx, "contenido", val)}
                                 onDireccionChange={(val) => handleChangeField(idx, "direccion", val)}
                                 onCiudadChange={(val) => handleChangeField(idx, "ciudad", val)}
-                                onZonaChange={(val) => handleChangeField(idx, "zona", val)}
                                 onPrecioMensualChange={(val) => handleChangeField(idx, "precio_mensual", val)}
                                 onCantidadChange={(val) => handleChangeField(idx, "cantidad", val)}
                                 onNombrePersonalizadoChange={(val) => handleChangeField(idx, "nombre_personalizado", val)}
-                                onDescripcionAdicionalChange={(val) => handleChangeField(idx, "descripcionAdicional", val)}
                                 onUbicacionInternaChange={(val) => handleChangeField(idx, "ubicacionInterna", val)}
+                                onDisponibleChange={(nuevoEstado) => handleDisponibleChange(idx, nuevoEstado)}
+                                onMetrosCuadradosChange={(val) => handleChangeField(idx, "metrosCuadrados", val)}
+                                caracteristicas={b.caracteristicas ?? []}
+                                onCaracteristicasChange={(val) => handleChangeField(idx, "caracteristicas", val)}
                               />
                             </div>
                           </div>
@@ -276,8 +285,10 @@ export function MiniBodegasInSede({ sede, onChange, autoOpenAdd = false, onOpene
                                 maxCantidad={b.maxAmount ?? 99}
                                 nombrePersonalizado={b.nombre_personalizado ?? b.nombrePersonalizado}
                                 descripcionAdicional={b.descripcionAdicional ?? ""}
-                                ubicacionInterna={b.ubicacionInterna ?? ""}
+                                ubicacionInterna={b.ubicacionInterna ?? b.ubicacion_interna ?? ""}
                                 hideGuardarButton={true}
+                                disponible={b.disponible}
+                                metrosCuadrados={b.metrosCuadrados ?? b.metros_cuadrados ?? ""}
                                 onImagenChange={(img) => handleChangeField(idx, "imagen", img)}
                                 onMetrajeChange={(val) => handleChangeField(idx, "metraje", val)}
                                 onDescripcionChange={(val) => handleChangeField(idx, "descripcion", val)}
@@ -290,6 +301,10 @@ export function MiniBodegasInSede({ sede, onChange, autoOpenAdd = false, onOpene
                                 onNombrePersonalizadoChange={(val) => handleChangeField(idx, "nombre_personalizado", val)}
                                 onDescripcionAdicionalChange={(val) => handleChangeField(idx, "descripcionAdicional", val)}
                                 onUbicacionInternaChange={(val) => handleChangeField(idx, "ubicacionInterna", val)}
+                                onDisponibleChange={(nuevoEstado) => handleDisponibleChange(idx, nuevoEstado)}
+                                onMetrosCuadradosChange={(val) => handleChangeField(idx, "metrosCuadrados", val)}
+                                caracteristicas={b.caracteristicas ?? []}
+                                onCaracteristicasChange={(val) => handleChangeField(idx, "caracteristicas", val)}
                               />
                             </div>
                           </div>

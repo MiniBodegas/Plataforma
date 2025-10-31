@@ -19,6 +19,11 @@ export function CardBodegas({
   descripcionAdicional = "",
   ubicacionInterna = "",
 
+  // Nuevos props
+  metrosCuadrados = "",
+  caracteristicas = "",
+  disponible = true,
+
   // Callbacks (no-ops para evitar TypeError si no llegan)
   onImagenChange = () => {},
   onMetrajeChange = () => {},
@@ -28,7 +33,10 @@ export function CardBodegas({
   onCantidadChange = () => {},
   onNombrePersonalizadoChange = () => {},
   onDescripcionAdicionalChange = () => {},
-  onUbicacionInternaChange = () => {}
+  onUbicacionInternaChange = () => {},
+  onDisponibleChange = () => {},
+  onMetrosCuadradosChange = () => {},
+  onCaracteristicasChange = () => {}
 }) {
   const [editMetraje, setEditMetraje] = useState(false);
   const [editDescripcion, setEditDescripcion] = useState(false);
@@ -37,6 +45,20 @@ export function CardBodegas({
   const [editNombrePersonalizado, setEditNombrePersonalizado] = useState(false);
   const [flipped, setFlipped] = useState(false);
   const [imagenError, setImagenError] = useState(false);
+  const [editMetrosCuadrados, setEditMetrosCuadrados] = useState(false);
+  const [editCaracteristicas, setEditCaracteristicas] = useState(false);
+  const [caracteristicasOpen, setCaracteristicasOpen] = useState(false);
+  const [ubicacionOpen, setUbicacionOpen] = useState(false);
+
+  const opcionesCaracteristicas = [
+    "Acceso 24/7",
+    "Vigilancia",
+    "Montacargas",
+    "Zona de carga",
+    "Clima controlado",
+    "Parqueadero",
+    "Cámaras de seguridad"
+  ];
 
   // Cantidad interna (controlado + notifica)
   const [cantidadInterna, setCantidadInterna] = useState(cantidad);
@@ -107,192 +129,138 @@ export function CardBodegas({
     <div className={`flip-card w-72 h-[520px]${flipped ? " flipped" : ""}`}>
       <div className="flip-inner">
         {/* =================== FRENTE =================== */}
-        <div className="flip-front bg-[#F7F8FA] rounded-2xl shadow p-6 flex flex-col items-center w-72 h-[520px]">
+        <div className="flip-front bg-[#F7F8FA] rounded-2xl shadow p-6 flex flex-col w-72 h-[520px]">
           {/* Imagen */}
-          <div className="bg-[#E9E9E9] rounded-xl w-full h-36 flex flex-col justify-center items-center mb-4">
+          <div className="bg-[#E9E9E9] rounded-xl w-full h-32 flex justify-center items-center mb-3 overflow-hidden">
             {tieneImagen ? (
-              <div className="relative w-full h-full">
-                <img
-                  src={getImageUrl(imagen)}
-                  alt="Mini bodega"
-                  className="object-contain h-full w-full rounded-xl"
-                  onError={() => setImagenError(true)}
-                  onLoad={() => setImagenError(false)}
-                  crossOrigin="anonymous"
-                  referrerPolicy="no-referrer"
-                  loading="lazy"
-                />
-              </div>
+              <img
+                src={getImageUrl(imagen)}
+                alt={nombrePersonalizado || "Mini bodega"}
+                className="object-cover h-full w-full rounded-xl"
+                onError={() => setImagenError(true)}
+              />
             ) : (
-              <label className="cursor-pointer flex flex-col items-center w-full h-full justify-center">
-                <Image className="h-10 w-10 text-[#2C3A61]" />
-                <span className="text-[#2C3A61] mt-2 text-sm text-center">
-                  {imagenError
-                    ? "Error cargando imagen - Sube una nueva"
-                    : "Sube una imagen de tu mini bodega"}
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    setImagenError(false);
-                    if (e.target.files?.[0]) onImagenChange(e.target.files[0]);
-                  }}
-                />
-              </label>
+              <span className="text-gray-400">Sin imagen</span>
             )}
           </div>
 
-          <div className="w-full text-center flex-1">
-            {/* Metraje */}
-            <div className="flex items-center justify-center mb-3">
-              {editMetraje ? (
-                <input
-                  type="text"
-                  value={metraje}
-                  onChange={(e) => onMetrajeChange(e.target.value)}
-                  className="font-bold text-[#2C3A61] text-lg bg-white text-center rounded px-2 py-1"
-                  style={{ maxWidth: "200px", minWidth: "100px" }}
-                  onBlur={() => setEditMetraje(false)}
-                  autoFocus
-                  placeholder="Ej: 15 m²"
-                />
-              ) : (
-                <span
-                  className="font-bold text-[#2C3A61] text-lg block w-full cursor-pointer hover:bg-gray-100 rounded px-2 py-1 transition truncate"
-                  onClick={() => setEditMetraje(true)}
-                  title={metraje || "Metraje de tu mini bodega"}
-                >
-                  {metraje || "Metraje de tu mini bodega"}
-                </span>
-              )}
+          {/* Campos alineados a la izquierda */}
+          <div className="w-full flex flex-col gap-2">
+            {/* Nombre editable */}
+            <div>
+              <label className="font-bold text-[#2C3A61] text-xs block mb-1">Nombre</label>
+              <input
+                type="text"
+                value={nombrePersonalizado}
+                onChange={(e) => onNombrePersonalizadoChange(e.target.value)}
+                className="w-full p-1.5 rounded bg-white text-[#2C3A61] border text-xs"
+                placeholder="Nombre personalizado"
+                maxLength={50}
+              />
             </div>
 
-            {/* Descripción corta (comparativa) */}
-            <div className="flex items-center justify-center text-[#2C3A61] text-sm mb-3">
-              <span className="font-semibold whitespace-nowrap mr-2">Es como:</span>
-              {editDescripcion ? (
-                <input
-                  type="text"
-                  value={descripcion}
-                  onChange={(e) => onDescripcionChange(e.target.value)}
-                  className="flex-1 bg-white text-[#2C3A61] rounded px-2 py-1"
-                  style={{ maxWidth: "150px", minWidth: "80px" }}
-                  onBlur={() => setEditDescripcion(false)}
-                  autoFocus
-                  placeholder="un closet pequeño"
-                />
-              ) : (
-                <span
-                  className="flex-1 cursor-pointer hover:bg-gray-100 rounded px-2 py-1 transition truncate-text"
-                  onClick={() => setEditDescripcion(true)}
-                  title={descripcion || "una comparativa de tamaño"}
-                >
-                  {descripcion || "una comparativa de tamaño"}
-                </span>
-              )}
+            {/* Metros cúbicos */}
+            <div>
+              <label className="font-semibold text-[#2C3A61] text-xs block mb-1">Metros cúbicos (m³)</label>
+              <input
+                type="number"
+                value={metraje}
+                onChange={(e) => onMetrajeChange(e.target.value)}
+                className="w-full p-1.5 rounded bg-white text-[#2C3A61] border text-xs"
+                min={0}
+                step="any"
+                placeholder="m³"
+              />
             </div>
 
-            {/* Contenido (qué cabe) */}
-            <div className="flex items-center justify-center text-[#2C3A61] text-sm mb-3">
-              <span className="font-semibold whitespace-nowrap mr-2">¿Qué cabe?:</span>
-              {editContenido ? (
-                <input
-                  type="text"
-                  value={contenido}
-                  onChange={(e) => onContenidoChange(e.target.value)}
-                  className="flex-1 bg-white text-[#2C3A61] rounded px-2 py-1"
-                  style={{ maxWidth: "140px", minWidth: "80px" }}
-                  onBlur={() => setEditContenido(false)}
-                  autoFocus
-                  placeholder="cajas, ropa, documentos"
-                />
-              ) : (
-                <span
-                  className="flex-1 cursor-pointer hover:bg-gray-100 rounded px-2 py-1 transition truncate-text"
-                  onClick={() => setEditContenido(true)}
-                  title={contenido || "qué puede guardar"}
-                >
-                  {contenido || "qué puede guardar"}
-                </span>
-              )}
+            {/* Metros cuadrados */}
+            <div>
+              <label className="font-semibold text-[#2C3A61] text-xs block mb-1">Metros cuadrados (m²)</label>
+              <input
+                type="number"
+                value={metrosCuadrados === null || metrosCuadrados === undefined ? "" : metrosCuadrados}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  onMetrosCuadradosChange(val === "" ? "" : Number(val));
+                }}
+                className="w-full p-1.5 rounded bg-white text-[#2C3A61] border text-xs"
+                min={0}
+                step="any"
+                placeholder="m²"
+              />
             </div>
 
-            {/* Precio mensual */}
-            <div className="flex items-center justify-center text-[#2C3A61] text-sm mb-2">
-              <span className="font-semibold whitespace-nowrap mr-2">💰 Precio c/u:</span>
-              {editPrecio ? (
+            {/* Descripción */}
+            <div>
+              <label className="font-semibold text-[#2C3A61] text-xs block mb-1">Descripción</label>
+              <input
+                type="text"
+                value={descripcion}
+                onChange={(e) => onDescripcionChange(e.target.value)}
+                className="w-full p-1.5 rounded bg-white text-[#2C3A61] border text-xs"
+                placeholder="Descripción"
+                maxLength={120}
+              />
+            </div>
+
+            {/* Precio y cantidad */}
+            <div className="flex gap-2 items-center">
+              <div className="flex-1">
+                <label className="font-semibold text-[#2C3A61] text-xs block mb-1">Precio</label>
                 <input
                   type="number"
                   value={precioMensual}
                   onChange={(e) => onPrecioMensualChange(e.target.value)}
-                  className="flex-1 bg-white text-[#2C3A61] rounded px-2 py-1"
-                  style={{
-                    maxWidth: "120px",
-                    minWidth: "80px",
-                    MozAppearance: "textfield",
-                    WebkitAppearance: "none",
-                    appearance: "none"
-                  }}
-                  onBlur={() => setEditPrecio(false)}
-                  autoFocus
-                  placeholder="350000"
-                  min="0"
+                  className="w-full p-1.5 rounded bg-white text-[#2C3A61] border text-xs"
+                  min={0}
+                  step="any"
+                  placeholder="COP"
                 />
-              ) : (
-                <span
-                  className="flex-1 cursor-pointer hover:bg-gray-100 rounded px-2 py-1 transition truncate-text"
-                  onClick={() => setEditPrecio(true)}
-                  title={precioMensual ? formatearPrecio(precioMensual) : "precio mensual"}
-                >
-                  {precioMensual ? formatearPrecio(precioMensual) : "precio mensual"}
-                </span>
-              )}
-            </div>
-
-            {/* Cantidad */}
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <span className="text-xs text-[#2C3A61] font-semibold">Cantidad:</span>
-
-              <button
-                onClick={disminuirCantidad}
-                type="button"
-                disabled={cantidadInterna <= 1}
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-sm
-                  ${cantidadInterna <= 1
-                    ? "text-gray-300 cursor-not-allowed"
-                    : "text-[#2C3A61] hover:bg-gray-100 active:scale-95"
-                  } transition-all duration-150`}
-              >
-                <Minus className="h-3 w-3" />
-              </button>
-
-              <span className="w-8 h-6 text-center text-sm font-bold text-[#2C3A61] flex items-center justify-center">
-                {cantidadInterna}
-              </span>
-
-              <button
-                onClick={aumentarCantidad}
-                type="button"
-                disabled={cantidadInterna >= maxCantidad}
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-sm
-                  ${cantidadInterna >= maxCantidad
-                    ? "text-gray-300 cursor-not-allowed"
-                    : "text-[#2C3A61] hover:bg-gray-100 active:scale-95"
-                  } transition-all duration-150`}
-              >
-                <Plus className="h-3 w-3" />
-              </button>
-
-              <span className="text-xs text-gray-400">/{maxCantidad}</span>
+              </div>
+              <div className="flex-1">
+                <label className="font-semibold text-[#2C3A61] text-xs block mb-1">Cantidad</label>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    className="p-1 rounded bg-blue-50 border border-blue-200 text-[#2C3A61] text-xs"
+                    onClick={disminuirCantidad}
+                    disabled={cantidadInterna <= 1}
+                    style={{ minWidth: 24 }}
+                  >
+                    <Minus size={14} />
+                  </button>
+                  <input
+                    type="number"
+                    value={cantidadInterna}
+                    onChange={(e) => {
+                      let val = Number(e.target.value);
+                      if (val >= 1 && val <= maxCantidad) {
+                        setCantidadInterna(val);
+                        onCantidadChange(val);
+                      }
+                    }}
+                    className="w-10 p-1 rounded bg-white text-[#2C3A61] border text-xs text-center"
+                    min={1}
+                    max={maxCantidad}
+                  />
+                  <button
+                    type="button"
+                    className="p-1 rounded bg-blue-50 border border-blue-200 text-[#2C3A61] text-xs"
+                    onClick={aumentarCantidad}
+                    disabled={cantidadInterna >= maxCantidad}
+                    style={{ minWidth: 24 }}
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Voltear */}
+          {/* Botón para ver reverso */}
           <button
             type="button"
-            className="w-full py-3 rounded-xl border border-[#BFD6EA] text-[#2C3A61] font-bold bg-white hover:bg-[#E9E9E9] transition"
+            className="w-full mt-3 py-2 rounded-xl border border-[#BFD6EA] text-[#2C3A61] font-bold bg-white hover:bg-[#E9E9E9] transition text-xs"
             onClick={() => setFlipped(true)}
             title="Ver ubicación"
           >
@@ -305,60 +273,59 @@ export function CardBodegas({
           <div className="w-full text-center">
             <h3 className="font-bold text-[#2C3A61] text-lg mb-6">📍 Ubicación y Detalles</h3>
 
-            {/* Nombre personalizado */}
+            {/* Características primero */}
             <div className="mb-4">
               <label className="block text-sm font-semibold text-[#2C3A61] mb-2">
-                🏷️ Nombre personalizado (opcional):
+                🛡️ Características:
               </label>
-              {editNombrePersonalizado ? (
-                <input
-                  type="text"
-                  value={nombrePersonalizado}
-                  onChange={(e) => onNombrePersonalizadoChange(e.target.value)}
-                  className="w-full p-2 rounded bg-white text-[#2C3A61] border text-sm"
-                  onBlur={() => setEditNombrePersonalizado(false)}
-                  autoFocus
-                  placeholder="Ej: Bodega Principal, Local Centro, etc."
-                  maxLength={50}
-                />
-              ) : (
+              <div className="relative">
                 <div
-                  className="w-full p-2 rounded bg-gray-50 text-[#2C3A61] border cursor-pointer hover:bg-gray-100 transition text-sm min-h-[40px] flex items-center"
-                  onClick={() => setEditNombrePersonalizado(true)}
-                  title={nombrePersonalizado || "Agrega un nombre personalizado"}
+                  className="w-full p-2 rounded bg-white text-[#2C3A61] border text-sm cursor-pointer flex flex-wrap gap-1 min-h-[40px]"
+                  onClick={() => setCaracteristicasOpen((open) => !open)}
+                  tabIndex={0}
+                  onBlur={() => setCaracteristicasOpen(false)}
+                  style={{ minHeight: "40px" }}
                 >
-                  <span className="truncate w-full text-center">
-                    {nombrePersonalizado || "Sin nombre personalizado"}
-                  </span>
+                  {Array.isArray(caracteristicas) && caracteristicas.length > 0
+                    ? caracteristicas.map((car, idx) => (
+                        <span key={idx} className="px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-[#2C3A61]">
+                          {car}
+                        </span>
+                      ))
+                    : <span className="text-gray-400">Selecciona características</span>
+                  }
+                  <span className="ml-auto text-xs text-gray-400">&#9660;</span>
                 </div>
-              )}
-              {nombrePersonalizado && (
-                <div className="text-xs text-gray-500 mt-1">
-                  {nombrePersonalizado.length}/50 caracteres
-                </div>
-              )}
-            </div>
-
-            {/* Descripción adicional */}
-            <div className="mb-4">
-              <label className="block text-sm font-semibold text-[#2C3A61] mb-2">
-                📝 Descripción adicional:
-              </label>
-              <textarea
-                value={descripcionAdicional || ""}
-                onChange={(e) =>
-                  onDescripcionAdicionalChange(e.target.value)
-                }
-                className="w-full p-2 rounded bg-white text-[#2C3A61] border text-sm"
-                placeholder="Ej: Espacio ideal para archivos, acceso por escaleras, etc."
-                rows={2}
-                maxLength={120}
-              />
-              {descripcionAdicional && (
-                <div className="text-xs text-gray-500 mt-1">
-                  {descripcionAdicional.length}/120 caracteres
-                </div>
-              )}
+                {caracteristicasOpen && (
+                  <div className="absolute z-10 bg-white border rounded shadow w-full mt-1 max-h-40 overflow-auto">
+                    {opcionesCaracteristicas.map((opcion) => (
+                      <div
+                        key={opcion}
+                        className={`px-3 py-2 cursor-pointer hover:bg-blue-50 flex items-center ${
+                          Array.isArray(caracteristicas) && caracteristicas.includes(opcion) ? "font-semibold text-[#2C3A61]" : "text-gray-700"
+                        }`}
+                        onMouseDown={() => {
+                          let nuevas;
+                          if (Array.isArray(caracteristicas) && caracteristicas.includes(opcion)) {
+                            nuevas = caracteristicas.filter(c => c !== opcion);
+                          } else {
+                            nuevas = [...(Array.isArray(caracteristicas) ? caracteristicas : []), opcion];
+                          }
+                          onCaracteristicasChange(nuevas);
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={Array.isArray(caracteristicas) && caracteristicas.includes(opcion)}
+                          readOnly
+                          className="mr-2"
+                        />
+                        {opcion}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Ubicación interna */}
@@ -366,19 +333,58 @@ export function CardBodegas({
               <label className="block text-sm font-semibold text-[#2C3A61] mb-2">
                 🏢 Ubicación interna:
               </label>
-              <input
-                type="text"
-                value={ubicacionInterna || ""}
-                onChange={(e) => onUbicacionInternaChange(e.target.value)}
-                className="w-full p-2 rounded bg-white text-[#2C3A61] border text-sm"
-                placeholder="Ej: Segundo piso, pasillo central, cerca a la entrada"
-                maxLength={60}
-              />
-              {ubicacionInterna && (
-                <div className="text-xs text-gray-500 mt-1">
-                  {ubicacionInterna.length}/60 caracteres
+              <div className="relative">
+                <div
+                  className="w-full p-2 rounded bg-white text-[#2C3A61] border text-sm cursor-pointer flex items-center min-h-[40px]"
+                  onClick={() => setUbicacionOpen((open) => !open)}
+                  tabIndex={0}
+                  onBlur={() => setUbicacionOpen(false)}
+                  style={{ minHeight: "40px" }}
+                >
+                  {ubicacionInterna
+                    ? <span className="px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-[#2C3A61]">{ubicacionInterna}</span>
+                    : <span className="text-gray-400">Selecciona ubicación</span>
+                  }
+                  <span className="ml-auto text-xs text-gray-400">&#9660;</span>
                 </div>
-              )}
+                {ubicacionOpen && (
+                  <div className="absolute z-10 bg-white border rounded shadow w-full mt-1">
+                    {["Primer piso", "Segundo piso", "Externo", "Interno"].map((opcion) => (
+                      <div
+                        key={opcion}
+                        className={`px-3 py-2 cursor-pointer hover:bg-blue-50 ${
+                          ubicacionInterna === opcion ? "font-semibold text-[#2C3A61]" : "text-gray-700"
+                        }`}
+                        onMouseDown={() => {
+                          onUbicacionInternaChange(opcion);
+                          setUbicacionOpen(false);
+                        }}
+                      >
+                        {opcion}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Botón para deshabilitar la bodega */}
+            <div className="mb-4 flex items-center justify-center">
+              <label className="text-sm font-semibold text-[#2C3A61] mr-2">
+                Estado:
+              </label>
+              <button
+                type="button"
+                className={`px-4 py-2 rounded-md font-semibold text-xs transition-colors ${
+                  disponible
+                    ? "bg-green-100 text-green-700 hover:bg-green-200"
+                    : "bg-red-100 text-red-700 hover:bg-red-200"
+                }`}
+                onClick={() => onDisponibleChange(!disponible)}
+                title={disponible ? "Deshabilitar minibodega" : "Habilitar minibodega"}
+              >
+                {disponible ? "Disponible" : "Inhabilitada"}
+              </button>
             </div>
           </div>
 
