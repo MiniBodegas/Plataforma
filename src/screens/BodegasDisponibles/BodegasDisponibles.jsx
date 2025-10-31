@@ -170,6 +170,21 @@ export function BodegasDisponibles() {
     totalBodegas: bodegasFiltradas.length
   }
 
+  // IMÁGENES DE LA SEDE
+  let sedeImages = [];
+  if (sedeFinal?.imagen_url) {
+    if (typeof sedeFinal.imagen_url === "string" && sedeFinal.imagen_url.startsWith("[")) {
+      try {
+        const arr = JSON.parse(sedeFinal.imagen_url);
+        if (Array.isArray(arr)) sedeImages = arr;
+      } catch (e) {
+        sedeImages = [sedeFinal.imagen_url];
+      }
+    } else {
+      sedeImages = [sedeFinal.imagen_url];
+    }
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header con flecha de regreso */}
@@ -184,7 +199,7 @@ export function BodegasDisponibles() {
 
       {/* ✅ COMPONENTES CON DATOS FILTRADOS */}
       <Carrousel 
-        images={warehouse.images}
+        images={sedeImages}
         sede={sedeFinal}
       />
       

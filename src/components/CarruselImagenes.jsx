@@ -1,5 +1,5 @@
 import { useState} from "react";
-import { Loader2, Building2, Image } from "lucide-react";
+import { Image } from "lucide-react";
 
 // Simple carrusel para imágenes
 export function CarruselImagenes({ imagenes }) {

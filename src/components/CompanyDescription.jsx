@@ -162,9 +162,18 @@ export function CompanyDescription({
     ? String(sedeFinal.direccion).trim()
     : (sedeFinal?.ciudad && sedeFinal?.zona ? `${sedeFinal.ciudad} - ${sedeFinal.zona}` : (warehouse?.address || 'Dirección no disponible'))
 
+  let sedeImage = sedeFinal?.imagen_url;
+  if (sedeImage && typeof sedeImage === "string" && sedeImage.startsWith("[")) {
+    try {
+      const arr = JSON.parse(sedeImage);
+      if (Array.isArray(arr) && arr.length > 0) sedeImage = arr[0];
+    } catch (e) {
+      // Si falla el parseo, usa el string tal cual
+    }
+  }
+
   const mainImage =
-    sedeFinal?.imagen_url ||
-    warehouse?.companyImage ||
+    sedeImage ||
     'https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop'
 
   const displayFeatures = Array.isArray(warehouse?.features) && warehouse.features.length > 0
