@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { MapPin } from 'lucide-react'
 import { CompanyRating } from './CompanyRating'
@@ -162,7 +162,9 @@ export function CompanyDescription({
     ? String(sedeFinal.direccion).trim()
     : (sedeFinal?.ciudad && sedeFinal?.zona ? `${sedeFinal.ciudad} - ${sedeFinal.zona}` : (warehouse?.address || 'Dirección no disponible'))
 
-  const mainImage = warehouse?.companyImage ||
+  const mainImage =
+    sedeFinal?.imagen_url ||
+    warehouse?.companyImage ||
     'https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop'
 
   const displayFeatures = Array.isArray(warehouse?.features) && warehouse.features.length > 0

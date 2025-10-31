@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Star, MapPin, Ruler, Shield } from "lucide-react"
 import { supabase } from "../../lib/supabase"
-import { useSedes } from "../../hooks/useSedes"
 
 export function WarehouseCard({
   warehouse = {},
@@ -12,7 +11,6 @@ export function WarehouseCard({
   filtroActivo = null
 }) {
   // Debug: inspeccionar props / datos internos
-  console.log("[WarehouseCard] props -> sede:", sede, "empresa:", empresa, "minis.length:", (minis || []).length, "warehouse.id:", warehouse?.id)
 
   const navigate = useNavigate()
   // fallback: si no llega `sede`, intentar traerla por id desde la tabla `sedes`
@@ -30,7 +28,7 @@ export function WarehouseCard({
       try {
         const { data, error } = await supabase
           .from("sedes")
-          .select("id, nombre, ciudad")
+          .select("id, nombre, ciudad, imagen_url")
           .eq("id", sedeIdToFetch)
           .single()
         if (!error && mounted) setSedeFetched(data || null)
@@ -58,10 +56,21 @@ export function WarehouseCard({
   // título y ciudad: usar siempre el nombre de la SEDE (sedeFinal)
   const displayedCity = sedeFinal?.ciudad ?? minisToRender?.[0]?.ciudad ?? empresaObj.city ?? warehouse?.city ?? ""
 
+  // Normaliza imagen_url: si es un array en string, toma la primera imagen
+  let sedeImage = sedeFinal?.imagen_url;
+
+  if (sedeImage && typeof sedeImage === "string" && sedeImage.startsWith("[")) {
+    try {
+      const arr = JSON.parse(sedeImage);
+      if (Array.isArray(arr) && arr.length > 0) sedeImage = arr[0];
+    } catch (e) {
+      console.warn("[WarehouseCard] Error parsing imagen_url:", e, sedeImage);
+    }
+  } 
+
+  // Usar imagen de sede, y si no existe, usar un placeholder de Unsplash
   const image =
-    empresaObj.image ||
-    sedeObj?.imagen ||
-    warehouse?.image ||
+    sedeImage ||
     "https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop"
 
   // Normalizar campos
@@ -147,10 +156,7 @@ export function WarehouseCard({
   }
 
   // ✅ URL del perfil para el <Link>
-  const perfilUrl = canNavigate ? generateUrlWithFilters(`/perfil-bodegas/${id}`) : "#"
-
-  // Debug: inspeccionar valores usados para el título
-  console.log("[WarehouseCard] sedeObj:", sedeObj, "sedeFetched:", sedeFetched, "sedeFinal:", sedeFinal, "displayedSedeName:", displayedSedeName)
+  const SedeslUrl = canNavigate ? generateUrlWithFilters(`/bodegas/${id}`) : "#"
 
   return (
     <div
@@ -178,23 +184,26 @@ export function WarehouseCard({
       {/* Contenido */}
       <div className="p-4 sm:p-5 flex flex-col flex-1">
         <div className="mb-2 sm:mb-3">
-          <div className="flex items-center justify-between mb-1 sm:mb-2">
-            {/* ✅ Link del nombre -> Perfil */}
+          <div className="flex flex-col mb-1 sm:mb-2">
             <Link
-              to={perfilUrl}
+              to={SedeslUrl}
               className="font-semibold text-base sm:text-lg text-[#2C3A61] line-clamp-1"
               title={`Ir a reserva de ${displayedSedeName}${displayedCity ? ` · ${displayedCity}` : ''}`}
               onClick={handleLinkClick}
             >
               {displayedSedeName}{displayedCity ? ` · ${displayedCity}` : ''}
             </Link>
-
-            {/* Nombre de la empresa debajo del título */}
-           
-          </div>
-           {empresaObj?.name && (
-              <div className="text-sm text-gray-500 mt-1 line-clamp-1">{empresaObj.name}</div>
+            {empresaObj?.name && (
+              <Link
+                to={`/perfil-bodegas/${empresaObj.id}`}
+                className="text-sm text-gray-500 mt-1 line-clamp-1 hover:underline"
+                title={`Ver perfil de ${empresaObj.name}`}
+                onClick={handleLinkClick}
+              >
+                {empresaObj.name}
+              </Link>
             )}
+          </div>
 
           {/* Rating real */}
           <div className="flex items-center justify-between">

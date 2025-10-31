@@ -13,7 +13,7 @@ export function useSedes({ empresaId = null, empresaIds = null, includeMinis = f
     try {
       console.log("[useSedes] fetchSedes -> empresaId:", empresaId, "empresaIds:", empresaIds, "includeMinis:", includeMinis)
       // preparar filtro por ids (empresaId single o empresaIds array)
-      let query = supabase.from("sedes").select("id, nombre, ciudad, direccion, empresa_id, principal, telefono, lat, lng, created_at, updated_at")
+      let query = supabase.from("sedes").select("id, nombre, ciudad, direccion, empresa_id, principal, telefono, lat, lng, created_at, updated_at, imagen_url")
       if (empresaId) {
         query = query.eq("empresa_id", empresaId)
       } else if (Array.isArray(empresaIds) && empresaIds.length > 0) {
