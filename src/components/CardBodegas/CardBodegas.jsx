@@ -264,14 +264,14 @@ export function CardBodegas({
             onClick={() => setFlipped(true)}
             title="Ver ubicación"
           >
-            📍 Ubicación y Detalles
+            📍 Caracteristicas
           </button>
         </div>
 
         {/* =================== REVERSO =================== */}
         <div className="flip-back bg-[#F7F8FA] rounded-2xl shadow p-6 flex flex-col justify-between w-72 h-[520px]">
           <div className="w-full text-center">
-            <h3 className="font-bold text-[#2C3A61] text-lg mb-6">📍 Ubicación y Detalles</h3>
+            <h3 className="font-bold text-[#2C3A61] text-lg mb-6">📍 Características</h3>
 
             {/* Características primero */}
             <div className="mb-4">
