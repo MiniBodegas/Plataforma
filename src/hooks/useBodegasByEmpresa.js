@@ -19,7 +19,6 @@ export function useBodegasByEmpresa() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Asegúrate que tu AuthContext exponga { user, loading }
   const { user, loading: authLoading } = useAuth();
 
   const fetchBodegas = async () => {
@@ -47,7 +46,7 @@ export function useBodegasByEmpresa() {
       if (empresaError) throw empresaError;
       if (!empresa?.id) throw new Error('Empresa no encontrada');
 
-      // 2) Mini-bodegas de la empresa (SIN comentarios en select)
+      // 2) Mini-bodegas de la empresa (trae TODOS los campos que usas luego)
       const { data: miniBodegas, error: bodegasError } = await supabase
         .from('mini_bodegas')
         .select(`
@@ -72,19 +71,15 @@ export function useBodegasByEmpresa() {
         return;
       }
 
-      // 3) Lookup de sedes (sin joins): obtenemos todas las sedes usadas
+      // 3) Lookup de sedes (sin joins)
       const sedeIds = Array.from(
-        new Set(
-          miniBodegas
-            .map((b) => b?.sede_id)
-            .filter((x) => x !== null && x !== undefined)
-        )
+        new Set(miniBodegas.map((b) => b?.sede_id).filter((x) => x != null))
       );
 
       let sedeById = {};
       if (sedeIds.length) {
         const { data: sedesData, error: sedesError } = await supabase
-          .from('sedes') // 🔧 ajusta el nombre si tu tabla es distinta
+          .from('sedes') // 🔧 cambia si tu tabla se llama distinto
           .select('id, nombre, ciudad')
           .in('id', sedeIds);
 
@@ -95,9 +90,10 @@ export function useBodegasByEmpresa() {
         }, {});
       }
 
-      // 4) Normalización + conteo de reservas activas
+      // 4) Normalización + reservas activas
       const result = await Promise.all(
         miniBodegas.map(async (b) => {
+          // Conteo de reservas activas
           const { count: reservasActivas = 0 } = await supabase
             .from('reservas')
             .select('id', { count: 'exact', head: true })
@@ -113,63 +109,61 @@ export function useBodegasByEmpresa() {
             imagenPrincipal = toPublicUrl(b.imagen_url);
           }
 
-          const imagenes = Array.isArray(b.imagenes)
-            ? b.imagenes
-                .map((it) => toPublicUrl(it?.url || it?.path))
-                .filter(Boolean)
-            : [imagenPrincipal];
+          // Estado que tu UI espera
+          // - mantenimiento: disponibilidad === false
+          // - ocupada: hay reservas activas
+          // - activa: disponible y sin reservas
+          let estadoUi = 'activa';
+          if (b.disponibilidad === false) estadoUi = 'mantenimiento';
+          else if ((reservasActivas || 0) > 0) estadoUi = 'ocupada';
 
-          // Estado derivado
-          let estado = 'disponible';
-          if (b.disponibilidad === false) estado = 'mantenimiento';
-          else if ((reservasActivas || 0) > 0) estado = 'ocupada';
-
-          // Precio
-          const precio =
+          // Precio en número y dejar el campo que usa la Card: precio_mensual
+          const precioNumber =
             typeof b.precio_mensual === 'number'
               ? b.precio_mensual
               : Number(b.precio_mensual) || 0;
 
-          const precioTexto = new Intl.NumberFormat('es-CO', {
-            style: 'currency',
-            currency: 'COP',
-            maximumFractionDigits: 0
-          }).format(precio);
-
-          // Sede compuesta: desde lookup o con fallbacks
+          // Sede normalizada
           const sedeRaw = sedeById[b.sede_id] || null;
           const sede = {
             id: sedeRaw?.id ?? b.sede_id ?? null,
-            nombre:
-              sedeRaw?.nombre ||
-              (b.zona ? `Sede ${b.zona}` : 'Sin sede'),
+            nombre: sedeRaw?.nombre || (b.zona ? `Sede ${b.zona}` : 'Sin sede'),
             ciudad: sedeRaw?.ciudad || b?.ciudad || '—'
           };
 
           return {
+            // Base
             id: b.id,
-            titulo: `Mini bodega de ${b.metraje ?? 'N/A'}`,
+            created_at: b.created_at,
+            empresa_id: b.empresa_id,
             descripcion: b.descripcion || 'Sin descripción',
-            direccion: b.direccion || 'Sin dirección',
             metraje: b.metraje ?? null,
+            direccion: b.direccion || 'Sin dirección',
             ciudad: b.ciudad ?? null,
             zona: b.zona ?? null,
-            empresaId: b.empresa_id,
-            created_at: b.created_at,
+            sede_id: b.sede_id ?? null,
             orden: b.orden ?? null,
 
-            estado,
+            // Lo que consume tu UI actualmente:
+            estado: estadoUi,
             disponibilidad: b.disponibilidad ?? null,
             reservasActivas: reservasActivas || 0,
 
-            precio,
-            precioTexto,
+            // 🔑 Claves que usa BodegaInfo:
+            precio_mensual: precioNumber,
 
-            sede,
+            // 🔑 Clave que usa BodegaImage:
+            imagen_url: imagenPrincipal,
 
-            imagen: imagenPrincipal,
-            imagenPrincipal,
-            imagenes
+            // Extra útil si luego quieres carrusel
+            imagenes: Array.isArray(b.imagenes)
+              ? b.imagenes
+                  .map((it) => toPublicUrl(it?.url || it?.path))
+                  .filter(Boolean)
+              : [imagenPrincipal],
+
+            // Objeto sede para mostrar nombre/ciudad
+            sede
           };
         })
       );
@@ -192,11 +186,14 @@ export function useBodegasByEmpresa() {
 
   const actualizarEstadoBodega = async (bodegaId, nuevoEstado) => {
     try {
+      // Mapear al boolean de disponibilidad
       let nuevaDisponibilidad;
-      if (nuevoEstado === 'disponible') nuevaDisponibilidad = true;
+      if (nuevoEstado === 'activa') nuevaDisponibilidad = true;
       else if (nuevoEstado === 'mantenimiento') nuevaDisponibilidad = false;
       else if (nuevoEstado === 'ocupada')
         throw new Error('El estado "ocupada" se determina por reservas activas');
+      else if (nuevoEstado === 'inhabilitada')
+        throw new Error('Define cómo guardas "inhabilitada" (bool o campo aparte)');
       else throw new Error('Estado no válido');
 
       const { error } = await supabase

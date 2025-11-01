@@ -3,12 +3,23 @@ import { useState } from 'react';
 
 // Componente para la imagen de la bodega
 function BodegaImage({ imagen_url, nombre }) {
-  // Asegurarse de que la URL de la imagen sea válida
-  const imageUrl = imagen_url ? 
-    (Array.isArray(JSON.parse(imagen_url)) ? 
-      JSON.parse(imagen_url)[0] : 
-      imagen_url
-    ) : null;
+  let imageUrl = null;
+  
+  try {
+    if (imagen_url) {
+      if (typeof imagen_url === 'string') {
+        // Check if it's a JSON string
+        if (imagen_url.startsWith('[')) {
+          const parsed = JSON.parse(imagen_url);
+          imageUrl = Array.isArray(parsed) ? parsed[0] : null;
+        } else {
+          imageUrl = imagen_url;
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing image URL:', error);
+  }
 
   return (
     <div className="w-24 h-24 flex-shrink-0">
@@ -17,6 +28,10 @@ function BodegaImage({ imagen_url, nombre }) {
           src={imageUrl}
           alt={nombre || "Mini bodega"}
           className="w-full h-full object-cover rounded-lg"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = 'https://via.placeholder.com/150?text=Sin+imagen';
+          }}
         />
       ) : (
         <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
@@ -29,6 +44,16 @@ function BodegaImage({ imagen_url, nombre }) {
 
 // Componente para la información de la bodega
 function BodegaInfo({ bodega }) {
+  const formatearPrecio = (precio) => {
+    if (!precio) return '$ 0';
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(precio);
+  };
+
   return (
     <div className="flex-grow">
       <h3 className="text-lg font-semibold text-[#2C3A61]">
@@ -42,14 +67,10 @@ function BodegaInfo({ bodega }) {
         </p>
         <p className="flex gap-2">
           <span className="font-medium">Ciudad:</span>
-          {bodega.ciudad}
-        </p>
-        <p className="flex gap-2">
-          <span className="font-medium">Ubicación:</span>
-          {bodega.ubicacion_interna || 'No especificada'}
+          {bodega.ciudad || 'No especificada'}
         </p>
         <p className="mt-1 font-medium text-[#2C3A61]">
-          Precio mensual: {formatPrecio(bodega.precio_mensual)}
+          Precio mensual: {formatearPrecio(Number(bodega.precio_mensual))}
         </p>
         <div className="mt-2 flex items-center gap-2">
           <span className={`inline-block px-3 py-1 rounded-full text-xs ${getEstadoColor(bodega.estado)}`}>
