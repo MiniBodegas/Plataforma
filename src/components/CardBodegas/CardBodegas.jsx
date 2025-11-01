@@ -132,16 +132,32 @@ export function CardBodegas({
         <div className="flip-front bg-[#F7F8FA] rounded-2xl shadow p-6 flex flex-col w-72 h-[520px]">
           {/* Imagen */}
           <div className="bg-[#E9E9E9] rounded-xl w-full h-32 flex justify-center items-center mb-3 overflow-hidden">
-            {tieneImagen ? (
+            {getImageUrl(imagen) && !imagenError ? (
               <img
                 src={getImageUrl(imagen)}
                 alt={nombrePersonalizado || "Mini bodega"}
                 className="object-cover h-full w-full rounded-xl"
                 onError={() => setImagenError(true)}
+                loading="lazy"
               />
             ) : (
               <span className="text-gray-400">Sin imagen</span>
             )}
+          </div>
+          <div className="w-full mt-2 flex justify-center">
+            <label className="text-xs text-[#2C3A61] cursor-pointer bg-white border border-[#BFD6EA] rounded px-2 py-1 hover:bg-blue-50 transition">
+              Cambiar imagen
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={e => {
+                  if (e.target.files && e.target.files[0]) {
+                    onImagenChange(e.target.files[0]);
+                  }
+                }}
+              />
+            </label>
           </div>
 
           {/* Campos alineados a la izquierda */}
