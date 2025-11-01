@@ -15,11 +15,6 @@ export function NavBarProveedores() {
       icon: '🏬'
     },
     {
-      path: '/mis-mini-bodegas',
-      label: 'Mis mini bodegas',
-      icon: '🏢'
-    },
-    {
       path: '/mis-bodegas',
       label: 'Reservas',
       icon: '📋'

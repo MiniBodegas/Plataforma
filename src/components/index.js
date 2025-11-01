@@ -50,7 +50,6 @@ export * from './LoginProveedores'
 export * from './Planes'
 export * from './ReservaCard'
 export * from './NavBarSecundaria'
-export * from './MisBodegas'
 
 export * from './Balance'
 export * from './Calculadora'
@@ -92,3 +91,5 @@ export * from './ReservaCardUsuario'
 export * from './CarruselImagenes'
 
 export * from './PopupSede'
+
+export * from './MisBodegas/index'

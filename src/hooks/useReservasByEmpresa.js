@@ -24,7 +24,6 @@ export function useReservasByEmpresa(empresaId) {
             id,
             metraje,
             ciudad,
-            zona,
             precio_mensual,
             imagen_url,
             cantidad

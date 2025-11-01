@@ -1,13 +1,25 @@
+// src/hooks/useBodegasByEmpresa.js
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+
+const PLACEHOLDER_IMG = 'https://via.placeholder.com/640x360?text=Sin+imagen';
+
+// Convierte un path de Storage a URL pública; si ya es URL, la retorna tal cual
+const toPublicUrl = (maybePath) => {
+  if (!maybePath) return PLACEHOLDER_IMG;
+  if (/^https?:\/\//i.test(maybePath)) return maybePath;
+  // 🔧 Ajusta 'bodegas' al nombre real de tu bucket de Storage
+  const { data } = supabase.storage.from('bodegas').getPublicUrl(maybePath);
+  return data?.publicUrl || PLACEHOLDER_IMG;
+};
 
 export function useBodegasByEmpresa() {
   const [bodegas, setBodegas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  // ✅ CAMBIAR A user PARA MANTENER CONSISTENCIA
+
+  // Asegúrate que tu AuthContext exponga { user, loading }
   const { user, loading: authLoading } = useAuth();
 
   const fetchBodegas = async () => {
@@ -15,172 +27,177 @@ export function useBodegasByEmpresa() {
       setLoading(true);
       setError(null);
 
-      // ✅ DEBUG: Revisar qué campos tiene realmente el AuthContext
-      console.log('🔍 DEBUG AUTH COMPLETO:', {
-        user: user,
-        authLoading: authLoading,
-        userId: user?.id,
-        userKeys: user ? Object.keys(user) : 'no user',
-        typeof: typeof user
-      });
-
-      // ✅ VERIFICAR SI EL USUARIO ESTÁ CARGANDO AÚN
       if (authLoading) {
-        console.log('⏳ Auth aún está cargando...');
         setLoading(false);
         return;
       }
-
-      if (!user) {
-        console.log('❌ No hay usuario logueado');
+      if (!user?.id) {
         setBodegas([]);
         setLoading(false);
         return;
       }
 
-      if (!user.id) {
-        console.log('❌ user.id no existe. Campos disponibles:', Object.keys(user));
-        setBodegas([]);
-        setLoading(false);
-        return;
-      }
-
-      console.log('✅ Usuario ID válido:', user.id);
-
-      // 1. Obtener la empresa del usuario
+      // 1) Empresa del usuario
       const { data: empresa, error: empresaError } = await supabase
         .from('empresas')
         .select('id, nombre, user_id')
         .eq('user_id', user.id)
         .single();
 
-      console.log('🏢 Consulta empresa resultado:', { empresa, empresaError });
+      if (empresaError) throw empresaError;
+      if (!empresa?.id) throw new Error('Empresa no encontrada');
 
-      if (empresaError) {
-        console.error('❌ Error en consulta de empresa:', empresaError);
-        
-        // ✅ SI NO ENCUENTRA EMPRESA, MOSTRAR TODAS LAS EMPRESAS PARA DEBUG
-        const { data: todasEmpresas } = await supabase
-          .from('empresas')
-          .select('id, nombre, user_id')
-          .limit(5);
-        
-        console.log('🔍 DEBUG: Algunas empresas en BD:', todasEmpresas);
-        console.log('🔍 Buscando user_id:', user.id);
-        
-        throw new Error(`No se encontró empresa para user_id: ${user.id}`);
-      }
-
-      if (!empresa) {
-        throw new Error('Empresa no encontrada');
-      }
-
-      console.log('✅ Empresa encontrada:', empresa);
-
-      // 2. Obtener las mini bodegas de la empresa
+      // 2) Mini-bodegas de la empresa (SIN comentarios en select)
       const { data: miniBodegas, error: bodegasError } = await supabase
         .from('mini_bodegas')
-        .select('*')
+        .select(`
+          id,
+          created_at,
+          empresa_id,
+          descripcion,
+          metraje,
+          ciudad,
+          precio_mensual,
+          imagen_url,
+          sede_id,
+          orden
+        `)
         .eq('empresa_id', empresa.id)
         .order('created_at', { ascending: false });
 
-      console.log('📦 Bodegas encontradas:', { 
-        empresaId: empresa.id,
-        count: miniBodegas?.length || 0, 
-        miniBodegas, 
-        bodegasError 
-      });
+      if (bodegasError) throw bodegasError;
 
-      if (bodegasError) {
-        console.error('❌ Error obteniendo mini bodegas:', bodegasError);
-        throw bodegasError;
-      }
-
-      if (!miniBodegas || miniBodegas.length === 0) {
-        console.log('⚠️ No hay bodegas para empresa_id:', empresa.id);
+      if (!miniBodegas?.length) {
         setBodegas([]);
         return;
       }
 
-      // 3. Para cada bodega, obtener el número de reservas activas
-      const bodegasConEstados = await Promise.all(
-        miniBodegas.map(async (bodega) => {
-          // Contar reservas activas (aceptadas)
-          const { count: reservasActivas } = await supabase
+      // 3) Lookup de sedes (sin joins): obtenemos todas las sedes usadas
+      const sedeIds = Array.from(
+        new Set(
+          miniBodegas
+            .map((b) => b?.sede_id)
+            .filter((x) => x !== null && x !== undefined)
+        )
+      );
+
+      let sedeById = {};
+      if (sedeIds.length) {
+        const { data: sedesData, error: sedesError } = await supabase
+          .from('sedes') // 🔧 ajusta el nombre si tu tabla es distinta
+          .select('id, nombre, ciudad')
+          .in('id', sedeIds);
+
+        if (sedesError) throw sedesError;
+        sedeById = (sedesData || []).reduce((acc, s) => {
+          acc[s.id] = s;
+          return acc;
+        }, {});
+      }
+
+      // 4) Normalización + conteo de reservas activas
+      const result = await Promise.all(
+        miniBodegas.map(async (b) => {
+          const { count: reservasActivas = 0 } = await supabase
             .from('reservas')
-            .select('id', { count: 'exact' })
-            .eq('mini_bodega_id', bodega.id)
+            .select('id', { count: 'exact', head: true })
+            .eq('mini_bodega_id', b.id)
             .eq('estado', 'aceptada');
 
-          // Determinar estado basado en disponibilidad + reservas
-          let estado = 'disponible';
-          
-          if (bodega.disponibilidad === false) {
-            estado = 'mantenimiento';
-          } else if (reservasActivas > 0) {
-            estado = 'ocupada';
-          } else {
-            estado = 'disponible';
+          // Imagen principal: soporta JSON [{url}] o [{path}] y/o imagen_url directa
+          let imagenPrincipal = PLACEHOLDER_IMG;
+          if (Array.isArray(b.imagenes) && b.imagenes.length) {
+            const first = b.imagenes[0];
+            imagenPrincipal = toPublicUrl(first?.url || first?.path);
+          } else if (b.imagen_url) {
+            imagenPrincipal = toPublicUrl(b.imagen_url);
           }
 
+          const imagenes = Array.isArray(b.imagenes)
+            ? b.imagenes
+                .map((it) => toPublicUrl(it?.url || it?.path))
+                .filter(Boolean)
+            : [imagenPrincipal];
+
+          // Estado derivado
+          let estado = 'disponible';
+          if (b.disponibilidad === false) estado = 'mantenimiento';
+          else if ((reservasActivas || 0) > 0) estado = 'ocupada';
+
+          // Precio
+          const precio =
+            typeof b.precio_mensual === 'number'
+              ? b.precio_mensual
+              : Number(b.precio_mensual) || 0;
+
+          const precioTexto = new Intl.NumberFormat('es-CO', {
+            style: 'currency',
+            currency: 'COP',
+            maximumFractionDigits: 0
+          }).format(precio);
+
+          // Sede compuesta: desde lookup o con fallbacks
+          const sedeRaw = sedeById[b.sede_id] || null;
+          const sede = {
+            id: sedeRaw?.id ?? b.sede_id ?? null,
+            nombre:
+              sedeRaw?.nombre ||
+              (b.zona ? `Sede ${b.zona}` : 'Sin sede'),
+            ciudad: sedeRaw?.ciudad || b?.ciudad || '—'
+          };
+
           return {
-            id: bodega.id,
-            titulo: `Mini bodega de ${bodega.metraje || 'N/A'}`,
-            direccion: bodega.direccion || 'Sin dirección',
-            sede: `${bodega.zona || ''} - ${bodega.ciudad || ''}`.trim() || 'Sin ubicación',
-            precio: parseFloat(bodega.precio_mensual || 0),
-            estado: estado,
-            disponibilidad: bodega.disponibilidad,
-            descripcion: bodega.descripcion || 'Sin descripción',
-            imagen: bodega.imagen_url || "https://images.unsplash.com/photo-1611967164521-abae8fba4668?w=400",
-            fechaCreacion: new Date(bodega.created_at).toLocaleDateString('es-ES'),
-            // Datos adicionales útiles
-            metraje: bodega.metraje,
-            contenido: bodega.contenido,
-            ciudad: bodega.ciudad,
-            zona: bodega.zona,
+            id: b.id,
+            titulo: `Mini bodega de ${b.metraje ?? 'N/A'}`,
+            descripcion: b.descripcion || 'Sin descripción',
+            direccion: b.direccion || 'Sin dirección',
+            metraje: b.metraje ?? null,
+            ciudad: b.ciudad ?? null,
+            zona: b.zona ?? null,
+            empresaId: b.empresa_id,
+            created_at: b.created_at,
+            orden: b.orden ?? null,
+
+            estado,
+            disponibilidad: b.disponibilidad ?? null,
             reservasActivas: reservasActivas || 0,
-            empresaId: bodega.empresa_id,
-            orden: bodega.orden,
-            created_at: bodega.created_at
+
+            precio,
+            precioTexto,
+
+            sede,
+
+            imagen: imagenPrincipal,
+            imagenPrincipal,
+            imagenes
           };
         })
       );
 
-      console.log('✅ Bodegas procesadas finales:', bodegasConEstados);
-      setBodegas(bodegasConEstados);
-
+      setBodegas(result);
     } catch (err) {
       console.error('❌ Error completo:', err);
-      setError(err.message);
+      setError(err.message || 'Error al cargar');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    // ✅ SOLO EJECUTAR SI NO ESTÁ CARGANDO EL AUTH
-    if (!authLoading) {
-      fetchBodegas();
-    }
+    if (!authLoading) fetchBodegas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, authLoading]);
+
+  const refetch = fetchBodegas;
 
   const actualizarEstadoBodega = async (bodegaId, nuevoEstado) => {
     try {
-      // Mapear el estado visual al valor de disponibilidad
       let nuevaDisponibilidad;
-      switch (nuevoEstado) {
-        case 'disponible':
-          nuevaDisponibilidad = true;
-          break;
-        case 'mantenimiento':
-          nuevaDisponibilidad = false;
-          break;
-        case 'ocupada':
-          throw new Error('El estado "ocupada" se determina automáticamente por las reservas activas');
-        default:
-          throw new Error('Estado no válido');
-      }
+      if (nuevoEstado === 'disponible') nuevaDisponibilidad = true;
+      else if (nuevoEstado === 'mantenimiento') nuevaDisponibilidad = false;
+      else if (nuevoEstado === 'ocupada')
+        throw new Error('El estado "ocupada" se determina por reservas activas');
+      else throw new Error('Estado no válido');
 
       const { error } = await supabase
         .from('mini_bodegas')
@@ -189,9 +206,7 @@ export function useBodegasByEmpresa() {
 
       if (error) throw error;
 
-      // Recargar los datos para reflejar el cambio
-      await fetchBodegas();
-
+      await refetch();
       return { success: true };
     } catch (err) {
       console.error('❌ Error actualizando bodega:', err);
@@ -199,11 +214,5 @@ export function useBodegasByEmpresa() {
     }
   };
 
-  return {
-    bodegas,
-    loading,
-    error,
-    refetch: fetchBodegas,
-    actualizarEstadoBodega
-  };
+  return { bodegas, loading, error, refetch, actualizarEstadoBodega };
 }
