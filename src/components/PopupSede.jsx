@@ -17,6 +17,7 @@ export function PopupSede({ sede, empresa, onClose, onUpdate }) {
       ? safeParseArray(sede.caracteristicas)
       : [],
     nuevaImagen: null,
+    nuevaImagenes: [],
   });
 
   const [saving, setSaving] = useState(false);
@@ -118,6 +119,35 @@ export function PopupSede({ sede, empresa, onClose, onUpdate }) {
       }
 
       // 2) Actualiza la sede
+      let imagenUrls = [];
+
+      if (form.nuevaImagenes && form.nuevaImagenes.length > 0) {
+        for (const file of form.nuevaImagenes) {
+          const safeName = normalizeFilename(file.name);
+          const filePath = `${sede.id}/${Date.now()}-${safeName}`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from("Sedes")
+            .upload(filePath, file, {
+              cacheControl: "3600",
+              upsert: false,
+              contentType: file.type || "image/jpeg",
+            });
+          if (uploadError) {
+            setError(`No se pudo subir la imagen: ${uploadError.message || "Error desconocido"}`);
+            setSaving(false);
+            return;
+          }
+          const { data: pub } = supabase.storage.from("Sedes").getPublicUrl(uploadData.path);
+          if (pub?.publicUrl) {
+            imagenUrls.push(pub.publicUrl);
+          }
+        }
+      } else if (sede?.imagen_url) {
+        // Si ya hay imágenes previas, las conservamos
+        if (Array.isArray(imagenes)) imagenUrls = imagenes;
+        else if (typeof imagenes === "string") imagenUrls = [imagenes];
+      }
+
       const { error: updateError } = await supabase
         .from("sedes")
         .update({
@@ -127,7 +157,7 @@ export function PopupSede({ sede, empresa, onClose, onUpdate }) {
           telefono: form.telefono,
           descripcion: form.descripcion,
           caracteristicas: JSON.stringify(form.caracteristicas || []),
-          imagen_url: imagenUrl,
+          imagen_url: JSON.stringify(imagenUrls),
         })
         .eq("id", sede.id);
 
@@ -148,15 +178,14 @@ export function PopupSede({ sede, empresa, onClose, onUpdate }) {
 
   // Prepara arreglo de imágenes para el carrusel
   let imagenes = [];
-  if (form.nuevaImagen) {
-    imagenes = [URL.createObjectURL(form.nuevaImagen)];
+  if (form.nuevaImagenes && form.nuevaImagenes.length > 0) {
+    imagenes = form.nuevaImagenes.map(img => URL.createObjectURL(img));
   } else if (sede?.imagen_url) {
     const raw = sede.imagen_url;
     if (Array.isArray(raw)) {
       imagenes = raw;
     } else if (typeof raw === "string") {
       try {
-        // Si es JSON de array
         imagenes = raw.trim().startsWith("[") ? JSON.parse(raw) : [raw];
       } catch {
         imagenes = [raw];
@@ -340,16 +369,48 @@ export function PopupSede({ sede, empresa, onClose, onUpdate }) {
                   />
                 )}
 
+                {form.nuevaImagenes && form.nuevaImagenes.length > 0 ? (
+                  form.nuevaImagenes.map((img, idx) => (
+                    <img
+                      key={idx}
+                      src={URL.createObjectURL(img)}
+                      alt={`Previsualización ${idx + 1}`}
+                      className="h-16 w-16 object-cover rounded mr-2"
+                    />
+                  ))
+                ) : sede?.imagen_url ? (
+                  Array.isArray(imagenes)
+                    ? imagenes.map((img, idx) => (
+                        <img
+                          key={idx}
+                          src={img}
+                          alt={`Imagen ${idx + 1}`}
+                          className="h-16 w-16 object-cover rounded mr-2"
+                        />
+                      ))
+                    : (
+                      <img
+                        src={imagenes[0]}
+                        alt="Foto sede"
+                        className="h-16 w-16 object-cover rounded"
+                      />
+                    )
+                ) : null}
+
                 <label className="text-xs text-[#2C3A61] cursor-pointer bg-white border border-[#BFD6EA] rounded px-2 py-1 hover:bg-blue-50 transition">
                   Cambiar foto
                   <input
                     type="file"
                     accept="image/*"
+                    multiple
                     className="hidden"
                     onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) {
-                        setForm((prev) => ({ ...prev, nuevaImagen: f }));
+                      const files = Array.from(e.target.files || []);
+                      if (files.length) {
+                        setForm((prev) => ({
+                          ...prev,
+                          nuevaImagenes: files, // Cambia a un array
+                        }));
                       }
                     }}
                   />
