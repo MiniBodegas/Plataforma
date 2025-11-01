@@ -15,7 +15,7 @@ export function SedesEditorScreen() {
   const [popupSede, setPopupSede] = useState(null);
   const [empresa, setEmpresa] = useState(null);
   const [miniBodegas, setMiniBodegas] = useState([]);
-  const [editSede, setEditSede] = useState(null); // NUEVO: estado para edición
+  const [editSede, setEditSede] = useState(null);
   const [editInPopup, setEditInPopup] = useState(false);
   const navigate = useNavigate();
 
