@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 
-export function useToast(duration = 3000) {
+export function useToast(duration = 5000) {
   const [toast, setToast] = useState({ 
     msg: '', 
     type: '', 
@@ -8,28 +8,28 @@ export function useToast(duration = 3000) {
   });
 
   // Clear toast
-  const clearToast = useCallback(() => {
-    setToast(prev => ({ ...prev, visible: false }));
-  }, []);
+  const clearToast = () => {
+    setToast({ msg: '', type: '', visible: false });
+  };
 
   // Show toast with message and type
-  const showToast = useCallback((msg, type) => {
-    // Clear any existing timeout
-    if (toast.visible) {
-      clearToast();
-    }
-
+  const showToast = (msg, type) => {
     setToast({ msg, type, visible: true });
 
     // Set timeout to clear toast
-    const timer = setTimeout(clearToast, duration);
+    setTimeout(() => {
+      setToast(prev => {
+        // Solo limpiar si es el mismo mensaje (evita conflictos)
+        if (prev.msg === msg && prev.type === type) {
+          return { msg: '', type: '', visible: false };
+        }
+        return prev;
+      });
+    }, duration);
+  };
 
-    // Cleanup timeout on unmount or when showing new toast
-    return () => clearTimeout(timer);
-  }, [duration, toast.visible, clearToast]);
-
-  const showOk = useCallback((msg) => showToast(msg, 'success'), [showToast]);
-  const showError = useCallback((msg) => showToast(msg, 'error'), [showToast]);
+  const showOk = (msg) => showToast(msg, 'success');
+  const showError = (msg) => showToast(msg, 'error');
 
   return {
     toast,

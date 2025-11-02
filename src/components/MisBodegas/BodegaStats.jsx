@@ -1,3 +1,5 @@
+import { getEstadoColor } from './Helpers';
+
 export function BodegaStats({ bodegas }) {
   const stats = {
     total: bodegas.length,

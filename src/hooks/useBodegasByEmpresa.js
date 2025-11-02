@@ -9,8 +9,8 @@ const PLACEHOLDER_IMG = 'https://via.placeholder.com/640x360?text=Sin+imagen';
 const toPublicUrl = (maybePath) => {
   if (!maybePath) return PLACEHOLDER_IMG;
   if (/^https?:\/\//i.test(maybePath)) return maybePath;
-  // 🔧 Ajusta 'bodegas' al nombre real de tu bucket de Storage
-  const { data } = supabase.storage.from('bodegas').getPublicUrl(maybePath);
+  // Cambiar a 'imagenes' según tu estructura
+  const { data } = supabase.storage.from('imagenes').getPublicUrl(maybePath);
   return data?.publicUrl || PLACEHOLDER_IMG;
 };
 
@@ -18,7 +18,7 @@ export function useBodegasByEmpresa() {
   const [bodegas, setBodegas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const [empresaData, setEmpresaData] = useState(null); // Agregar estado para empresa
   const { user, loading: authLoading } = useAuth();
 
   const fetchBodegas = async () => {
@@ -26,17 +26,13 @@ export function useBodegasByEmpresa() {
       setLoading(true);
       setError(null);
 
-      if (authLoading) {
-        setLoading(false);
-        return;
-      }
-      if (!user?.id) {
+      if (authLoading || !user?.id) {
         setBodegas([]);
         setLoading(false);
         return;
       }
 
-      // 1) Empresa del usuario
+      // 1) Obtener la empresa del usuario
       const { data: empresa, error: empresaError } = await supabase
         .from('empresas')
         .select('id, nombre, user_id')
@@ -46,7 +42,10 @@ export function useBodegasByEmpresa() {
       if (empresaError) throw empresaError;
       if (!empresa?.id) throw new Error('Empresa no encontrada');
 
-      // 2) Mini-bodegas de la empresa (trae TODOS los campos que usas luego)
+      // Guardar empresa en estado
+      setEmpresaData(empresa);
+
+      // 2) Obtener mini-bodegas de la empresa (trae TODOS los campos que usas luego)
       const { data: miniBodegas, error: bodegasError } = await supabase
         .from('mini_bodegas')
         .select(`
@@ -59,7 +58,19 @@ export function useBodegasByEmpresa() {
           precio_mensual,
           imagen_url,
           sede_id,
-          orden
+          orden,
+          estado,
+          cantidad,
+          nombre_personalizado,
+          caracteristicas,
+          updated_at,
+          metros_cuadrados,
+          ubicacion_interna,
+          sede:sede_id (
+            id,
+            nombre,
+            ciudad
+          )
         `)
         .eq('empresa_id', empresa.id)
         .order('created_at', { ascending: false });
@@ -113,9 +124,7 @@ export function useBodegasByEmpresa() {
           // - mantenimiento: disponibilidad === false
           // - ocupada: hay reservas activas
           // - activa: disponible y sin reservas
-          let estadoUi = 'activa';
-          if (b.disponibilidad === false) estadoUi = 'mantenimiento';
-          else if ((reservasActivas || 0) > 0) estadoUi = 'ocupada';
+          let estadoUi = b.estado || 'activa';  // Ya está correcto
 
           // Precio en número y dejar el campo que usa la Card: precio_mensual
           const precioNumber =
@@ -170,7 +179,7 @@ export function useBodegasByEmpresa() {
 
       setBodegas(result);
     } catch (err) {
-      console.error('❌ Error completo:', err);
+      console.error('❌ Error:', err);
       setError(err.message || 'Error al cargar');
     } finally {
       setLoading(false);
@@ -182,23 +191,17 @@ export function useBodegasByEmpresa() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, authLoading]);
 
-  const refetch = fetchBodegas;
+  // Refetch corregido
+  const refetch = async () => {
+    console.log('🔄 Refetch iniciado...');
+    await fetchBodegas(); // Simplemente llamar fetchBodegas que ya maneja todo
+  };
 
   const actualizarEstadoBodega = async (bodegaId, nuevoEstado) => {
     try {
-      // Mapear al boolean de disponibilidad
-      let nuevaDisponibilidad;
-      if (nuevoEstado === 'activa') nuevaDisponibilidad = true;
-      else if (nuevoEstado === 'mantenimiento') nuevaDisponibilidad = false;
-      else if (nuevoEstado === 'ocupada')
-        throw new Error('El estado "ocupada" se determina por reservas activas');
-      else if (nuevoEstado === 'inhabilitada')
-        throw new Error('Define cómo guardas "inhabilitada" (bool o campo aparte)');
-      else throw new Error('Estado no válido');
-
       const { error } = await supabase
         .from('mini_bodegas')
-        .update({ disponibilidad: nuevaDisponibilidad })
+        .update({ estado: nuevoEstado })  // Usar 'estado' directamente
         .eq('id', bodegaId);
 
       if (error) throw error;
@@ -211,5 +214,12 @@ export function useBodegasByEmpresa() {
     }
   };
 
-  return { bodegas, loading, error, refetch, actualizarEstadoBodega };
+  return { 
+    bodegas, 
+    loading, 
+    error, 
+    refetch, 
+    actualizarEstadoBodega,
+    empresa: empresaData // Opcional: exponer empresa si la necesitas
+  };
 }

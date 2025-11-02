@@ -19,18 +19,30 @@ export function MisBodegas() {
 
   const handleStatusChange = async (bodegaId, nuevoEstado) => {
     try {
-      const { error } = await supabase
+      console.log(`🔄 Intentando actualizar bodega ${bodegaId} a estado: ${nuevoEstado}`);
+      
+      const { data, error } = await supabase
         .from('mini_bodegas')
         .update({ estado: nuevoEstado })
         .eq('id', bodegaId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error de Supabase:', error);
+        throw error;
+      }
+
+      console.log('✅ Actualización exitosa:', data);
+      showOk(`Estado cambiado a: ${nuevoEstado}`);
       
-      showOk('Estado actualizado correctamente');
-      refetch();
+      // Esperar un poco y luego refetch
+      setTimeout(async () => {
+        await refetch();
+        console.log('🔄 Refetch completado');
+      }, 100);
+      
     } catch (error) {
-      console.error('Error:', error);
-      showError('No se pudo actualizar el estado');
+      console.error('❌ Error completo:', error);
+      showError(`Error: ${error.message}`);
     }
   };
 
@@ -105,9 +117,22 @@ export function MisBodegas() {
         <EditBodegaModal
           bodega={bodegaSeleccionada}
           onClose={() => setBodegaSeleccionada(null)}
-          onSaved={() => {
-            showOk('Bodega actualizada');
-            refetch();
+          onSaved={async () => {
+            console.log('🔄 Iniciando actualización de datos...');
+            
+            // Primero mostrar mensaje
+            showOk('Bodega actualizada exitosamente');
+            
+            // Luego hacer refetch
+            try {
+              await refetch();
+              console.log('✅ Datos actualizados correctamente');
+            } catch (error) {
+              console.error('❌ Error al actualizar datos:', error);
+              showError('Error al actualizar la vista');
+            }
+            
+            // Finalmente cerrar modal
             setBodegaSeleccionada(null);
           }}
         />
