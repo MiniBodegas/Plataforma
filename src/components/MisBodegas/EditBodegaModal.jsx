@@ -17,41 +17,43 @@ export function EditBodegaModal({ bodega, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  // Poblar el form con los datos de la bodega cuando se abre el modal
+  // Poblar el form con los datos de la bodega cuando se abre el modal o cambia la prop
   useEffect(() => {
-    if (bodega) {
-      console.log('📋 Poblando form con datos de bodega:', bodega);
-      setForm({
-        nombre_personalizado: bodega.nombre_personalizado || '',
-        metraje: bodega.metraje || '',
-        descripcion: bodega.descripcion || '',
-        precio_mensual: bodega.precio_mensual || '',
-        ciudad: bodega.ciudad || '',
-        ubicacion_interna: bodega.ubicacion_interna || '',
-        metros_cuadrados: bodega.metros_cuadrados || '',
-        caracteristicas: Array.isArray(bodega.caracteristicas) ? bodega.caracteristicas : [],
-        cantidad: bodega.cantidad || 1
-      });
-    }
+    if (!bodega) return;
+
+    const newForm = {
+      nombre_personalizado: bodega.nombre_personalizado || '',
+      metraje: String(bodega.metraje ?? ''),
+      descripcion: bodega.descripcion || '',
+      precio_mensual: String(
+        typeof bodega.precio_mensual === 'number'
+          ? bodega.precio_mensual
+          : Number(bodega.precio_mensual ?? 0)
+      ),
+      ciudad: bodega.ciudad || '',
+      ubicacion_interna: bodega.ubicacion_interna || '',
+      metros_cuadrados: String(bodega.metros_cuadrados ?? ''),
+      caracteristicas: Array.isArray(bodega.caracteristicas) ? bodega.caracteristicas : [],
+      cantidad: Number(bodega.cantidad ?? 1)
+    };
+
+    setForm(newForm);
   }, [bodega]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log(`📝 Cambiando ${name}: ${value}`);
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
       [name]: value
     }));
   };
 
   const handleCaracteristicas = (caracteristica) => {
-    setForm(prev => {
+    setForm((prev) => {
       const nuevasCaracteristicas = prev.caracteristicas.includes(caracteristica)
-        ? prev.caracteristicas.filter(c => c !== caracteristica)
+        ? prev.caracteristicas.filter((c) => c !== caracteristica)
         : [...prev.caracteristicas, caracteristica];
-      
-      console.log(`🏷️ Características actualizadas:`, nuevasCaracteristicas);
-      
+
       return {
         ...prev,
         caracteristicas: nuevasCaracteristicas
@@ -65,23 +67,19 @@ export function EditBodegaModal({ bodega, onClose, onSaved }) {
     setError('');
 
     try {
-      console.log('🔄 Actualizando bodega:', bodega.id);
-      console.log('📝 Datos originales:', bodega);
-      console.log('📝 Datos del formulario:', form);
-
       const updateData = {
         nombre_personalizado: form.nombre_personalizado || null,
-        metraje: form.metraje || null,
+        metraje: form.metraje === '' ? null : form.metraje, // si en DB es texto, déjalo así
         descripcion: form.descripcion || null,
-        precio_mensual: parseFloat(form.precio_mensual) || 0,
+        precio_mensual:
+          form.precio_mensual === '' ? 0 : parseFloat(String(form.precio_mensual).replace(/,/g, '')),
         ciudad: form.ciudad || null,
         ubicacion_interna: form.ubicacion_interna || null,
-        metros_cuadrados: form.metros_cuadrados || null,
-        caracteristicas: form.caracteristicas || [],
-        cantidad: parseInt(form.cantidad) || 1
+        metros_cuadrados:
+          form.metros_cuadrados === '' ? null : Number(form.metros_cuadrados),
+        caracteristicas: Array.isArray(form.caracteristicas) ? form.caracteristicas : [],
+        cantidad: form.cantidad === '' ? 1 : parseInt(form.cantidad, 10)
       };
-
-      console.log('📝 Datos a enviar a DB:', updateData);
 
       const { data, error: updateError } = await supabase
         .from('mini_bodegas')
@@ -89,44 +87,50 @@ export function EditBodegaModal({ bodega, onClose, onSaved }) {
         .eq('id', bodega.id)
         .select();
 
-      if (updateError) {
-        console.error('❌ Error de actualización:', updateError);
-        throw updateError;
+      if (updateError) throw updateError;
+
+      // Refresca el UI del modal con el registro actualizado
+      const updated = Array.isArray(data) ? data[0] : data;
+      if (updated) {
+        setForm({
+          nombre_personalizado: updated.nombre_personalizado || '',
+          metraje: String(updated.metraje ?? ''),
+          descripcion: updated.descripcion || '',
+          precio_mensual: String(
+            typeof updated.precio_mensual === 'number'
+              ? updated.precio_mensual
+              : Number(updated.precio_mensual ?? 0)
+          ),
+          ciudad: updated.ciudad || '',
+          ubicacion_interna: updated.ubicacion_interna || '',
+          metros_cuadrados: String(updated.metros_cuadrados ?? ''),
+          caracteristicas: Array.isArray(updated.caracteristicas) ? updated.caracteristicas : [],
+          cantidad: Number(updated.cantidad ?? 1)
+        });
       }
 
-      console.log('✅ Actualización exitosa:', data);
-      
-      // Llamar onSaved que debería hacer refetch
-      onSaved();
-      
-    } catch (error) {
-      console.error('❌ Error completo:', error);
-      setError(`Error: ${error.message}`);
+      // Notifica al padre con el objeto actualizado (mejor que solo refetch ciego)
+      onSaved?.(updated);
+    } catch (err) {
+      setError(`Error: ${err.message}`);
     } finally {
       setSaving(false);
     }
   };
 
   const CARACTERISTICAS_DEFAULT = [
-    "Acceso 24/7",
-    "Seguridad",
-    "Climatizado",
-    "Primer piso",
-    "Luz incluida"
+    'Acceso 24/7',
+    'Seguridad',
+    'Climatizado',
+    'Primer piso',
+    'Luz incluida'
   ];
-
-  // Debug: mostrar datos actuales
-  console.log('🔍 Datos actuales del form:', form);
-  console.log('🔍 Bodega recibida:', bodega);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <h3 className="text-2xl font-bold text-[#2C3A61] mb-6">
           Editar Mini Bodega
-          <span className="text-sm font-normal text-gray-500 block">
-            ID: {bodega?.id}
-          </span>
         </h3>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -134,16 +138,13 @@ export function EditBodegaModal({ bodega, onClose, onSaved }) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Nombre personalizado
-              <span className="text-xs text-gray-500 ml-2">
-                (Actual: {bodega?.nombre_personalizado || 'Sin nombre'})
-              </span>
             </label>
             <input
               type="text"
               name="nombre_personalizado"
               value={form.nombre_personalizado}
               onChange={handleChange}
-              placeholder={bodega?.nombre_personalizado || 'Ingrese nombre personalizado'}
+              placeholder="Ingrese nombre personalizado"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#2C3A61] focus:border-[#2C3A61] outline-none"
             />
           </div>
@@ -153,32 +154,26 @@ export function EditBodegaModal({ bodega, onClose, onSaved }) {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Metraje
-                <span className="text-xs text-gray-500 ml-2">
-                  (Actual: {bodega?.metraje || 'No definido'})
-                </span>
               </label>
               <input
                 type="number"
                 name="metraje"
                 value={form.metraje}
                 onChange={handleChange}
-                placeholder={bodega?.metraje || '0'}
+                placeholder="0"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#2C3A61] focus:border-[#2C3A61] outline-none"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Metros cuadrados
-                <span className="text-xs text-gray-500 ml-2">
-                  (Actual: {bodega?.metros_cuadrados || 'No definido'})
-                </span>
               </label>
               <input
                 type="number"
                 name="metros_cuadrados"
                 value={form.metros_cuadrados}
                 onChange={handleChange}
-                placeholder={bodega?.metros_cuadrados || '0'}
+                placeholder="0"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#2C3A61] focus:border-[#2C3A61] outline-none"
               />
             </div>
@@ -188,16 +183,13 @@ export function EditBodegaModal({ bodega, onClose, onSaved }) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Descripción
-              <span className="text-xs text-gray-500 ml-2">
-                (Actual: {bodega?.descripcion || 'Sin descripción'})
-              </span>
             </label>
             <textarea
               name="descripcion"
               value={form.descripcion}
               onChange={handleChange}
               rows={3}
-              placeholder={bodega?.descripcion || 'Ingrese descripción'}
+              placeholder="Ingrese descripción"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#2C3A61] focus:border-[#2C3A61] outline-none"
             />
           </div>
@@ -206,16 +198,13 @@ export function EditBodegaModal({ bodega, onClose, onSaved }) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Precio mensual
-              <span className="text-xs text-gray-500 ml-2">
-                (Actual: ${Number(bodega?.precio_mensual || 0).toLocaleString()})
-              </span>
             </label>
             <input
               type="number"
               name="precio_mensual"
               value={form.precio_mensual}
               onChange={handleChange}
-              placeholder={bodega?.precio_mensual || '0'}
+              placeholder="0"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#2C3A61] focus:border-[#2C3A61] outline-none"
             />
           </div>
@@ -225,32 +214,26 @@ export function EditBodegaModal({ bodega, onClose, onSaved }) {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Ciudad
-                <span className="text-xs text-gray-500 ml-2">
-                  (Actual: {bodega?.ciudad || 'No definida'})
-                </span>
               </label>
               <input
                 type="text"
                 name="ciudad"
                 value={form.ciudad}
                 onChange={handleChange}
-                placeholder={bodega?.ciudad || 'Ingrese ciudad'}
+                placeholder="Ingrese ciudad"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#2C3A61] focus:border-[#2C3A61] outline-none"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Ubicación interna
-                <span className="text-xs text-gray-500 ml-2">
-                  (Actual: {bodega?.ubicacion_interna || 'No definida'})
-                </span>
               </label>
               <input
                 type="text"
                 name="ubicacion_interna"
                 value={form.ubicacion_interna}
                 onChange={handleChange}
-                placeholder={bodega?.ubicacion_interna || 'Ej: Piso 2, Sección A'}
+                placeholder="Ej: Piso 2, Sección A"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#2C3A61] focus:border-[#2C3A61] outline-none"
               />
             </div>
@@ -260,9 +243,6 @@ export function EditBodegaModal({ bodega, onClose, onSaved }) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Cantidad
-              <span className="text-xs text-gray-500 ml-2">
-                (Actual: {bodega?.cantidad || 1})
-              </span>
             </label>
             <input
               type="number"
@@ -270,7 +250,7 @@ export function EditBodegaModal({ bodega, onClose, onSaved }) {
               value={form.cantidad}
               onChange={handleChange}
               min="1"
-              placeholder={bodega?.cantidad || '1'}
+              placeholder="1"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-[#2C3A61] focus:border-[#2C3A61] outline-none"
             />
           </div>
@@ -279,9 +259,6 @@ export function EditBodegaModal({ bodega, onClose, onSaved }) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Características
-              <span className="text-xs text-gray-500 ml-2">
-                (Actuales: {bodega?.caracteristicas?.length || 0} seleccionadas)
-              </span>
             </label>
             <div className="flex flex-wrap gap-2">
               {CARACTERISTICAS_DEFAULT.map((caracteristica) => (

@@ -18,7 +18,7 @@ function BodegaImage({ imagen_url, nombre }) {
       }
     }
   } catch (error) {
-    console.error('Error parsing image URL:', error);
+    // Silently handle JSON parse errors
   }
 
   return (
@@ -99,7 +99,7 @@ function BodegaActions({ bodega, onEdit, onStatusChange }) {
       await onStatusChange(bodega.id, nuevoEstado);
       
     } catch (error) {
-      console.error('Error al cambiar estado:', error);
+      // Error handling is done in parent component
     } finally {
       setProcesando(false);
     }
@@ -107,12 +107,6 @@ function BodegaActions({ bodega, onEdit, onStatusChange }) {
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Debug info */}
-      <div className="text-xs text-gray-500 border p-1 rounded">
-        ID: {bodega.id}<br/>
-        Estado: {bodega.estado}
-      </div>
-
       <button
         onClick={() => onEdit(bodega)}
         className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors"

@@ -19,34 +19,24 @@ export function MisBodegas() {
 
   const handleStatusChange = async (bodegaId, nuevoEstado) => {
     try {
-      console.log(`🔄 Intentando actualizar bodega ${bodegaId} a estado: ${nuevoEstado}`);
-      
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('mini_bodegas')
         .update({ estado: nuevoEstado })
         .eq('id', bodegaId);
 
-      if (error) {
-        console.error('❌ Error de Supabase:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log('✅ Actualización exitosa:', data);
       showOk(`Estado cambiado a: ${nuevoEstado}`);
       
-      // Esperar un poco y luego refetch
       setTimeout(async () => {
         await refetch();
-        console.log('🔄 Refetch completado');
       }, 100);
       
     } catch (error) {
-      console.error('❌ Error completo:', error);
       showError(`Error: ${error.message}`);
     }
   };
 
-  // Simplified filtering without unused fields
   const bodegasFiltradas = bodegas.filter(bodega => {
     const cumpleEstado = filtros.estado === 'todos' || bodega.estado === filtros.estado;
     const cumpleBusqueda = !filtros.busqueda || 
@@ -82,7 +72,6 @@ export function MisBodegas() {
 
       <BodegaStats bodegas={bodegas} />
       
-      {/* Simplified filters without sede and ciudad */}
       <BodegaFilters 
         bodegas={bodegas}
         filtros={filtros}
@@ -96,7 +85,6 @@ export function MisBodegas() {
               key={bodega.id}
               bodega={{
                 ...bodega,
-                // Format fields for display
                 metraje: bodega.metraje || 'N/A',
                 descripcion: bodega.descripcion || 'Sin descripción',
                 estado: bodega.estado || 'activa'
@@ -112,37 +100,37 @@ export function MisBodegas() {
         )}
       </div>
 
-      {/* Modal and toast remain the same */}
       {bodegaSeleccionada && (
         <EditBodegaModal
           bodega={bodegaSeleccionada}
           onClose={() => setBodegaSeleccionada(null)}
           onSaved={async () => {
-            console.log('🔄 Iniciando actualización de datos...');
-            
-            // Primero mostrar mensaje
             showOk('Bodega actualizada exitosamente');
             
-            // Luego hacer refetch
             try {
               await refetch();
-              console.log('✅ Datos actualizados correctamente');
             } catch (error) {
-              console.error('❌ Error al actualizar datos:', error);
               showError('Error al actualizar la vista');
             }
             
-            // Finalmente cerrar modal
             setBodegaSeleccionada(null);
           }}
         />
       )}
 
-      {toast.msg && (
-        <div className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg ${
+      {toast.visible && (
+        <div className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ${
           toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'
-        } text-white`}>
-          {toast.msg}
+        } text-white z-50`}>
+          <div className="flex items-center justify-between">
+            <span>{toast.msg}</span>
+            <button 
+              onClick={clearToast}
+              className="ml-3 text-white hover:text-gray-200 text-lg font-bold"
+            >
+              ×
+            </button>
+          </div>
         </div>
       )}
     </div>
