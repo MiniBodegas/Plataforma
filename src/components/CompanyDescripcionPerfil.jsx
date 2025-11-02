@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { CompanyRating } from './CompanyRating';
 import { useCompanyReviews } from '../hooks/useCompanyReview';
-import { supabase } from '../lib/supabase'; // Asegúrate de importar supabase
 import { useAuth } from '../contexts/AuthContext'; // Ajusta la ruta a tu context
 
 export function CompanyDescripcionPerfil({ warehouse = {} }) {

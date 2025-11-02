@@ -11,22 +11,22 @@ export function useSedes({ empresaId = null, empresaIds = null, includeMinis = f
     setLoading(true)
     setError(null)
     try {
-      console.log("[useSedes] fetchSedes -> empresaId:", empresaId, "empresaIds:", empresaIds, "includeMinis:", includeMinis)
-      // preparar filtro por ids (empresaId single o empresaIds array)
-      let query = supabase.from("sedes").select("id, nombre, ciudad, direccion, empresa_id, principal, telefono, lat, lng, created_at, updated_at, imagen_url")
+      let query = supabase
+        .from("sedes")
+        .select("id, nombre, ciudad, direccion, empresa_id, principal, telefono, lat, lng, created_at, updated_at, imagen_url, descripcion")
+      
       if (empresaId) {
         query = query.eq("empresa_id", empresaId)
       } else if (Array.isArray(empresaIds) && empresaIds.length > 0) {
         query = query.in("empresa_id", empresaIds)
       }
+      
       const { data: sedesData, error: sedesErr } = await query
-      console.log("[useSedes] query result sedes:", sedesData, "error:", sedesErr)
+      
       if (sedesErr) throw sedesErr
       setSedes(sedesData || [])
 
       if (includeMinis) {
-        // traer mini_bodegas para las sedes/empresas retornadas
-        // preferimos filtrar por empresa_id si hay, sino por sede ids
         const empresaIdsToQuery = empresaId ? [empresaId] : (empresaIds || (sedesData || []).map(s => s.empresa_id).filter(Boolean))
         const sedeIdsToQuery = (sedesData || []).map(s => s.id).filter(Boolean)
 
@@ -38,7 +38,6 @@ export function useSedes({ empresaId = null, empresaIds = null, includeMinis = f
         }
 
         const { data: minisData, error: minisErr } = await minisQuery
-        console.log("[useSedes] query result minis:", minisData, "error:", minisErr)
         if (minisErr) throw minisErr
 
         const grouped = {}
@@ -52,7 +51,6 @@ export function useSedes({ empresaId = null, empresaIds = null, includeMinis = f
         setMiniPorSede({})
       }
     } catch (err) {
-      console.error("[useSedes] fetch error:", err)
       setError(err)
     } finally {
       setLoading(false)
