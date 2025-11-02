@@ -10,10 +10,7 @@ export function WarehouseCard({
   minis = [],
   filtroActivo = null
 }) {
-  // Debug: inspeccionar props / datos internos
-
   const navigate = useNavigate()
-  // fallback: si no llega `sede`, intentar traerla por id desde la tabla `sedes`
   const [sedeFetched, setSedeFetched] = useState(null)
   const minisToRender = (Array.isArray(minis) && minis.length > 0) ? minis : (warehouse?.miniBodegas || [])
   const sedeIdToFetch = sede?.id ?? minisToRender?.[0]?.sede_id ?? minisToRender?.[0]?.sede
@@ -21,7 +18,6 @@ export function WarehouseCard({
   useEffect(() => {
     let mounted = true
     if (sede || !sedeIdToFetch) {
-      // si ya tenemos sede o no hay id, no hacer fetch
       return
     }
     ;(async () => {
@@ -39,11 +35,8 @@ export function WarehouseCard({
     return () => { mounted = false }
   }, [sede, sedeIdToFetch])
 
-  // Preferir datos pasados explícitamente: sede > sedeFetched > warehouse
   const sedeObj = sede || (warehouse && warehouse.sede) || null
   const sedeFinal = sedeObj || sedeFetched || null
-
-  // Mostrar únicamente el nombre de la sede, tomado directamente de la prop `sedeFinal`
   const displayedSedeName = sedeFinal?.nombre ?? "Sede sin nombre"
 
   const empresaObj =
@@ -51,12 +44,8 @@ export function WarehouseCard({
     (warehouse && { id: warehouse.id, name: warehouse.name, image: warehouse.image }) ||
     {}
 
-  // minisToRender ya definido arriba
-
-  // título y ciudad: usar siempre el nombre de la SEDE (sedeFinal)
   const displayedCity = sedeFinal?.ciudad ?? minisToRender?.[0]?.ciudad ?? empresaObj.city ?? warehouse?.city ?? ""
 
-  // Normaliza imagen_url: si es un array en string, toma la primera imagen
   let sedeImage = sedeFinal?.imagen_url;
 
   if (sedeImage && typeof sedeImage === "string" && sedeImage.startsWith("[")) {
@@ -68,16 +57,13 @@ export function WarehouseCard({
     }
   } 
 
-  // Usar imagen de sede, y si no existe, usar un placeholder de Unsplash
   const image =
     sedeImage ||
     "https://images.unsplash.com/photo-1609143739217-01b60dad1c67?q=80&w=687&auto=format&fit=crop"
 
-  // Normalizar campos
   const id = sedeObj?.id ?? empresaObj?.id ?? warehouse?.id ?? null
   const name = empresaObj?.name || warehouse?.name || displayedSedeName
 
-  // priceRange: inferir de minis si no viene
   const priceRange =
     empresaObj?.priceRange ||
     warehouse?.priceRange ||
@@ -96,10 +82,21 @@ export function WarehouseCard({
   const sizes =
     empresaObj?.sizes || warehouse?.sizes || minisToRender.map((m) => m?.metraje ?? m?.size ?? m?.tamano).filter(Boolean)
 
-  const description = empresaObj?.description || warehouse?.description || ""
+  // ✅ CAMBIO: Usar descripción de mini_bodegas en lugar de empresa
+  const description = (() => {
+    // Si hay mini bodegas, tomar la descripción de la primera
+    if (minisToRender && minisToRender.length > 0) {
+      const firstMiniDesc = minisToRender[0]?.descripcion
+      if (firstMiniDesc && firstMiniDesc.trim() !== '') {
+        return firstMiniDesc
+      }
+    }
+    // Fallback: descripción de empresa/warehouse
+    return empresaObj?.description || warehouse?.description || ""
+  })()
+
   const features = empresaObj?.features || warehouse?.features || []
 
-  // rating/reviews
   const average = parseFloat(empresaObj?.rating ?? warehouse?.rating ?? 0) || 0
   const count = parseInt(empresaObj?.reviewCount ?? warehouse?.reviewCount ?? 0, 10) || 0
   const loadingReviews = false
@@ -114,7 +111,6 @@ export function WarehouseCard({
       maximumFractionDigits: 0
     }).format(price)
 
-  // ✅ Generar URL con filtros
   const generateUrlWithFilters = (basePath) => {
     let url = basePath
     if (filtroActivo && (filtroActivo.ciudad || filtroActivo.zona || filtroActivo.empresa)) {
@@ -127,27 +123,20 @@ export function WarehouseCard({
     return url
   }
 
-  // DESTINO UNIFICADO: usar la misma URL para la card y para el botón de reservar
   const destinoUrl = generateUrlWithFilters(`/bodegas/${id}`)
 
-  // ✅ Botón Reservar -> misma URL que la tarjeta (reserva)
   const handleReserve = (e) => {
     e.stopPropagation()
     if (!canNavigate) return
     navigate(destinoUrl, { state: { warehouse, sede: sedeFinal, empresa: empresaObj, minis: minisToRender } })
   }
 
-  // ✅ Click en la card -> /perfil-bodegas/${id}
-  // Ignorar clicks que vienen de botones/links/inputs/iconos para evitar navegación accidental
   const handleCardClick = (e) => {
-    // si no hay id no navegamos
     if (!canNavigate) return
     const target = e?.target
-    // si el click proviene de un enlace, botón, input, svg o elemento que contenga aria-label, no navegamos
     if (target && target.closest && target.closest('a, button, input, label, svg')) {
       return
     }
-    // navegación principal: misma URL de reserva
     navigate(destinoUrl, { state: { warehouse, sede: sedeFinal, empresa: empresaObj, minis: minisToRender } })
   }
 
@@ -155,7 +144,6 @@ export function WarehouseCard({
     e.stopPropagation()
   }
 
-  // ✅ URL del perfil para el <Link>
   const SedeslUrl = canNavigate ? generateUrlWithFilters(`/bodegas/${id}`) : "#"
 
   return (
