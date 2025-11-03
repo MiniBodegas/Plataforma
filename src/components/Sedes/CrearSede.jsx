@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { ModalDireccionConMapa } from "./ModalDireccionConMapa";
 
 const CARACTERISTICAS_DEFAULT = [
   "Acceso 24/7",
@@ -24,41 +25,21 @@ export function CrearSede({ empresaId, onCreate, className }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [caracteristicas, setCaracteristicas] = useState([]);
-  const [geocodificando, setGeocodificando] = useState(false);
-
-  // Función para geocodificar dirección automáticamente
-  const geocodificarDireccion = async (direccion, ciudad) => {
-    try {
-      const query = `${direccion}, ${ciudad}, Colombia`;
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
-      
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'MiniBodegas-App'
-        }
-      });
-      
-      const data = await response.json();
-      
-      if (data && data.length > 0) {
-        return {
-          lat: parseFloat(data[0].lat),
-          lng: parseFloat(data[0].lon)
-        };
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Error geocodificando:', error);
-      return null;
-    }
-  };
+  const [coordenadas, setCoordenadas] = useState(null);
+  const [modalDireccionAbierto, setModalDireccionAbierto] = useState(false);
 
   // Manejar selección de múltiples imágenes
   const handleImagenesChange = (e) => {
     const files = Array.from(e.target.files);
     setImagenes(files);
     setPreviews(files.map((file) => URL.createObjectURL(file)));
+  };
+
+  // Manejar confirmación del modal de dirección
+  const handleConfirmarDireccion = (data) => {
+    setCiudad(data.ciudad);
+    setDireccion(data.direccion);
+    setCoordenadas(data.coordenadas);
   };
 
   const handleSubmit = async (e) => {
@@ -76,19 +57,9 @@ export function CrearSede({ empresaId, onCreate, className }) {
 
     setLoading(true);
     let imagenes_urls = [];
-    let coordenadas = null;
 
     try {
-      // 1️⃣ Geocodificar dirección automáticamente (invisible para el usuario)
-      setGeocodificando(true);
-      coordenadas = await geocodificarDireccion(direccion.trim(), ciudad.trim());
-      setGeocodificando(false);
-
-      if (!coordenadas) {
-        console.warn('⚠️ No se pudo geocodificar la dirección. Se guardará sin coordenadas.');
-      }
-
-      // 2️⃣ Subir imágenes
+      // Subir imágenes
       let sedeFolder = `${empresaId}-${Date.now()}`;
       if (imagenes.length > 0) {
         for (const imagen of imagenes) {
@@ -110,7 +81,7 @@ export function CrearSede({ empresaId, onCreate, className }) {
         }
       }
 
-      // 3️⃣ Crear payload con coordenadas automáticas
+      // Crear payload
       const payload = {
         empresa_id: empresaId,
         nombre: nombre?.trim() || null,
@@ -121,12 +92,12 @@ export function CrearSede({ empresaId, onCreate, className }) {
         principal: !!principal,
         imagen_url: imagenes_urls.length > 0 ? JSON.stringify(imagenes_urls) : null,
         caracteristicas: caracteristicas.length > 0 ? caracteristicas : null,
-        lat: coordenadas?.lat || null,  // ✅ Guardado automáticamente
-        lng: coordenadas?.lng || null,  // ✅ Guardado automáticamente
+        lat: coordenadas?.lat || null,
+        lng: coordenadas?.lng || null,
         created_at: new Date().toISOString()
       };
 
-      // 4️⃣ Insertar en DB
+      // Insertar en DB
       const { data, error: insertErr } = await supabase
         .from("sedes")
         .insert([payload])
@@ -147,182 +118,214 @@ export function CrearSede({ empresaId, onCreate, className }) {
       setImagenes([]);
       setPreviews([]);
       setCaracteristicas([]);
+      setCoordenadas(null);
     } catch (err) {
       console.error("CrearSede error", err);
       setError(err.message || "Error creando sede");
     } finally {
       setLoading(false);
-      setGeocodificando(false);
     }
   };
 
   return (
-    <form
-      className={
-        className ||
-        "bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl shadow-lg p-10 w-full"
-      }
-      onSubmit={handleSubmit}
-    >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Columna 1: datos básicos */}
-        <div className="flex flex-col gap-4">
-          <label className="block text-sm font-semibold text-[#2C3A61]">
-            Nombre de sede
-          </label>
-          <input
-            className="p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#2C3A61] transition text-base"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            placeholder="Principal"
-          />
-
-          <label className="block text-sm font-semibold text-[#2C3A61] mt-2">
-            Ciudad *
-          </label>
-          <input
-            className="p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#2C3A61] transition text-base"
-            value={ciudad}
-            onChange={(e) => setCiudad(e.target.value)}
-            placeholder="Bogotá"
-          />
-
-          <label className="block text-sm font-semibold text-[#2C3A61] mt-2">
-            Dirección *
-          </label>
-          <input
-            className="p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#2C3A61] transition text-base"
-            value={direccion}
-            onChange={(e) => setDireccion(e.target.value)}
-            placeholder="Cra 15 # 34-56"
-          />
-          {geocodificando && (
-            <span className="text-xs text-blue-600 flex items-center gap-1">
-              <span className="animate-spin">🗺️</span>
-              Buscando ubicación en el mapa...
-            </span>
-          )}
-
-          <label className="block text-sm font-semibold text-[#2C3A61] mt-2">
-            Teléfono
-          </label>
-          <input
-            className="p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#2C3A61] transition text-base"
-            value={telefono}
-            onChange={(e) => setTelefono(e.target.value)}
-            placeholder="3001234567"
-          />
-
-          <label className="inline-flex items-center gap-2 mt-2">
+    <>
+      <form
+        className={
+          className ||
+          "bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl shadow-lg p-10 w-full"
+        }
+        onSubmit={handleSubmit}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Columna 1 */}
+          <div className="flex flex-col gap-4">
+            <label className="block text-sm font-semibold text-[#2C3A61]">
+              Nombre de sede
+            </label>
             <input
-              type="checkbox"
-              checked={principal}
-              onChange={(e) => setPrincipal(e.target.checked)}
-              className="accent-[#2C3A61]"
+              className="p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#2C3A61] transition text-base"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              placeholder="Principal"
             />
-            <span className="text-sm">Marcar como sede principal</span>
-          </label>
-        </div>
-        {/* Columna 2: descripción y subir imágenes */}
-        <div className="flex flex-col gap-4">
-          <label className="block text-sm font-semibold text-[#2C3A61]">
-            Descripción
-          </label>
-          <textarea
-            className="p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#2C3A61] transition min-h-[180px] text-base"
-            value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
-            placeholder="Descripción de la sede"
-            rows={8}
-          />
 
-          {/* Subir imágenes debajo de descripción */}
-          <label className="block text-sm font-semibold text-[#2C3A61] mb-2">
-            Imágenes de la sede
-          </label>
-          <div className="w-full flex flex-col items-center">
-            <label className="cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-[#2C3A61] rounded-xl bg-white p-6 w-64 h-48 hover:bg-blue-50 transition">
-              <span className="text-[#2C3A61] text-sm mb-2">
-                Haz clic o arrastra para agregar imágenes
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImagenesChange}
-                className="hidden"
-              />
-              <span className="text-4xl">📷</span>
-            </label>
-            <div className="flex flex-wrap gap-2 mt-4 justify-center">
-              {previews.map((src, idx) => (
-                <div key={idx} className="relative">
-                  <img
-                    src={src}
-                    alt={`Previsualización ${idx + 1}`}
-                    className="rounded-lg border w-20 h-20 object-cover"
-                  />
+            {/* Botón para abrir modal de dirección */}
+            <div>
+              <label className="block text-sm font-semibold text-[#2C3A61] mb-2">
+                Ciudad y Dirección <span className="text-red-500">*</span>
+              </label>
+              
+              {ciudad && direccion ? (
+                <div className="bg-white border-2 border-green-500 rounded-xl p-4 mb-2">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-[#2C3A61] flex items-center gap-1">
+                        <span className="text-green-600">✓</span>
+                        {ciudad}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">📍 {direccion}</p>
+                      {coordenadas && (
+                        <p className="text-xs text-green-600 mt-1">
+                          🗺️ Ubicación confirmada en el mapa
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setModalDireccionAbierto(true)}
+                      className="text-blue-600 hover:text-blue-800 text-sm underline"
+                    >
+                      Editar
+                    </button>
+                  </div>
                 </div>
-              ))}
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setModalDireccionAbierto(true)}
+                  className="w-full p-4 border-2 border-dashed border-[#2C3A61] rounded-xl bg-white hover:bg-blue-50 transition flex flex-col items-center gap-2"
+                >
+                  <span className="text-3xl">📍</span>
+                  <span className="text-sm font-semibold text-[#2C3A61]">
+                    Agregar Dirección
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    Con confirmación en el mapa
+                  </span>
+                </button>
+              )}
             </div>
-          </div>
 
-          {/* Características de la instalación */}
-          <div>
-            <label className="block text-sm font-semibold text-[#2C3A61] mb-2">
-              Características de la instalación
+            <label className="block text-sm font-semibold text-[#2C3A61] mt-2">
+              Teléfono
             </label>
-            <div className="flex flex-wrap gap-2">
-              {CARACTERISTICAS_DEFAULT.map((car, idx) => (
-                <label key={idx} className={`px-3 py-1 rounded-full border cursor-pointer text-sm
-                  ${caracteristicas.includes(car) ? "bg-[#2C3A61] text-white border-[#2C3A61]" : "bg-white text-[#2C3A61] border-[#2C3A61]"}`}>
-                  <input
-                    type="checkbox"
-                    className="hidden"
-                    checked={caracteristicas.includes(car)}
-                    onChange={() => {
-                      setCaracteristicas((prev) =>
-                        prev.includes(car)
-                          ? prev.filter((c) => c !== car)
-                          : [...prev, car]
-                      );
-                    }}
-                  />
-                  {car}
-                </label>
-              ))}
+            <input
+              className="p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#2C3A61] transition text-base"
+              value={telefono}
+              onChange={(e) => setTelefono(e.target.value)}
+              placeholder="3001234567"
+            />
+
+            <label className="inline-flex items-center gap-2 mt-2">
+              <input
+                type="checkbox"
+                checked={principal}
+                onChange={(e) => setPrincipal(e.target.checked)}
+                className="accent-[#2C3A61]"
+              />
+              <span className="text-sm">Marcar como sede principal</span>
+            </label>
+          </div>
+          
+          {/* Columna 2: descripción e imágenes */}
+          <div className="flex flex-col gap-4">
+            <label className="block text-sm font-semibold text-[#2C3A61]">
+              Descripción
+            </label>
+            <textarea
+              className="p-3 border rounded-xl bg-white focus:ring-2 focus:ring-[#2C3A61] transition min-h-[180px] text-base"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              placeholder="Descripción de la sede"
+              rows={8}
+            />
+
+            <label className="block text-sm font-semibold text-[#2C3A61] mb-2">
+              Imágenes de la sede
+            </label>
+            <div className="w-full flex flex-col items-center">
+              <label className="cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-[#2C3A61] rounded-xl bg-white p-6 w-64 h-48 hover:bg-blue-50 transition">
+                <span className="text-[#2C3A61] text-sm mb-2">
+                  Haz clic o arrastra para agregar imágenes
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImagenesChange}
+                  className="hidden"
+                />
+                <span className="text-4xl">📷</span>
+              </label>
+              <div className="flex flex-wrap gap-2 mt-4 justify-center">
+                {previews.map((src, idx) => (
+                  <div key={idx} className="relative">
+                    <img
+                      src={src}
+                      alt={`Previsualización ${idx + 1}`}
+                      className="rounded-lg border w-20 h-20 object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-[#2C3A61] mb-2">
+                Características de la instalación
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {CARACTERISTICAS_DEFAULT.map((car, idx) => (
+                  <label key={idx} className={`px-3 py-1 rounded-full border cursor-pointer text-sm
+                    ${caracteristicas.includes(car) ? "bg-[#2C3A61] text-white border-[#2C3A61]" : "bg-white text-[#2C3A61] border-[#2C3A61]"}`}>
+                    <input
+                      type="checkbox"
+                      className="hidden"
+                      checked={caracteristicas.includes(car)}
+                      onChange={() => {
+                        setCaracteristicas((prev) =>
+                          prev.includes(car)
+                            ? prev.filter((c) => c !== car)
+                            : [...prev, car]
+                        );
+                      }}
+                    />
+                    {car}
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      {/* Errores y botones */}
-      <div className="mt-6 flex flex-col md:flex-row items-center gap-4">
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-[#2C3A61] text-white px-8 py-3 rounded-xl font-semibold shadow hover:bg-[#1d2742] transition disabled:opacity-50"
-        >
-          {loading ? (geocodificando ? "Localizando en mapa..." : "Creando...") : "Crear sede"}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setNombre("Principal");
-            setCiudad("");
-            setDireccion("");
-            setDescripcion("");
-            setTelefono("");
-            setImagenes([]);
-            setPreviews([]);
-            setCaracteristicas([]);
-            setError(null);
-          }}
-          className="px-6 py-3 border rounded-xl font-semibold bg-white hover:bg-gray-100 transition"
-        >
-          Limpiar
-        </button>
-      </div>
-    </form>
+        
+        <div className="mt-6 flex flex-col md:flex-row items-center gap-4">
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-[#2C3A61] text-white px-8 py-3 rounded-xl font-semibold shadow hover:bg-[#1d2742] transition disabled:opacity-50"
+          >
+            {loading ? "Creando..." : "Crear sede"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setNombre("Principal");
+              setCiudad("");
+              setDireccion("");
+              setDescripcion("");
+              setTelefono("");
+              setImagenes([]);
+              setPreviews([]);
+              setCaracteristicas([]);
+              setCoordenadas(null);
+              setError(null);
+            }}
+            className="px-6 py-3 border rounded-xl font-semibold bg-white hover:bg-gray-100 transition"
+          >
+            Limpiar
+          </button>
+        </div>
+      </form>
+
+      {/* Modal de dirección con mapa */}
+      <ModalDireccionConMapa
+        isOpen={modalDireccionAbierto}
+        onClose={() => setModalDireccionAbierto(false)}
+        onConfirmar={handleConfirmarDireccion}
+        ciudadInicial={ciudad}
+        direccionInicial={direccion}
+      />
+    </>
   );
 }
