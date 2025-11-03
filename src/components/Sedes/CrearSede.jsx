@@ -24,6 +24,35 @@ export function CrearSede({ empresaId, onCreate, className }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [caracteristicas, setCaracteristicas] = useState([]);
+  const [geocodificando, setGeocodificando] = useState(false);
+
+  // Función para geocodificar dirección automáticamente
+  const geocodificarDireccion = async (direccion, ciudad) => {
+    try {
+      const query = `${direccion}, ${ciudad}, Colombia`;
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'MiniBodegas-App'
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        return {
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon)
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error geocodificando:', error);
+      return null;
+    }
+  };
 
   // Manejar selección de múltiples imágenes
   const handleImagenesChange = (e) => {
@@ -47,10 +76,20 @@ export function CrearSede({ empresaId, onCreate, className }) {
 
     setLoading(true);
     let imagenes_urls = [];
+    let coordenadas = null;
 
     try {
+      // 1️⃣ Geocodificar dirección automáticamente (invisible para el usuario)
+      setGeocodificando(true);
+      coordenadas = await geocodificarDireccion(direccion.trim(), ciudad.trim());
+      setGeocodificando(false);
+
+      if (!coordenadas) {
+        console.warn('⚠️ No se pudo geocodificar la dirección. Se guardará sin coordenadas.');
+      }
+
+      // 2️⃣ Subir imágenes
       let sedeFolder = `${empresaId}-${Date.now()}`;
-      // Subir imágenes si hay
       if (imagenes.length > 0) {
         for (const imagen of imagenes) {
           const fileExt = imagen.name.split(".").pop();
@@ -71,6 +110,7 @@ export function CrearSede({ empresaId, onCreate, className }) {
         }
       }
 
+      // 3️⃣ Crear payload con coordenadas automáticas
       const payload = {
         empresa_id: empresaId,
         nombre: nombre?.trim() || null,
@@ -81,9 +121,12 @@ export function CrearSede({ empresaId, onCreate, className }) {
         principal: !!principal,
         imagen_url: imagenes_urls.length > 0 ? JSON.stringify(imagenes_urls) : null,
         caracteristicas: caracteristicas.length > 0 ? caracteristicas : null,
+        lat: coordenadas?.lat || null,  // ✅ Guardado automáticamente
+        lng: coordenadas?.lng || null,  // ✅ Guardado automáticamente
         created_at: new Date().toISOString()
       };
 
+      // 4️⃣ Insertar en DB
       const { data, error: insertErr } = await supabase
         .from("sedes")
         .insert([payload])
@@ -94,7 +137,7 @@ export function CrearSede({ empresaId, onCreate, className }) {
 
       onCreate && onCreate(data);
 
-      // limpiar formulario
+      // Limpiar formulario
       setNombre("Principal");
       setDireccion("");
       setCiudad("");
@@ -103,11 +146,13 @@ export function CrearSede({ empresaId, onCreate, className }) {
       setPrincipal(false);
       setImagenes([]);
       setPreviews([]);
+      setCaracteristicas([]);
     } catch (err) {
       console.error("CrearSede error", err);
       setError(err.message || "Error creando sede");
     } finally {
       setLoading(false);
+      setGeocodificando(false);
     }
   };
 
@@ -151,6 +196,12 @@ export function CrearSede({ empresaId, onCreate, className }) {
             onChange={(e) => setDireccion(e.target.value)}
             placeholder="Cra 15 # 34-56"
           />
+          {geocodificando && (
+            <span className="text-xs text-blue-600 flex items-center gap-1">
+              <span className="animate-spin">🗺️</span>
+              Buscando ubicación en el mapa...
+            </span>
+          )}
 
           <label className="block text-sm font-semibold text-[#2C3A61] mt-2">
             Teléfono
@@ -250,9 +301,9 @@ export function CrearSede({ empresaId, onCreate, className }) {
         <button
           type="submit"
           disabled={loading}
-          className="bg-[#2C3A61] text-white px-8 py-3 rounded-xl font-semibold shadow hover:bg-[#1d2742] transition"
+          className="bg-[#2C3A61] text-white px-8 py-3 rounded-xl font-semibold shadow hover:bg-[#1d2742] transition disabled:opacity-50"
         >
-          {loading ? "Creando..." : "Crear sede"}
+          {loading ? (geocodificando ? "Localizando en mapa..." : "Creando...") : "Crear sede"}
         </button>
         <button
           type="button"
@@ -264,6 +315,7 @@ export function CrearSede({ empresaId, onCreate, className }) {
             setTelefono("");
             setImagenes([]);
             setPreviews([]);
+            setCaracteristicas([]);
             setError(null);
           }}
           className="px-6 py-3 border rounded-xl font-semibold bg-white hover:bg-gray-100 transition"

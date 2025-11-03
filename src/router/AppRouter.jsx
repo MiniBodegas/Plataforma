@@ -87,7 +87,6 @@ export const AppRouter = () => {
         <Route path="/login-proveedores" element={<LoginProveedoresScreen />} />
         <Route path="/planes" element={<PlanesScreen />} />
         <Route path="/mis-bodegas" element={<Reservas />} />
-        <Route path="/mis-mini-bodegas" element={<MisBodegasScreen />} />
         <Route path="/balance" element={<BalanceScreen />} />
         <Route path="/perfil-proveedor" element={<PerfilProveedorScreen />} />
         <Route path="/perfil-form-proveedor" element={<PerfilFormProveedorScreen />} />

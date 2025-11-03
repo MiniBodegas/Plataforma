@@ -2,14 +2,12 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { HeroSection, FilterSidebar, WarehouseCard } from '../../components/index'
 import { useWarehouses } from '../../hooks/useWarehouses'
-import { useSedes } from '../../hooks/useSedes'
 
 export function BodegaScreen() {
   const [searchParams] = useSearchParams()
   const [filteredWarehouses, setFilteredWarehouses] = useState([])
   const [showFilters, setShowFilters] = useState(false)
-  // ✅ AÑADIR ESTADO PARA DEPURACIÓN
-  const [debugMode, setDebugMode] = useState(false)
+
   
   const [filters, setFilters] = useState({
     locations: [],
@@ -53,9 +51,7 @@ export function BodegaScreen() {
           newFilters.size = '+42 m³';
         }
       }
-      
-      console.log('🔍 Aplicando filtro de tamaño:', newFilters.size);
-      
+            
       // Actualizar el estado de filtros
       setFilters(newFilters);
     }
@@ -431,45 +427,6 @@ export function BodegaScreen() {
                   +{filters.features.length} características
                 </span>
               )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ✅ NUEVO: PANEL DE DIAGNÓSTICO */}
-      {debugMode && (
-        <div className="bg-gray-100 border-b px-6 py-4">
-          <div className="max-w-[1500px] mx-auto">
-            <h3 className="font-bold text-sm mb-2">Información de diagnóstico:</h3>
-            <div className="text-xs space-y-1 overflow-auto">
-              <p>Ciudad: <strong>{ciudadSeleccionada || 'ninguna'}</strong></p>
-              <p>Zona: <strong>{zonaSeleccionada || 'ninguna'}</strong></p>
-              <p>Metraje: min=<strong>{minMetrajeParam || 'ninguno'}</strong>, max=<strong>{maxMetrajeParam || 'ninguno'}</strong></p>
-              <p>Tamaño seleccionado: <strong>{filters.size || 'ninguno'}</strong></p>
-              <p>Empresas con bodegas: <strong>{filteredWarehouses.length}</strong></p>
-              <p>Total bodegas filtradas: <strong>
-                {filteredWarehouses.reduce((acc, w) => acc + w.miniBodegas.length, 0)}
-              </strong></p>
-              
-              <details>
-                <summary className="cursor-pointer text-blue-600">Ver detalles de bodegas</summary>
-                <div className="mt-2 p-2 bg-white rounded max-h-64 overflow-auto">
-                  {filteredWarehouses.map((w, idx) => (
-                    <div key={idx} className="mb-2 pb-2 border-b">
-                      <p><strong>{w.name}</strong> - {w.miniBodegas.length} bodegas</p>
-                      <ul className="ml-4 list-disc">
-                        {w.miniBodegas.slice(0, 3).map((b, i) => (
-                          <li key={i}>
-                            {b.metraje}m³ - {b.ciudad || 'Sin ciudad'}
-                            {b.zona ? ` (${b.zona})` : ''} - ${parseInt(b.precio_mensual).toLocaleString()}
-                          </li>
-                        ))}
-                        {w.miniBodegas.length > 3 && <li>... y {w.miniBodegas.length - 3} más</li>}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              </details>
             </div>
           </div>
         </div>

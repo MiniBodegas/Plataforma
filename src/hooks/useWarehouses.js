@@ -15,8 +15,6 @@ export function useWarehouses() {
       setLoading(true)
       setError(null)
       
-      console.log('🔍 Consultando empresas con RLS activado...')
-
       // ✅ CONSULTA DIRECTA (DEBERÍA FUNCIONAR CON LAS NUEVAS POLÍTICAS)
       const { data: empresas, error: empresasError } = await supabase
         .from('empresas')
@@ -36,7 +34,6 @@ export function useWarehouses() {
 
       // --- Traer todas las reviews de una sola vez desde la tabla de reviews (empresa_review)
       const empresaIds = empresas.map(e => String(e.id)).filter(Boolean)
-      console.log('🔎 empresaIds (sample):', empresaIds.slice(0,10))
       let allReviews = []
       try {
         const { data: reviewsData, error: reviewsError } = await supabase
@@ -51,8 +48,6 @@ export function useWarehouses() {
             empresa_id: String(r.empresa_id),
             rating: Number(r.rating)
           }))
-          console.log(`✅ Reviews cargadas (empresa_review): ${allReviews.length}`)
-          console.log('🧾 Ejemplo rows reviews:', allReviews.slice(0,10))
         }
       } catch (e) {
         console.warn('⚠️ Excepción cargando reviews:', e)
@@ -67,11 +62,8 @@ export function useWarehouses() {
         reviewMap.get(id).push(val)
       })
 
-      console.log('🔍 reviewMap sample:', Array.from(reviewMap.entries()).slice(0,10).map(([k,v])=>({id:k,count:v.length,avg:(v.reduce((a,b)=>a+b,0)/v.length).toFixed(2)})))
-
       // PROCESAR CADA EMPRESA (usando string key lookup)
       const warehousesPromises = empresas.map(async (empresa) => {
-        console.log(`🔍 Procesando: ${empresa.nombre}`)
 
         // Consultar mini_bodegas
         const { data: miniBodegas, error: miniBodegasError } = await supabase
@@ -119,12 +111,6 @@ export function useWarehouses() {
         }
 
         const descripcion = descripcionArray?.[0]
-
-        console.log(`📊 ${empresa.nombre}:`, {
-          miniBodegas: miniBodegas?.length || 0,
-          carrusel: carruselImagenes?.length || 0,
-          descripcion: !!descripcion
-        })
 
         // Filtrar bodegas disponibles
         const miniBodegasDisponibles = (miniBodegas || []).filter(b => 
@@ -211,20 +197,12 @@ export function useWarehouses() {
           created_at: empresa.created_at
         }
 
-        console.log(`✅ Warehouse: ${warehouse.name}`, {
-          bodegas: warehouse.totalBodegas,
-          precio: warehouse.priceRange,
-          rating: warehouse.rating,
-          reviewCount: warehouse.reviewCount
-        })
-
         return warehouse
       })
 
       const warehousesResults = await Promise.all(warehousesPromises)
       const warehousesValidos = warehousesResults.filter(w => w !== null)
 
-      console.log('✅ Total warehouses con RLS:', warehousesValidos.length)
       setWarehouses(warehousesValidos)
 
     } catch (err) {
