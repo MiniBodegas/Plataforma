@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Filter, X, Star } from 'lucide-react'
+import { X, Star } from 'lucide-react'
 import { MapaBodegas } from './index'
 
 const bodegas = [

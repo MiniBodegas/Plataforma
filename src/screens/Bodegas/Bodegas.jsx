@@ -27,16 +27,7 @@ export function BodegaScreen() {
   const maxMetrajeParam = searchParams.get('maxMetraje')
   
   const { warehouses, loading, error, refetch } = useWarehouses()
-  const empresaId = (warehouses && warehouses.length > 0) ? (warehouses[0].empresa_id || warehouses[0].id) : null
-  const { sedes, miniPorSede, loading: loadingSedes, error: errorSedes } = useSedes({ empresaId, includeMinis: true })
 
-  // Debug: ver qué trae useSedes
-  useEffect(() => {
-    console.log("[Bodegas] useSedes -> empresaId:", empresaId)
-    console.log("[Bodegas] sedes:", sedes)
-    console.log("[Bodegas] miniPorSede keys:", Object.keys(miniPorSede || {}))
-    console.log("[Bodegas] loadingSedes:", loadingSedes, "errorSedes:", errorSedes)
-  }, [empresaId, sedes, miniPorSede, loadingSedes, errorSedes])
 
   // ✅ APLICAR FILTROS DE URL AL SIDEBAR - MÁS FLEXIBLE
   useEffect(() => {
@@ -228,8 +219,6 @@ export function BodegaScreen() {
       setFilteredWarehouses([]);
       return;
     }
-
-    console.log('🔍 Aplicando filtros a', warehouses.length, 'empresas');
     
     // Crear copias profundas para modificar sin afectar los datos originales
     const warehousesCopy = JSON.parse(JSON.stringify(warehouses));
@@ -253,10 +242,6 @@ export function BodegaScreen() {
             return ciudadBodegaNorm.includes(ciudadBusquedaNorm) || 
                    ciudadBusquedaNorm.includes(ciudadBodegaNorm);
           });
-          
-          // Debug para resolver problemas
-          console.log(`🔍 Filtro ciudad "${ciudadSeleccionada}" para ${warehouse.name}:`, 
-                      bodegasFiltradas.length, 'bodegas de', warehouse.miniBodegas?.length || 0);
           
           if (bodegasFiltradas.length === 0) {
             return null; // No hay bodegas en esta ciudad
@@ -321,9 +306,6 @@ export function BodegaScreen() {
     
     // Aplicar filtros del sidebar
     filtered = filtered.filter(aplicarFiltros);
-    
-    console.log('🔍 Resultados finales:', filtered.length, 'empresas con',
-                filtered.reduce((acc, w) => acc + w.miniBodegas.length, 0), 'bodegas');
     
     setFilteredWarehouses(filtered);
     
