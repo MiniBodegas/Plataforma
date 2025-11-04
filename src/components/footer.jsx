@@ -1,6 +1,7 @@
 import { Instagram, Facebook, MessageCircle } from "lucide-react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
+import { Link } from "react-router-dom"
 
 export function Footer() {
   const location = useLocation()
@@ -89,6 +90,14 @@ export function Footer() {
             <h4 className="font-medium text-gray-900 mb-4">Contacto</h4>
             <p className="text-gray-600">minibodegas@gmail.com</p>
           </div>
+        </div>
+        <div className="mt-8">
+          <Link 
+            to="/admin" 
+            className="text-gray-400 hover:text-white transition"
+          >
+            Admin
+          </Link>
         </div>
       </div>
     </footer>

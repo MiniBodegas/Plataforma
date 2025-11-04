@@ -28,3 +28,5 @@ export * from './ReservaConfirmada/ReservaConfirmada'
 export * from './SedesEditor/SedesEditorScreen'
 
 export * from './MiniBodegas/MiniBodegasEditorScreen'
+
+export * from './Admin/AdminPanel'
