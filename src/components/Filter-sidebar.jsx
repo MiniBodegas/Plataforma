@@ -1,17 +1,9 @@
 import { useState, useEffect } from 'react'
 import { X, Star } from 'lucide-react'
 import { MapaBodegas } from './index'
-
-const bodegas = [
-  { id: 1, name: "Bodega Norte", city: "Cali", coords: [3.4706, -76.5290] },
-  { id: 2, name: "Bodega Sur", city: "Cali", coords: [3.3895, -76.5310] },
-  { id: 3, name: "Bodega Centro", city: "Cali", coords: [3.4516, -76.5320] },
-  { id: 4, name: "Bodega Bogotá", city: "Bogotá", coords: [4.7110, -74.0721] },
-  { id: 5, name: "Bodega Medellín", city: "Medellín", coords: [6.2442, -75.5812] },
-]
+import { supabase } from '../lib/supabase'
 
 export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, ciudadSeleccionada, hideMapOnMobile }) {
-  // Valores por defecto para evitar errores
   const defaultFilters = {
     locations: [],
     priceRange: [0, 3500000],
@@ -22,11 +14,67 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, 
   }
 
   const [localFilters, setLocalFilters] = useState(defaultFilters)
+  const [sedesReales, setSedesReales] = useState([])
+  const [loadingMapa, setLoadingMapa] = useState(false)
 
   // Sincronizar con props cuando cambien
   useEffect(() => {
     setLocalFilters({ ...defaultFilters, ...filters })
   }, [filters])
+
+  // ✅ CARGAR SEDES REALES DE LA CIUDAD SELECCIONADA
+  useEffect(() => {
+    const cargarSedesPorCiudad = async () => {
+      if (!ciudadSeleccionada) {
+        setSedesReales([])
+        return
+      }
+
+      setLoadingMapa(true)
+      try {
+        const { data: sedes, error } = await supabase
+          .from('sedes')
+          .select(`
+            id,
+            nombre,
+            ciudad,
+            direccion,
+            lat,
+            lng,
+            imagen_url
+          `)
+          .ilike('ciudad', ciudadSeleccionada) // Búsqueda case-insensitive
+          .not('lat', 'is', null)
+          .not('lng', 'is', null)
+
+        if (error) {
+          console.error('Error cargando sedes:', error)
+          setSedesReales([])
+          return
+        }
+
+        // Formatear para el componente MapaBodegas
+        const sedesFormateadas = (sedes || []).map(sede => ({
+          id: sede.id,
+          name: sede.nombre || `${sede.zona || 'Sede'} - ${sede.ciudad}`,
+          city: sede.ciudad,
+          coords: [parseFloat(sede.lat), parseFloat(sede.lng)],
+          direccion: sede.direccion,
+          zona: sede.zona,
+          imagen_url: sede.imagen_url
+        }))
+
+        setSedesReales(sedesFormateadas)
+      } catch (err) {
+        console.error('Error inesperado:', err)
+        setSedesReales([])
+      } finally {
+        setLoadingMapa(false)
+      }
+    }
+
+    cargarSedesPorCiudad()
+  }, [ciudadSeleccionada])
 
   const handleFilterChange = (key, value) => {
     const newFilters = { ...localFilters, [key]: value }
@@ -50,7 +98,6 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, 
     }
   }
 
-  // ✅ COMPONENTE DE ESTRELLAS PARA CALIFICACIÓN
   const StarRating = ({ rating, onRatingChange, interactive = true }) => {
     const [hoverRating, setHoverRating] = useState(0)
 
@@ -112,11 +159,35 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, 
 
         {/* Filtros */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 bg-white">
-          {/* Mapa */}
+          {/* ✅ MAPA CON SEDES REALES */}
           {!hideMapOnMobile || (hideMapOnMobile && window.innerWidth >= 768) ? (
             <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="font-medium mb-3 text-[#2C3A61]">Ubicación en mapa</h3>
-              <MapaBodegas city={ciudadSeleccionada || "Cali"} bodegas={bodegas} />
+              <h3 className="font-medium mb-3 text-[#2C3A61]">
+                Ubicación en mapa
+                {ciudadSeleccionada && (
+                  <span className="text-sm font-normal text-gray-500 ml-2">
+                    ({sedesReales.length} {sedesReales.length === 1 ? 'sede' : 'sedes'})
+                  </span>
+                )}
+              </h3>
+              
+              {loadingMapa ? (
+                <div className="flex items-center justify-center h-48 text-gray-500">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2C3A61]"></div>
+                </div>
+              ) : sedesReales.length > 0 ? (
+                <MapaBodegas 
+                  city={ciudadSeleccionada || "Cali"} 
+                  bodegas={sedesReales} 
+                />
+              ) : (
+                <div className="text-center text-gray-500 py-8 text-sm">
+                  {ciudadSeleccionada 
+                    ? `No hay sedes con ubicación en ${ciudadSeleccionada}`
+                    : 'Selecciona una ciudad para ver el mapa'
+                  }
+                </div>
+              )}
             </div>
           ) : null}
 

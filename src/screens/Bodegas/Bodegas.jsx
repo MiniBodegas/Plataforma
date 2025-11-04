@@ -26,33 +26,53 @@ export function BodegaScreen() {
   
   const { warehouses, loading, error, refetch } = useWarehouses()
 
-
-  // ✅ APLICAR FILTROS DE URL AL SIDEBAR - MÁS FLEXIBLE
+  // ✅ LOG DE BODEGAS INICIALES
   useEffect(() => {
-    // Inicializar nuevos filtros basados en los actuales
+    console.log('═══════════════════════════════════════════════════');
+    console.log('📦 BODEGAS ORIGINALES (desde useWarehouses):');
+    console.log('Total empresas/warehouses:', warehouses?.length || 0);
+    
+    warehouses?.forEach((warehouse, index) => {
+      console.log(`\n🏢 Empresa ${index + 1}: ${warehouse.name}`);
+      console.log('   ID:', warehouse.id);
+      console.log('   Ciudad:', warehouse.city);
+      console.log('   Zona:', warehouse.zone);
+      console.log('   Total MiniBodegas:', warehouse.miniBodegas?.length || 0);
+      
+      warehouse.miniBodegas?.forEach((bodega, bIndex) => {
+        console.log(`   📦 MiniBodega ${bIndex + 1}:`, {
+          id: bodega.id,
+          metraje: bodega.metraje,
+          precio: bodega.precio_mensual,
+          ciudad: bodega.ciudad,
+          zona: bodega.zona,
+          estado: bodega.estado
+        });
+      });
+    });
+    console.log('═══════════════════════════════════════════════════\n');
+  }, [warehouses]);
+
+  // ✅ APLICAR FILTROS DE URL AL SIDEBAR
+  useEffect(() => {
     const newFilters = { ...filters };
     
-    // Procesar parámetros de metraje y actualizar el filtro size
     if (minMetrajeParam || maxMetrajeParam) {
       const min = parseInt(minMetrajeParam);
       const max = parseInt(maxMetrajeParam);
       
-      // ✅ SER MÁS FLEXIBLE CON LOS RANGOS
       if (!isNaN(min) && !isNaN(max)) {
-        // Caso: tenemos min y max - USAR RANGOS APROXIMADOS
         if (min >= 0 && min <= 2 && max >= 13 && max <= 17) {
           newFilters.size = '1-15 m³';
         } else if (min >= 14 && min <= 17 && max >= 38 && max <= 42) {
           newFilters.size = '15-40 m³';
         }
       } else if (!isNaN(min)) {
-        // ✅ MÁS FLEXIBLE CON EL VALOR MÍNIMO
-        if (min >= 40) { // En lugar de exactamente 42
+        if (min >= 40) {
           newFilters.size = '+42 m³';
         }
       }
             
-      // Actualizar el estado de filtros
       setFilters(newFilters);
     }
   }, [minMetrajeParam, maxMetrajeParam]);
@@ -61,7 +81,7 @@ export function BodegaScreen() {
     window.scrollTo(0, 0);
   }, []);
 
-  // ✅ FUNCIÓN PARA NORMALIZAR TEXTO (elimina acentos, espacios extra)
+  // ✅ FUNCIÓN PARA NORMALIZAR TEXTO
   const normalizarTexto = (texto) => {
     if (!texto) return '';
     return texto.toLowerCase()
@@ -70,60 +90,72 @@ export function BodegaScreen() {
       .trim();
   };
 
-  // ✅ FUNCIÓN PARA APLICAR FILTROS - MUCHO MÁS FLEXIBLE
+  // ✅ FUNCIÓN PARA APLICAR FILTROS - SIN DEPENDER DE ZONA
   const aplicarFiltros = (warehouse) => {
-    // Si no hay mini bodegas, no aplicar filtros
+    console.log(`\n🔍 Aplicando filtros a: ${warehouse.name}`);
+    console.log('   MiniBodegas iniciales:', warehouse.miniBodegas?.length);
+    
     if (!warehouse.miniBodegas || warehouse.miniBodegas.length === 0) {
+      console.log('   ❌ Rechazada: Sin minibodegas');
       return false;
     }
 
     let bodegasValidas = [...warehouse.miniBodegas];
 
-    // ✅ FILTRO POR ZONAS MÁS FLEXIBLE
+    // ✅ FILTRO POR ZONAS - OPCIONAL (solo si la bodega tiene zona)
     if (filters.locations && filters.locations.length > 0) {
+      console.log('   📍 Filtrando por zonas:', filters.locations);
+      
       bodegasValidas = bodegasValidas.filter(bodega => {
-        // Si la bodega no tiene zona, permitirla si no estamos filtrando por zona específica
-        if (!bodega.zona) return true;
+        // ✅ Si la bodega NO tiene zona, la incluimos de todos modos
+        if (!bodega.zona) {
+          console.log('      ✅ Bodega sin zona incluida');
+          return true;
+        }
         
-        // Normalizar la zona de la bodega
         const zonaBodega = normalizarTexto(bodega.zona);
         
-        // Verificar si alguna zona seleccionada coincide parcialmente
-        return filters.locations.some(zonaFiltro => {
+        const cumpleFiltro = filters.locations.some(zonaFiltro => {
           const zonaFiltroNorm = normalizarTexto(zonaFiltro);
           return zonaBodega.includes(zonaFiltroNorm) || zonaFiltroNorm.includes(zonaBodega);
         });
+        
+        console.log(`      ${cumpleFiltro ? '✅' : '❌'} Zona "${bodega.zona}"`);
+        return cumpleFiltro;
       });
       
-      if (bodegasValidas.length === 0) return false;
+      console.log('   Después filtro zona:', bodegasValidas.length);
     }
 
-    // ✅ FILTRO POR PRECIO MÁS FLEXIBLE (5% de tolerancia)
+    // ✅ FILTRO POR PRECIO
     if (filters.priceRange && (filters.priceRange[0] > 0 || filters.priceRange[1] < 3500000)) {
       const minPrecio = filters.priceRange[0];
       const maxPrecio = filters.priceRange[1];
       
-      // Añadir 5% de tolerancia
+      console.log(`   💰 Filtrando por precio: $${minPrecio} - $${maxPrecio}`);
+      
       const minConTolerancia = minPrecio * 0.95;
       const maxConTolerancia = maxPrecio * 1.05;
       
       bodegasValidas = bodegasValidas.filter(bodega => {
         const precio = parseFloat(bodega.precio_mensual);
-        if (isNaN(precio)) return true; // Si no tiene precio, permitirla
+        if (isNaN(precio)) return true;
         
-        return precio >= minConTolerancia && precio <= maxConTolerancia;
+        const cumple = precio >= minConTolerancia && precio <= maxConTolerancia;
+        console.log(`      ${cumple ? '✅' : '❌'} Precio: $${precio}`);
+        return cumple;
       });
+      
+      console.log('   Después filtro precio:', bodegasValidas.length);
       
       if (bodegasValidas.length === 0) return false;
     }
 
-    // ✅ FILTRO POR TAMAÑO MUCHO MÁS FLEXIBLE
+    // ✅ FILTRO POR TAMAÑO
     if (filters.size || minMetrajeParam || maxMetrajeParam) {
-      // Determinar valores de metraje a filtrar
       let minMetraje = null;
       let maxMetraje = null;
       
-      // Primero obtener de URL params
       if (minMetrajeParam) {
         minMetraje = parseFloat(minMetrajeParam);
       }
@@ -131,7 +163,6 @@ export function BodegaScreen() {
         maxMetraje = parseFloat(maxMetrajeParam);
       }
       
-      // Si no hay en URL, usar filtros del sidebar
       if (!minMetraje && !maxMetraje && filters.size) {
         switch (filters.size) {
           case '1-15 m³':
@@ -148,41 +179,41 @@ export function BodegaScreen() {
         }
       }
       
-      // Aplicar filtro si tenemos valores
       if (minMetraje !== null || maxMetraje !== null) {
-        // ✅ AÑADIR TOLERANCIA SIGNIFICATIVA (±3m³)
+        console.log(`   📏 Filtrando por tamaño: ${minMetraje || 'min'} - ${maxMetraje || 'max'} m³`);
         const TOLERANCIA = 3;
         
         bodegasValidas = bodegasValidas.filter(bodega => {
           const metraje = parseFloat(bodega.metraje);
-          if (isNaN(metraje)) return true; // Si no tiene metraje, permitirla
+          if (isNaN(metraje)) return true;
           
+          let cumple = true;
           if (minMetraje !== null && maxMetraje !== null) {
-            // Rango con tolerancia
-            return metraje >= (minMetraje - TOLERANCIA) && metraje <= (maxMetraje + TOLERANCIA);
+            cumple = metraje >= (minMetraje - TOLERANCIA) && metraje <= (maxMetraje + TOLERANCIA);
           } else if (minMetraje !== null) {
-            // Solo mínimo con tolerancia
-            return metraje >= (minMetraje - TOLERANCIA);
+            cumple = metraje >= (minMetraje - TOLERANCIA);
           } else if (maxMetraje !== null) {
-            // Solo máximo con tolerancia
-            return metraje <= (maxMetraje + TOLERANCIA);
+            cumple = metraje <= (maxMetraje + TOLERANCIA);
           }
-          return true;
+          
+          console.log(`      ${cumple ? '✅' : '❌'} Metraje: ${metraje}m³`);
+          return cumple;
         });
+        
+        console.log('   Después filtro tamaño:', bodegasValidas.length);
         
         if (bodegasValidas.length === 0) return false;
       }
     }
 
-    // ✅ FILTRO POR CARACTERÍSTICAS - CAMBIAR EVERY POR SOME
+    // ✅ FILTRO POR CARACTERÍSTICAS
     if (filters.features && filters.features.length > 0) {
+      console.log('   🎯 Filtrando por características:', filters.features);
+      
       bodegasValidas = bodegasValidas.filter(bodega => {
-        // ✅ CAMBIO IMPORTANTE: Usar SOME en lugar de EVERY
-        // Una bodega pasa si tiene AL MENOS UNA de las características seleccionadas
         return filters.features.some(feature => {
           const featureNorm = normalizarTexto(feature);
           
-          // Buscar en múltiples campos
           return (
             (warehouse.features?.some(f => normalizarTexto(f).includes(featureNorm))) ||
             (bodega.caracteristicas && normalizarTexto(bodega.caracteristicas).includes(featureNorm)) ||
@@ -192,62 +223,86 @@ export function BodegaScreen() {
         });
       });
       
+      console.log('   Después filtro características:', bodegasValidas.length);
+      
       if (bodegasValidas.length === 0) return false;
     }
 
-    // ✅ FILTRO POR CALIFICACIÓN MÁS FLEXIBLE
+    // ✅ FILTRO POR CALIFICACIÓN
     if (filters.rating > 0) {
+      console.log(`   ⭐ Filtrando por calificación: ${filters.rating}+`);
       const rating = parseFloat(warehouse.rating) || 0;
-      // Permitir 0.5 menos que el mínimo seleccionado
-      if (rating < (filters.rating - 0.5)) return false;
+      if (rating < (filters.rating - 0.5)) {
+        console.log(`   ❌ Rechazada: Rating ${rating} < ${filters.rating}`);
+        return false;
+      }
     }
 
-    // ✅ ACTUALIZAR LAS BODEGAS DEL WAREHOUSE PARA MOSTRAR SOLO LAS VÁLIDAS
     warehouse.miniBodegas = bodegasValidas;
     warehouse.totalBodegas = bodegasValidas.length;
 
+    console.log(`   ✅ APROBADA con ${bodegasValidas.length} minibodegas`);
     return true;
   }
 
-  // ✅ FILTRADO PRINCIPAL - MUCHO MÁS FLEXIBLE
+  // ✅ FILTRADO PRINCIPAL - SIN ZONA OBLIGATORIA
   useEffect(() => {
+    console.log('\n╔════════════════════════════════════════════════════╗');
+    console.log('║           INICIANDO FILTRADO PRINCIPAL             ║');
+    console.log('╚════════════════════════════════════════════════════╝');
+    console.log('🎯 Parámetros de búsqueda:');
+    console.log('   Ciudad:', ciudadSeleccionada || 'Todas');
+    console.log('   Zona:', zonaSeleccionada || 'Todas');
+    console.log('   Empresa:', empresaSeleccionada || 'Todas');
+    console.log('   Min Metraje:', minMetrajeParam || 'N/A');
+    console.log('   Max Metraje:', maxMetrajeParam || 'N/A');
+    console.log('   Filtros Sidebar:', filters);
+    
     if (!warehouses || warehouses.length === 0) {
+      console.log('⚠️  No hay warehouses disponibles');
       setFilteredWarehouses([]);
       return;
     }
     
-    // Crear copias profundas para modificar sin afectar los datos originales
     const warehousesCopy = JSON.parse(JSON.stringify(warehouses));
     
     let filtered = warehousesCopy
       .map(warehouse => {
-        // Crear copia del warehouse y sus bodegas
+        console.log(`\n━━━ Procesando: ${warehouse.name} ━━━`);
         let filteredWarehouse = { ...warehouse };
         let bodegasFiltradas = [...(warehouse.miniBodegas || [])];
         
-        // ✅ FILTRO DE CIUDAD MÁS FLEXIBLE
+        console.log(`Minibodegas iniciales: ${bodegasFiltradas.length}`);
+        
+        // ✅ FILTRO DE CIUDAD (OBLIGATORIO SI ESTÁ EN URL)
         if (ciudadSeleccionada) {
+          console.log(`🌆 Filtrando por ciudad: "${ciudadSeleccionada}"`);
           const ciudadBusquedaNorm = normalizarTexto(ciudadSeleccionada);
           
           bodegasFiltradas = bodegasFiltradas.filter(bodega => {
-            if (!bodega.ciudad) return false;
+            if (!bodega.ciudad) {
+              console.log('   ❌ Bodega sin ciudad');
+              return false;
+            }
             
             const ciudadBodegaNorm = normalizarTexto(bodega.ciudad);
-            
-            // ✅ COINCIDENCIA PARCIAL EN AMBAS DIRECCIONES
-            return ciudadBodegaNorm.includes(ciudadBusquedaNorm) || 
+            const cumple = ciudadBodegaNorm.includes(ciudadBusquedaNorm) || 
                    ciudadBusquedaNorm.includes(ciudadBodegaNorm);
+            
+            console.log(`   ${cumple ? '✅' : '❌'} "${bodega.ciudad}"`);
+            return cumple;
           });
           
+          console.log(`Después filtro ciudad: ${bodegasFiltradas.length}`);
+          
           if (bodegasFiltradas.length === 0) {
-            return null; // No hay bodegas en esta ciudad
+            console.log('❌ Rechazada: Sin bodegas en esta ciudad');
+            return null;
           }
           
-          // Actualizar warehouse con las bodegas filtradas
           filteredWarehouse.miniBodegas = bodegasFiltradas;
           filteredWarehouse.totalBodegas = bodegasFiltradas.length;
           
-          // Actualizar propiedades derivadas
           const precios = bodegasFiltradas.map(b => parseFloat(b.precio_mensual)).filter(p => !isNaN(p));
           filteredWarehouse.priceRange = precios.length > 0 ? {
             min: Math.min(...precios),
@@ -255,53 +310,81 @@ export function BodegaScreen() {
           } : { min: 0, max: 0 };
         }
         
-        // ✅ FILTRO DE ZONA MÁS FLEXIBLE
+        // ✅ FILTRO DE ZONA (OPCIONAL - solo si está en URL Y la bodega tiene zona)
         if (zonaSeleccionada) {
+          console.log(`📍 Filtrando por zona: "${zonaSeleccionada}"`);
           const zonaBusquedaNorm = normalizarTexto(zonaSeleccionada);
           
-          bodegasFiltradas = filteredWarehouse.miniBodegas.filter(bodega => {
-            if (!bodega.zona) return false;
-            
-            const zonaBodegaNorm = normalizarTexto(bodega.zona);
-            
-            // Coincidencia parcial en ambas direcciones
-            return zonaBodegaNorm.includes(zonaBusquedaNorm) || 
-                   zonaBusquedaNorm.includes(zonaBodegaNorm);
-          });
+          // Solo filtrar bodegas que SÍ tienen zona
+          const bodegasConZona = filteredWarehouse.miniBodegas.filter(bodega => bodega.zona);
           
-          if (bodegasFiltradas.length === 0) {
-            return null; // No hay bodegas en esta zona
+          console.log(`Bodegas con zona: ${bodegasConZona.length}`);
+          
+          if (bodegasConZona.length > 0) {
+            bodegasFiltradas = bodegasConZona.filter(bodega => {
+              const zonaBodegaNorm = normalizarTexto(bodega.zona);
+              const cumple = zonaBodegaNorm.includes(zonaBusquedaNorm) || 
+                     zonaBusquedaNorm.includes(zonaBodegaNorm);
+              
+              console.log(`   ${cumple ? '✅' : '❌'} "${bodega.zona}"`);
+              return cumple;
+            });
+            
+            // Si hay bodegas con zona que coinciden, usar solo esas
+            if (bodegasFiltradas.length > 0) {
+              filteredWarehouse.miniBodegas = bodegasFiltradas;
+              filteredWarehouse.totalBodegas = bodegasFiltradas.length;
+              console.log(`Usando bodegas con zona: ${bodegasFiltradas.length}`);
+            } else {
+              console.log('⚠️  No hay coincidencias pero hay bodegas sin zona');
+            }
+            // Si no hay coincidencias pero sí bodegas sin zona, mantener todas
+          } else {
+            console.log('⚠️  No hay bodegas con zona, manteniendo todas');
           }
+          // Si no hay bodegas con zona, mantener todas (las que no tienen zona)
           
-          filteredWarehouse.miniBodegas = bodegasFiltradas;
-          filteredWarehouse.totalBodegas = bodegasFiltradas.length;
-          
-          // Actualizar propiedades derivadas
-          const precios = bodegasFiltradas.map(b => parseFloat(b.precio_mensual)).filter(p => !isNaN(p));
+          const precios = filteredWarehouse.miniBodegas.map(b => parseFloat(b.precio_mensual)).filter(p => !isNaN(p));
           filteredWarehouse.priceRange = precios.length > 0 ? {
             min: Math.min(...precios),
             max: Math.max(...precios)
           } : { min: 0, max: 0 };
         }
         
-        // ✅ FILTRO POR EMPRESA MÁS FLEXIBLE
+        // ✅ FILTRO POR EMPRESA
         if (empresaSeleccionada) {
+          console.log(`🏢 Filtrando por empresa: "${empresaSeleccionada}"`);
           const empresaBusquedaNorm = normalizarTexto(empresaSeleccionada);
           const nombreEmpresaNorm = normalizarTexto(warehouse.name);
           
-          // Coincidencia parcial
           if (!nombreEmpresaNorm.includes(empresaBusquedaNorm) && 
               !empresaBusquedaNorm.includes(nombreEmpresaNorm)) {
+            console.log(`❌ Rechazada: "${warehouse.name}" no coincide`);
             return null;
           }
+          console.log(`✅ Empresa coincide`);
         }
         
+        console.log(`✅ Warehouse aprobado con ${filteredWarehouse.miniBodegas.length} minibodegas`);
         return filteredWarehouse;
       })
-      .filter(Boolean); // Eliminar nulls
+      .filter(Boolean);
+    
+    console.log(`\n📊 Después de filtros URL: ${filtered.length} warehouses`);
     
     // Aplicar filtros del sidebar
     filtered = filtered.filter(aplicarFiltros);
+    
+    console.log('\n╔════════════════════════════════════════════════════╗');
+    console.log('║              RESULTADO FINAL                       ║');
+    console.log('╚════════════════════════════════════════════════════╝');
+    console.log('🔍 Warehouses filtrados:', filtered.length);
+    console.log('📦 Total minibodegas:', filtered.reduce((acc, w) => acc + w.miniBodegas.length, 0));
+    console.log('\n📋 Detalle de resultados:');
+    filtered.forEach((w, i) => {
+      console.log(`   ${i + 1}. ${w.name}: ${w.miniBodegas.length} minibodegas`);
+    });
+    console.log('════════════════════════════════════════════════════\n');
     
     setFilteredWarehouses(filtered);
     
@@ -352,7 +435,7 @@ export function BodegaScreen() {
     )
   }
 
-  // ✅ GENERAR TÍTULO DINÁMICO MEJORADO
+  // ✅ GENERAR TÍTULO DINÁMICO
   const generarTitulo = () => {
     const partes = []
     if (empresaSeleccionada) partes.push(empresaSeleccionada)
@@ -360,7 +443,6 @@ export function BodegaScreen() {
     if (ciudadSeleccionada) partes.push(ciudadSeleccionada)
     
     let tamaño = '';
-    // Añadir información de tamaño al título
     if (filters.size) {
       tamaño = filters.size;
     } else if (minMetrajeParam && maxMetrajeParam) {

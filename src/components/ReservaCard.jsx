@@ -30,17 +30,16 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, se
     tipoDocumento: reserva.tipo_documento
   };
 
-  const bodega = reserva.mini_bodegas || {};
   const fechaInicio = reserva.fecha_inicio;
   const fechaFin = reserva.fecha_fin;
   const servicios = reserva.servicios_adicionales || [];
-  const precioTotal = reserva.precio_total;
 
   const [mostrarModalRechazo, setMostrarModalRechazo] = useState(false);
   const [motivoRechazo, setMotivoRechazo] = useState('');
   const [sedesConCoordenadas, setSedesConCoordenadas] = useState([]);
   const [mapCenter, setMapCenter] = useState([4.7110, -74.0721]); // Bogotá por defecto
   const [loading, setLoading] = useState(false);
+  const [procesando, setProcesando] = useState(false); // ✅ Estado local para el botón
 
   // Coordenadas por defecto de ciudades principales
   const ciudadesCoords = {
@@ -57,40 +56,40 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, se
   // Función para geocodificar dirección usando Nominatim
   const geocodificarDireccion = async (direccion, ciudad) => {
     try {
-      const query = `${direccion}, ${ciudad}, Colombia`
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`
+      const query = `${direccion}, ${ciudad}, Colombia`;
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
       
       const response = await fetch(url, {
         headers: {
           'User-Agent': 'MiniBodegas-App'
         }
-      })
+      });
       
-      const data = await response.json()
+      const data = await response.json();
       
       if (data && data.length > 0) {
         return {
           lat: parseFloat(data[0].lat),
           lng: parseFloat(data[0].lon)
-        }
+        };
       }
       
-      return null
+      return null;
     } catch (error) {
-      console.error('Error geocodificando:', error)
-      return null
+      console.error('Error geocodificando:', error);
+      return null;
     }
-  }
+  };
 
   // Procesar sedes al cargar o cambiar ciudad
   useEffect(() => {
     const procesarSedes = async () => {
-      setLoading(true)
+      setLoading(true);
       
       // Filtrar sedes por ciudad
       const sedesFiltradas = sedes.filter(sede => 
         !city || sede.ciudad?.toLowerCase() === city?.toLowerCase()
-      )
+      );
 
       const sedesProcesadas = await Promise.all(
         sedesFiltradas.map(async (sede) => {
@@ -100,53 +99,52 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, se
               ...sede,
               coords: [parseFloat(sede.lat), parseFloat(sede.lng)],
               origen: 'db'
-            }
+            };
           }
 
           // Si tiene dirección, geocodificar
           if (sede.direccion && sede.ciudad) {
-            const coords = await geocodificarDireccion(sede.direccion, sede.ciudad)
+            const coords = await geocodificarDireccion(sede.direccion, sede.ciudad);
             if (coords) {
               return {
                 ...sede,
                 coords: [coords.lat, coords.lng],
                 origen: 'geocodificado'
-              }
+              };
             }
           }
 
           // Usar coordenadas por defecto de la ciudad
-          const coordsCiudad = ciudadesCoords[sede.ciudad]
+          const coordsCiudad = ciudadesCoords[sede.ciudad];
           if (coordsCiudad) {
             return {
               ...sede,
               coords: coordsCiudad,
               origen: 'ciudad'
-            }
+            };
           }
 
-          return null
+          return null;
         })
-      )
+      );
 
       // Filtrar sedes que no pudieron ser ubicadas
-      const sedesValidas = sedesProcesadas.filter(Boolean)
-      setSedesConCoordenadas(sedesValidas)
+      const sedesValidas = sedesProcesadas.filter(Boolean);
+      setSedesConCoordenadas(sedesValidas);
 
       // Centrar mapa en la primera sede o en la ciudad
       if (sedesValidas.length > 0) {
-        setMapCenter(sedesValidas[0].coords)
+        setMapCenter(sedesValidas[0].coords);
       } else if (city && ciudadesCoords[city]) {
-        setMapCenter(ciudadesCoords[city])
+        setMapCenter(ciudadesCoords[city]);
       }
 
-      setLoading(false)
-    }
+      setLoading(false);
+    };
 
-    procesarSedes()
-  }, [sedes, city])
+    procesarSedes();
+  }, [sedes, city]);
 
-  // ✅ AGREGAR FUNCIÓN getIcon QUE FALTABA
   const getIcon = () => {
     switch (reserva.estado) {
       case 'pendiente':
@@ -162,7 +160,6 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, se
     }
   };
 
-  // ✅ AGREGAR FUNCIÓN getBadgeColor QUE FALTABA
   const getBadgeColor = () => {
     switch (reserva.estado) {
       case 'pendiente':
@@ -193,7 +190,6 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, se
     }
   };
 
-  // ✅ AGREGAR FUNCIÓN getEstadoTexto QUE FALTABA
   const getEstadoTexto = () => {
     switch (reserva.estado) {
       case 'pendiente': return 'Pendiente';
@@ -204,10 +200,32 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, se
     }
   };
 
-  const handleRechazar = () => {
-    onRechazar(reserva.id, motivoRechazo);
-    setMostrarModalRechazo(false);
-    setMotivoRechazo('');
+  // ✅ Función mejorada para rechazar
+  const handleRechazar = async () => {
+    try {
+      setProcesando(true);
+      await onRechazar(reserva.id, motivoRechazo);
+      setMostrarModalRechazo(false);
+      setMotivoRechazo('');
+    } catch (error) {
+      console.error('Error al rechazar:', error);
+      alert('Error al rechazar la reserva');
+    } finally {
+      setProcesando(false);
+    }
+  };
+
+  // ✅ Función mejorada para aceptar
+  const handleAceptar = async () => {
+    try {
+      setProcesando(true);
+      await onAceptar(reserva.id);
+    } catch (error) {
+      console.error('Error al aceptar:', error);
+      alert('Error al aceptar la reserva');
+    } finally {
+      setProcesando(false);
+    }
   };
 
   // Solo mostrar datos personales si la reserva está aceptada
@@ -313,11 +331,11 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, se
       {reserva.estado === 'pendiente' && (
         <div className="flex gap-3 pt-4 border-t">
           <button
-            onClick={() => onAceptar(reserva.id)}
-            disabled={disabled}
-            className="flex-1 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            onClick={handleAceptar}
+            disabled={disabled || procesando}
+            className="flex-1 bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
           >
-            {disabled ? (
+            {procesando ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 Procesando...
@@ -332,20 +350,11 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, se
           
           <button
             onClick={() => setMostrarModalRechazo(true)}
-            disabled={disabled}
-            className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            disabled={disabled || procesando}
+            className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
           >
-            {disabled ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Procesando...
-              </>
-            ) : (
-              <>
-                <X className="h-4 w-4" />
-                Rechazar Reserva
-              </>
-            )}
+            <X className="h-4 w-4" />
+            Rechazar Reserva
           </button>
         </div>
       )}
@@ -393,23 +402,32 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, se
                   setMostrarModalRechazo(false);
                   setMotivoRechazo('');
                 }}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={procesando}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleRechazar}
-                disabled={disabled}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+                disabled={procesando}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center gap-2"
               >
-                Confirmar Rechazo
+                {procesando ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Procesando...
+                  </>
+                ) : (
+                  'Confirmar Rechazo'
+                )}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      <div className="relative">
+      {/* Mapa */}
+      <div className="relative mt-4">
         {loading && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/90 px-4 py-2 rounded-lg shadow-lg z-[1000]">
             <span className="text-sm text-gray-600">🗺️ Cargando ubicaciones...</span>
@@ -419,7 +437,7 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, se
         <MapContainer
           center={mapCenter}
           zoom={12}
-          className="w-full h-60 rounded-lg mb-4"
+          className="w-full h-60 rounded-lg"
           style={{ height: '300px', width: '100%' }}
         >
           <TileLayer
@@ -466,7 +484,6 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, se
                       </p>
                     )}
 
-                    {/* Indicador de origen de coordenadas */}
                     <div className="mt-2 pt-2 border-t border-gray-200">
                       {sede.origen === 'db' && (
                         <span className="text-xs text-green-600 flex items-center gap-1">

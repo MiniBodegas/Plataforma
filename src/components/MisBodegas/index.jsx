@@ -10,7 +10,7 @@ import { supabase } from '../../lib/supabase';
 export function MisBodegas() {
   const { bodegas, loading, error, refetch } = useBodegasByEmpresa();
   const [bodegaSeleccionada, setBodegaSeleccionada] = useState(null);
-  const { toast, showOk, showError } = useToast();
+  const { toast, showOk, showError, clearToast } = useToast();
   const [filtros, setFiltros] = useState({
     estado: 'todos',
     ciudad: 'todas',
