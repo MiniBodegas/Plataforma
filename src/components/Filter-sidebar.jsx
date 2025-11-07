@@ -43,7 +43,7 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, 
             lng,
             imagen_url
           `)
-          .ilike('ciudad', ciudadSeleccionada) // Búsqueda case-insensitive
+          .ilike('ciudad', ciudadSeleccionada)
           .not('lat', 'is', null)
           .not('lng', 'is', null)
 
@@ -53,15 +53,13 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, 
           return
         }
 
-        // Formatear para el componente MapaBodegas
-        const sedesFormateadas = (sedes || []).map(sede => ({
-          id: sede.id,
-          name: sede.nombre || `${sede.zona || 'Sede'} - ${sede.ciudad}`,
-          city: sede.ciudad,
-          coords: [parseFloat(sede.lat), parseFloat(sede.lng)],
-          direccion: sede.direccion,
-          zona: sede.zona,
-          imagen_url: sede.imagen_url
+        // ✅ Formatear como array de sedes con coordenadas válidas
+        const sedesFormateadas = (sedes || []).filter(sede => 
+          sede.lat && sede.lng
+        ).map(sede => ({
+          ...sede,
+          lat: parseFloat(sede.lat),
+          lng: parseFloat(sede.lng)
         }))
 
         setSedesReales(sedesFormateadas)
@@ -177,8 +175,8 @@ export function FilterSidebar({ isOpen, onClose, filters = {}, onFiltersChange, 
                 </div>
               ) : sedesReales.length > 0 ? (
                 <MapaBodegas 
-                  city={ciudadSeleccionada || "Cali"} 
-                  bodegas={sedesReales} 
+                  sedes={sedesReales} 
+                  height="300px"
                 />
               ) : (
                 <div className="text-center text-gray-500 py-8 text-sm">
