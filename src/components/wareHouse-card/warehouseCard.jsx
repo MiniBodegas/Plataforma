@@ -82,6 +82,13 @@ export function WarehouseCard({
   const sizes =
     empresaObj?.sizes || warehouse?.sizes || minisToRender.map((m) => m?.metraje ?? m?.size ?? m?.tamano).filter(Boolean)
 
+  // ✅ NUEVO: Eliminar duplicados y ordenar
+  const uniqueSizes = [...new Set(sizes.map(s => String(s).trim()))].sort((a, b) => {
+    const numA = parseFloat(a) || 0;
+    const numB = parseFloat(b) || 0;
+    return numA - numB;
+  });
+
   // ✅ CAMBIO: Usar descripción de mini_bodegas en lugar de empresa
   const description = (() => {
     // Si hay mini bodegas, tomar la descripción de la primera
@@ -216,15 +223,22 @@ export function WarehouseCard({
             <span className="text-xs sm:text-sm font-medium text-[#2C3A61]">Tamaños disponibles:</span>
           </div>
           <div className="flex flex-wrap gap-1">
-            {sizes && sizes.length > 0 ? (
-              sizes.map((size, index) => (
-                <span
-                  key={`${String(size)}-${index}`}
-                  className="px-2 py-1 bg-blue-50 border border-blue-200 rounded-md text-xs text-[#2C3A61]"
-                >
-                  {size}
-                </span>
-              ))
+            {uniqueSizes.length > 0 ? (
+              <>
+                {uniqueSizes.slice(0, 3).map((size, index) => (
+                  <span
+                    key={`${size}-${index}`}
+                    className="px-2 py-1 bg-blue-50 border border-blue-200 rounded-md text-xs text-[#2C3A61]"
+                  >
+                    {size}
+                  </span>
+                ))}
+                {uniqueSizes.length > 3 && (
+                  <span className="px-2 py-1 text-xs text-[#2C3A61] font-medium">
+                    +{uniqueSizes.length - 3} más
+                  </span>
+                )}
+              </>
             ) : (
               <span className="text-xs text-gray-500">Consultar tamaños disponibles</span>
             )}
