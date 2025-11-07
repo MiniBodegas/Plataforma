@@ -1,6 +1,8 @@
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
 import "leaflet/dist/leaflet.css"
 import L from "leaflet"
+import useSedes from "../hooks/useSedes"
+import { useMemo } from "react"
 
 // Icono personalizado para las bodegas
 const bodegaIcon = new L.Icon({
@@ -8,18 +10,35 @@ const bodegaIcon = new L.Icon({
   iconSize: [32, 32],
 })
 
-export function MapaBodegas({ city, bodegas, height = "500px", width = "100%", className = "", style = {} }) {
-  const bodegasFiltradas = bodegas.filter(b => b.city === city)
+export function MapaBodegas({ bodegas, empresaId, height = "500px", width = "100%", className = "", style = {} }) {
+  // Obtener sedes de la empresa
+  const { sedes, loading } = useSedes({ empresaId, includeMinis: false });
 
-  const ciudadesCoords = {
-    Cali: [3.4516, -76.5320],
-    Bogotá: [4.7110, -74.0721],
-    Medellín: [6.2442, -75.5812],
+  // Mapear bodegas con sus sedes para obtener lat/lng y dirección
+  const bodegasConSede = useMemo(() => {
+    if (!sedes.length || !bodegas.length) return [];
+
+    return bodegas.map(bodega => {
+      const sede = sedes.find(s => s.id === bodega.sede_id);
+      return {
+        ...bodega,
+        sede: sede || null
+      };
+    }).filter(b => b.sede && b.sede.lat && b.sede.lng);
+  }, [bodegas, sedes]);
+
+  // Centra el mapa en la primera bodega con sede, o Bogotá por defecto
+  const center = bodegasConSede.length > 0
+    ? [bodegasConSede[0].sede.lat, bodegasConSede[0].sede.lng]
+    : [4.7110, -74.0721];
+
+  if (loading) {
+    return <div className="flex items-center justify-center" style={{ height }}>Cargando mapa...</div>;
   }
 
   return (
     <MapContainer
-      center={ciudadesCoords[city] || [4.7110, -74.0721]}
+      center={center}
       zoom={12}
       className={className}
       style={{ height, width, ...style }}
@@ -29,17 +48,27 @@ export function MapaBodegas({ city, bodegas, height = "500px", width = "100%", c
         attribution="&copy; OpenStreetMap contributors"
       />
 
-      {bodegasFiltradas.map((bodega) => (
-        <Marker key={bodega.id} position={bodega.coords} icon={bodegaIcon}>
+      {bodegasConSede.map((bodega) => (
+        <Marker
+          key={bodega.id}
+          position={[bodega.sede.lat, bodega.sede.lng]}
+          icon={bodegaIcon}
+        >
           <Popup>
-            <strong>{bodega.name}</strong>
+            <strong>{bodega.nombre_personalizado || bodega.descripcion}</strong>
             <br />
-            📍 {bodega.city}
+            📍 {bodega.sede.ciudad}
+            <br />
+            📌 {bodega.sede.direccion}
+            <br />
+            💰 ${Number(bodega.precio_mensual).toLocaleString('es-CO')}/mes
+            <br />
+            📦 {bodega.metraje} m²
           </Popup>
         </Marker>
       ))}
     </MapContainer>
-  )
+  );
 }
 
 export default MapaBodegas
