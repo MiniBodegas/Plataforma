@@ -116,43 +116,72 @@ export function MiniBodegasInSede({ sede, onChange, autoOpenAdd = false, onOpene
     try {
       for (let i = 0; i < bodegas.length; i++) {
         const b = bodegas[i];
-        // subir imagen si es File
         let imagenUrl = b.imagen;
+        
+        // Upload de imagen si es necesario
         if (b.imagen && typeof b.imagen !== "string") {
-          try { imagenUrl = await uploadFile(b.imagen); } catch (e) { console.error("upload error", e); imagenUrl = null; }
+          try { 
+            imagenUrl = await uploadFile(b.imagen); 
+          } catch (e) { 
+            console.error("Error subiendo imagen:", e); 
+            imagenUrl = null; 
+          }
         }
 
+        // ✅ CONSTRUIR PAYLOAD CON VALORES VÁLIDOS
         const payload = {
           empresa_id: b.empresa_id || sede.empresa_id,
           sede_id: sede.id,
-          metraje: b.metraje || "",
-          descripcion: b.descripcion || "",
+          metraje: String(b.metraje || "").trim() || null,
+          descripcion: String(b.descripcion || "").trim() || null,
           precio_mensual: parseFloat(b.precio_mensual) || 0,
           cantidad: parseInt(b.cantidad, 10) || 1,
-          nombre_personalizado: b.nombre_personalizado || null,
+          nombre_personalizado: b.nombre_personalizado?.trim() || null,
           imagen_url: imagenUrl || null,
-          disponible: b.disponible,
-          estado: b.disponible ? "activa" : "inhabilitada",
+          disponible: b.disponible !== false,
+          estado: (b.disponible !== false) ? "activa" : "inhabilitada",
           orden: i,
-          ubicacion_interna: b.ubicacionInterna ?? b.ubicacion_interna ?? "",
+          ubicacion_interna: String(b.ubicacionInterna ?? b.ubicacion_interna ?? "").trim() || null,
           metros_cuadrados: b.metrosCuadrados ?? b.metros_cuadrados ?? null,
-          caracteristicas: b.caracteristicas ?? [],
-
+          caracteristicas: Array.isArray(b.caracteristicas) ? b.caracteristicas : [],
+          // ✅ HEREDAR CIUDAD DE LA SEDE SI LA BODEGA NO TIENE
+          ciudad: (b.ciudad?.trim() || sede.ciudad || "").substring(0, 255),
         };
 
+        console.log('💾 Guardando bodega:', payload);
+
         if (b.id) {
-          const { error } = await supabase.from("mini_bodegas").update(payload).eq("id", b.id);
-          if (error) throw error;
+          // Actualizar bodega existente
+          const { error } = await supabase
+            .from("mini_bodegas")
+            .update(payload)
+            .eq("id", b.id);
+
+          if (error) {
+            console.error(`❌ Error actualizando bodega ${b.id}:`, error);
+            throw error;
+          }
+          console.log(`✅ Bodega ${b.id} actualizada`);
         } else {
-          const { error } = await supabase.from("mini_bodegas").insert([payload]);
-          if (error) throw error;
+          // Insertar nueva bodega
+          const { error } = await supabase
+            .from("mini_bodegas")
+            .insert([payload]);
+
+          if (error) {
+            console.error('❌ Error insertando bodega:', error);
+            throw error;
+          }
+          console.log('✅ Bodega insertada');
         }
       }
 
       await load();
       onChange && onChange();
+      alert('✅ Mini bodegas guardadas exitosamente');
     } catch (e) {
-      console.error("Error guardando mini bodegas", e);
+      console.error("❌ Error guardando mini bodegas:", e);
+      alert(`Error guardando mini bodegas: ${e.message || 'Error desconocido'}`);
     } finally {
       setGuardando(false);
     }
