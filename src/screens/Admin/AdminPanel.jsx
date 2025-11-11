@@ -74,10 +74,10 @@ export function AdminPanel() {
             label="Empresas"
           />
           <TabButton
-            active={activeTab === 'reservas'}
-            onClick={() => setActiveTab('reservas')}
+            active={activeTab === 'documentacion'}
+            onClick={() => setActiveTab('documentacion')}
             icon={<Calendar className="h-4 w-4" />}
-            label="Reservas"
+            label="Documentación"
           />
           <TabButton
             active={activeTab === 'usuarios'}
@@ -98,7 +98,7 @@ export function AdminPanel() {
           <DashboardTab stats={stats} empresas={empresas} reservas={reservasRecientes} />
         )}
         {activeTab === 'empresas' && <EmpresasTab empresas={empresas} onRefresh={loadData} />}
-        {activeTab === 'reservas' && <ReservasTab reservas={reservasRecientes} onRefresh={loadData} />}
+        {activeTab === 'documentacion' && <ReservasTab reservas={reservasRecientes} onRefresh={loadData} />}
         {activeTab === 'usuarios' && <UsuariosTab usuarios={usuarios} />}
         {activeTab === 'configuracion' && <ConfiguracionTab />}
       </div>
