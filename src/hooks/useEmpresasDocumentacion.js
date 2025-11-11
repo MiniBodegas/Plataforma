@@ -37,25 +37,29 @@ export function useEmpresasDocumentacion() {
       console.log('📊 Empresas obtenidas:', empresasData?.length);
 
       // Formatear datos con información de documentación
-      const documentacionFormateada = (empresasData || []).map((empresa) => {
+      const documentacionFormateada = await Promise.all((empresasData || []).map(async (empresa) => {
         const documentos = [];
         
-        // RUT - Obtener URL pública del storage
+        // RUT - Obtener URL firmada del storage (válida por 1 hora)
         if (empresa.rut) {
           try {
-            const { data: publicURL } = supabase.storage
+            const { data: signedURL, error: signedError } = await supabase.storage
               .from('documentos-empresas')
-              .getPublicUrl(empresa.rut);
+              .createSignedUrl(empresa.rut, 3600); // 3600 segundos = 1 hora
             
-            documentos.push({
-              tipo: 'RUT',
-              url: publicURL?.publicUrl || null,
-              path: empresa.rut,
-              estado: 'subido',
-              extension: empresa.rut.split('.').pop()?.toLowerCase()
-            });
-            
-            console.log('✅ RUT URL:', publicURL?.publicUrl);
+            if (signedError) {
+              console.error('❌ Error creando URL firmada de RUT:', signedError);
+            } else {
+              documentos.push({
+                tipo: 'RUT',
+                url: signedURL?.signedUrl || null,
+                path: empresa.rut,
+                estado: 'subido',
+                extension: empresa.rut.split('.').pop()?.toLowerCase()
+              });
+              
+              console.log('✅ RUT URL firmada generada');
+            }
           } catch (err) {
             console.error('❌ Error obteniendo URL de RUT:', err);
           }
@@ -64,19 +68,23 @@ export function useEmpresasDocumentacion() {
         // Cámara de Comercio
         if (empresa.camara_comercio) {
           try {
-            const { data: publicURL } = supabase.storage
+            const { data: signedURL, error: signedError } = await supabase.storage
               .from('documentos-empresas')
-              .getPublicUrl(empresa.camara_comercio);
+              .createSignedUrl(empresa.camara_comercio, 3600); // 3600 segundos = 1 hora
             
-            documentos.push({
-              tipo: 'Cámara de Comercio',
-              url: publicURL?.publicUrl || null,
-              path: empresa.camara_comercio,
-              estado: 'subido',
-              extension: empresa.camara_comercio.split('.').pop()?.toLowerCase()
-            });
-            
-            console.log('✅ Cámara URL:', publicURL?.publicUrl);
+            if (signedError) {
+              console.error('❌ Error creando URL firmada de Cámara:', signedError);
+            } else {
+              documentos.push({
+                tipo: 'Cámara de Comercio',
+                url: signedURL?.signedUrl || null,
+                path: empresa.camara_comercio,
+                estado: 'subido',
+                extension: empresa.camara_comercio.split('.').pop()?.toLowerCase()
+              });
+              
+              console.log('✅ Cámara URL firmada generada');
+            }
           } catch (err) {
             console.error('❌ Error obteniendo URL de Cámara:', err);
           }
@@ -95,7 +103,7 @@ export function useEmpresasDocumentacion() {
           documentos_completos: documentos.length === 2,
           estado_verificacion: empresa.estado_verificacion || 'pendiente'
         };
-      });
+      }));
 
       setDocumentacion(documentacionFormateada);
       console.log('✅ Documentación cargada:', documentacionFormateada.length, 'empresas');

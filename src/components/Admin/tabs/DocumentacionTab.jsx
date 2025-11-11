@@ -239,7 +239,7 @@ export function DocumentacionTab() {
               {/* Documentos */}
               <div>
                 <h4 className="font-semibold text-gray-800 mb-3">
-                  Documentos ({empresaSeleccionada.total_documentos}/3)
+                  Documentos ({empresaSeleccionada.total_documentos}/2)
                 </h4>
                 <div className="space-y-3">
                   {empresaSeleccionada.documentos.length === 0 ? (
