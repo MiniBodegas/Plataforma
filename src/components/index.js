@@ -93,3 +93,20 @@ export * from './CarruselImagenes'
 export * from './PopupSede'
 
 export * from './MisBodegas/index'
+
+export * from './Admin/tabs/DashboardTab'
+export * from './Admin/tabs/EmpresasTab'
+export * from './Admin/tabs/ReservasTab'
+export * from './Admin/tabs/UsuariosTab'
+export * from './Admin/tabs/ConfiguracionTab'
+
+export { DashboardTab } from './Admin/tabs/DashboardTab';
+export { EmpresasTab } from './Admin/tabs/EmpresasTab';
+export { ReservasTab } from './Admin/tabs/ReservasTab';
+export { UsuariosTab } from './Admin/tabs/UsuariosTab';
+export { ConfiguracionTab } from './Admin/tabs/ConfiguracionTab';
+
+export { AdminHeader } from './Admin/AdminHeader';
+export { TabButton } from './Admin/TabButton';
+export { StatCard } from './Admin/StatCard';
+export { LoadingScreen } from './Admin/LoadingScreen';
