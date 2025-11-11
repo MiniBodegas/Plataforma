@@ -5,7 +5,7 @@ import {
   BarChart3, 
   Users, 
   Building2, 
-  Calendar, 
+  FileText, 
   Settings
 } from 'lucide-react';
 
@@ -14,7 +14,7 @@ import { AdminHeader, TabButton, LoadingScreen } from '../../components/index';
 import { 
   DashboardTab, 
   EmpresasTab, 
-  ReservasTab, 
+  DocumentacionTab, 
   UsuariosTab, 
   ConfiguracionTab 
 } from '../../components/index';
@@ -76,7 +76,7 @@ export function AdminPanel() {
           <TabButton
             active={activeTab === 'documentacion'}
             onClick={() => setActiveTab('documentacion')}
-            icon={<Calendar className="h-4 w-4" />}
+            icon={<FileText className="h-4 w-4" />}
             label="Documentación"
           />
           <TabButton
@@ -98,7 +98,7 @@ export function AdminPanel() {
           <DashboardTab stats={stats} empresas={empresas} reservas={reservasRecientes} />
         )}
         {activeTab === 'empresas' && <EmpresasTab empresas={empresas} onRefresh={loadData} />}
-        {activeTab === 'documentacion' && <ReservasTab reservas={reservasRecientes} onRefresh={loadData} />}
+        {activeTab === 'documentacion' && <DocumentacionTab />}
         {activeTab === 'usuarios' && <UsuariosTab usuarios={usuarios} />}
         {activeTab === 'configuracion' && <ConfiguracionTab />}
       </div>
