@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 export function PerfilFormProveedor() {
   const [nombreEmpresa, setNombreEmpresa] = useState("MiniBodegas S.A.S");

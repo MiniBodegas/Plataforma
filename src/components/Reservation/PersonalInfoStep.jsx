@@ -1,5 +1,3 @@
-import React from 'react';
-
 export function PersonalInfoStep({ formData, handleInputChange }) {
   const tiposDocumento = [
     { value: 'CC', label: 'Cédula de Ciudadanía' },

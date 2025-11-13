@@ -26,7 +26,18 @@ export function useReservasByEmpresa(empresaId) {
             ciudad,
             precio_mensual,
             imagen_url,
-            cantidad
+            cantidad,
+            descripcion,
+            ubicacion_interna,
+            metros_cuadrados,
+            sede_id,
+            sedes (
+              id,
+              nombre,
+              direccion,
+              ciudad,
+              telefono
+            )
           )
         `)
         .order('created_at', { ascending: false });
@@ -107,7 +118,25 @@ export function useReservasByEmpresa(empresaId) {
         .eq('id', reservaId)
         .select(`
           *,
-          mini_bodegas (id, metraje, ciudad, zona, precio_mensual, imagen_url, cantidad)
+          mini_bodegas (
+            id,
+            metraje,
+            ciudad,
+            precio_mensual,
+            imagen_url,
+            cantidad,
+            descripcion,
+            ubicacion_interna,
+            metros_cuadrados,
+            sede_id,
+            sedes (
+              id,
+              nombre,
+              direccion,
+              ciudad,
+              telefono
+            )
+          )
         `)
         .single();
 

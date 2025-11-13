@@ -1,28 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format } from 'date-fns';
 import { User, MapPin, Calendar, Check, X } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
 
-// Icono personalizado para las bodegas
-const bodegaIcon = new L.Icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
-  iconSize: [32, 32],
-});
-
-// Componente para centrar el mapa dinámicamente
-function MapCenter({ center }) {
-  const map = useMap();
-  useEffect(() => {
-    if (center) {
-      map.setView(center, 13);
-    }
-  }, [center, map]);
-  return null;
-}
-
-export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, sedes = [] }) {
+export function ReservaCard({ reserva, onAceptar, onRechazar, disabled }) {
   
   const cliente = {
     documento: reserva.numero_documento,
@@ -36,114 +16,7 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, se
 
   const [mostrarModalRechazo, setMostrarModalRechazo] = useState(false);
   const [motivoRechazo, setMotivoRechazo] = useState('');
-  const [sedesConCoordenadas, setSedesConCoordenadas] = useState([]);
-  const [mapCenter, setMapCenter] = useState([4.7110, -74.0721]); // Bogotá por defecto
-  const [loading, setLoading] = useState(false);
-  const [procesando, setProcesando] = useState(false); // ✅ Estado local para el botón
-
-  // Coordenadas por defecto de ciudades principales
-  const ciudadesCoords = {
-    Cali: [3.4516, -76.5320],
-    Bogotá: [4.7110, -74.0721],
-    Medellín: [6.2442, -75.5812],
-    Barranquilla: [10.9685, -74.7813],
-    Cartagena: [10.3910, -75.4794],
-    Bucaramanga: [7.1193, -73.1227],
-    Pereira: [4.8133, -75.6961],
-    Yumbo: [3.5833, -76.4833],
-  };
-
-  // Función para geocodificar dirección usando Nominatim
-  const geocodificarDireccion = async (direccion, ciudad) => {
-    try {
-      const query = `${direccion}, ${ciudad}, Colombia`;
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
-      
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'MiniBodegas-App'
-        }
-      });
-      
-      const data = await response.json();
-      
-      if (data && data.length > 0) {
-        return {
-          lat: parseFloat(data[0].lat),
-          lng: parseFloat(data[0].lon)
-        };
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Error geocodificando:', error);
-      return null;
-    }
-  };
-
-  // Procesar sedes al cargar o cambiar ciudad
-  useEffect(() => {
-    const procesarSedes = async () => {
-      setLoading(true);
-      
-      // Filtrar sedes por ciudad
-      const sedesFiltradas = sedes.filter(sede => 
-        !city || sede.ciudad?.toLowerCase() === city?.toLowerCase()
-      );
-
-      const sedesProcesadas = await Promise.all(
-        sedesFiltradas.map(async (sede) => {
-          // Si ya tiene coordenadas en la DB
-          if (sede.lat && sede.lng) {
-            return {
-              ...sede,
-              coords: [parseFloat(sede.lat), parseFloat(sede.lng)],
-              origen: 'db'
-            };
-          }
-
-          // Si tiene dirección, geocodificar
-          if (sede.direccion && sede.ciudad) {
-            const coords = await geocodificarDireccion(sede.direccion, sede.ciudad);
-            if (coords) {
-              return {
-                ...sede,
-                coords: [coords.lat, coords.lng],
-                origen: 'geocodificado'
-              };
-            }
-          }
-
-          // Usar coordenadas por defecto de la ciudad
-          const coordsCiudad = ciudadesCoords[sede.ciudad];
-          if (coordsCiudad) {
-            return {
-              ...sede,
-              coords: coordsCiudad,
-              origen: 'ciudad'
-            };
-          }
-
-          return null;
-        })
-      );
-
-      // Filtrar sedes que no pudieron ser ubicadas
-      const sedesValidas = sedesProcesadas.filter(Boolean);
-      setSedesConCoordenadas(sedesValidas);
-
-      // Centrar mapa en la primera sede o en la ciudad
-      if (sedesValidas.length > 0) {
-        setMapCenter(sedesValidas[0].coords);
-      } else if (city && ciudadesCoords[city]) {
-        setMapCenter(ciudadesCoords[city]);
-      }
-
-      setLoading(false);
-    };
-
-    procesarSedes();
-  }, [sedes, city]);
+  const [procesando, setProcesando] = useState(false);
 
   const getIcon = () => {
     switch (reserva.estado) {
@@ -200,7 +73,6 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, se
     }
   };
 
-  // ✅ Función mejorada para rechazar
   const handleRechazar = async () => {
     try {
       setProcesando(true);
@@ -215,7 +87,6 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, se
     }
   };
 
-  // ✅ Función mejorada para aceptar
   const handleAceptar = async () => {
     try {
       setProcesando(true);
@@ -228,7 +99,6 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, se
     }
   };
 
-  // Solo mostrar datos personales si la reserva está aceptada
   const mostrarDatosPersonales = reserva.estado === 'aceptada';
 
   return (
@@ -239,12 +109,13 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, se
           <span className="text-2xl">{getIcon()}</span>
           <div>
             <h3 className="font-bold text-lg text-gray-800">
-              {reserva.miniBodegaNombre}
+              Mini Bodega - Reserva
             </h3>
-            <p className="text-gray-600 text-sm">
-              {reserva.miniBodegaCiudad && <>Ciudad: {reserva.miniBodegaCiudad}<br /></>}
-              {reserva.miniBodegaZona && <>Zona: {reserva.miniBodegaZona}<br /></>}
-            </p>
+            {reserva.mini_bodegas?.ciudad && (
+              <p className="text-gray-600 text-sm">
+                Ciudad: {reserva.mini_bodegas.ciudad}
+              </p>
+            )}
             <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getBadgeColor()}`}>
               {getEstadoTexto()}
             </span>
@@ -290,9 +161,9 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, se
           Detalles de la Mini Bodega
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-          <p><span className="font-medium">Tamaño:</span> {reserva.miniBodegaMetraje || 'N/A'}m³</p>
-          <p><span className="font-medium">Ubicación:</span> {reserva.miniBodegaCiudad || 'N/A'} - {reserva.miniBodegaZona || 'N/A'}</p>
-          <p><span className="font-medium">Dirección:</span> {reserva.miniBodegaDireccion || 'N/A'}</p>
+          <p><span className="font-medium">Tamaño:</span> {reserva.mini_bodegas?.metraje || 'N/A'}m³</p>
+          <p><span className="font-medium">Ciudad:</span> {reserva.mini_bodegas?.ciudad || 'N/A'}</p>
+          <p><span className="font-medium">Dirección:</span> {reserva.mini_bodegas?.direccion || 'N/A'}</p>
           <p><span className="font-medium">Precio:</span> ${Number(reserva.precio_mensual || 0).toLocaleString()}/mes</p>
           <p><span className="font-medium">Total:</span> ${Number(reserva.precio_total || 0).toLocaleString()}</p>
         </div>
@@ -329,7 +200,7 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, se
 
       {/* Botones de acción para reservas pendientes */}
       {reserva.estado === 'pendiente' && (
-        <div className="flex gap-3 pt-4 border-t">
+        <div className="flex gap-3 mt-4">
           <button
             onClick={handleAceptar}
             disabled={disabled || procesando}
@@ -425,89 +296,6 @@ export function ReservaCard({ reserva, onAceptar, onRechazar, disabled, city, se
           </div>
         </div>
       )}
-
-      {/* Mapa */}
-      <div className="relative mt-4">
-        {loading && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/90 px-4 py-2 rounded-lg shadow-lg z-[1000]">
-            <span className="text-sm text-gray-600">🗺️ Cargando ubicaciones...</span>
-          </div>
-        )}
-        
-        <MapContainer
-          center={mapCenter}
-          zoom={12}
-          className="w-full h-60 rounded-lg"
-          style={{ height: '300px', width: '100%' }}
-        >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          />
-
-          <MapCenter center={mapCenter} />
-
-          {sedesConCoordenadas.map((sede) => (
-            <Marker 
-              key={sede.id} 
-              position={sede.coords} 
-              icon={bodegaIcon}
-            >
-              <Popup>
-                <div className="text-sm max-w-xs">
-                  <strong className="text-[#2C3A61] text-base block mb-2">{sede.nombre}</strong>
-                  
-                  <div className="space-y-1">
-                    <p className="flex items-start gap-1">
-                      <span className="text-gray-500">📍</span>
-                      <span className="text-gray-700">{sede.ciudad}</span>
-                    </p>
-                    
-                    {sede.direccion && (
-                      <p className="flex items-start gap-1">
-                        <span className="text-gray-500">📬</span>
-                        <span className="text-gray-700">{sede.direccion}</span>
-                      </p>
-                    )}
-                    
-                    {sede.telefono && (
-                      <p className="flex items-start gap-1">
-                        <span className="text-gray-500">📞</span>
-                        <span className="text-gray-700">{sede.telefono}</span>
-                      </p>
-                    )}
-
-                    {sede.descripcion && (
-                      <p className="flex items-start gap-1 mt-2 pt-2 border-t border-gray-200">
-                        <span className="text-gray-500">ℹ️</span>
-                        <span className="text-gray-600 text-xs">{sede.descripcion}</span>
-                      </p>
-                    )}
-
-                    <div className="mt-2 pt-2 border-t border-gray-200">
-                      {sede.origen === 'db' && (
-                        <span className="text-xs text-green-600 flex items-center gap-1">
-                          <span>✓</span> Ubicación guardada
-                        </span>
-                      )}
-                      {sede.origen === 'geocodificado' && (
-                        <span className="text-xs text-blue-600 flex items-center gap-1">
-                          <span>🗺️</span> Ubicación por dirección
-                        </span>
-                      )}
-                      {sede.origen === 'ciudad' && (
-                        <span className="text-xs text-orange-600 flex items-center gap-1">
-                          <span>⚠️</span> Ubicación aproximada
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
-      </div>
     </div>
   );
 }

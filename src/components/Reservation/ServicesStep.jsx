@@ -1,5 +1,3 @@
-import React from 'react';
-
 export function ServicesStep({ formData, handleFormChange, error }) {
   return (
     <div className="space-y-6">

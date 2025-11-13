@@ -4,29 +4,27 @@ import { supabase } from '../lib/supabase';
 export class ProfileService {
   static async getEmpresaByUserId(userId) {
     try {
-      // Verificar sesión primero
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
       if (sessionError || !session) {
         throw new Error('Usuario no autenticado');
       }
 
-      // Query MÁS SIMPLE - usar select('*') primero
+      const targetUserId = userId ?? session.user.id;
+      if (userId && userId !== session.user.id) {
+        throw new Error('No autorizado');
+      }
+
       const { data, error } = await supabase
         .from('empresas')
-        .select('*') // Cambiar a select todo en lugar de campos específicos
-        .eq('user_id', userId)
-        .maybeSingle(); // Usar maybeSingle en lugar de single
+        .select('*')
+        .eq('user_id', targetUserId)
+        .maybeSingle();
 
       if (error) {
         throw new Error(`Error obteniendo empresa: ${error.message} (Code: ${error.code})`);
       }
 
-      if (!data) {
-        return null;
-      }
-
-      return data;
+      return data || null;
     } catch (err) {
       throw err;
     }

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { supabase } from "../lib/supabase"; // Asegúrate de importar tu instancia
+import { supabase } from "../lib/supabase";
 
 export function RegisterProveedores() {
   const [showPassword, setShowPassword] = useState(false);

@@ -1,4 +1,4 @@
-import { X, MapPin, Ruler, Package, Shield, Clock, DollarSign, CheckCircle2, ChevronLeft, ChevronRight, AlertCircle, Home } from 'lucide-react';
+import { X, MapPin, Ruler, Package, DollarSign, CheckCircle2, ChevronLeft, ChevronRight, AlertCircle, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 

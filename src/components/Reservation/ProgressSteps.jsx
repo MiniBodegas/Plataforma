@@ -1,5 +1,3 @@
-import React from 'react';
-
 export function ProgressSteps({ steps, currentStep }) {
   return (
     <div className="mb-6">

@@ -1,6 +1,6 @@
 // CardBodegas.jsx
 import { useState, useEffect, useMemo } from "react";
-import { Image, RotateCcw, Minus, Plus } from "lucide-react";
+import { RotateCcw, Minus, Plus } from "lucide-react";
 import "./CardBodegas.css";
 
 export function CardBodegas({

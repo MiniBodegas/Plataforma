@@ -1,4 +1,3 @@
-import React from "react";
 // importa desde el index del directorio components para mantener la misma API que usas en pantallas
 import { CardBodegas, AgregarMiniBodegaBtn } from "./index";
 

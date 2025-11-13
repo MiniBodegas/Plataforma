@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Bell, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom'; // Importar useNavigate
+import { useNavigate } from 'react-router-dom'; 
 
 export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
