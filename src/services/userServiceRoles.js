@@ -1,4 +1,4 @@
-import { supabase } from '../supabase';
+import { supabase } from '../Supabase';
 //si
 export const userRolesService = {
   // ✅ Obtener SOLO empresas y usuarios con roles asignados (admin/empresa)
