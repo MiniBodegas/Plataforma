@@ -17,7 +17,7 @@ export * from './MapaBodegas'
 export * from './Carrousel'
 export * from './CompanyDescription'
 
-export * from './SizeCardReserved'
+export * from './sizecard/SizeCardReserved'
 
 export * from './Reservation/FormStepper' 
 export * from './Reservation/AuthStep'

@@ -34,24 +34,162 @@ export function BodegasDisponibles() {
   const ciudadFromParams = searchParams.get('ciudad') || null
   const { sedes: sedesHook = [] } = useSedes({ empresaId: empresaIdToFetch, includeMinis: false })
 
+  // ✅ CONSOLE.LOG DETALLADO PARA DEBUG
+  console.log('🔍 ===== DEBUG COMPLETO SEDE =====');
+  console.log('📦 Warehouse completo:', warehouse);
+  console.log('🏢 empresa_id:', empresaIdToFetch);
+  console.log('🔗 URL Params:', {
+    sedeId: sedeIdFromParams,
+    ciudad: ciudadFromParams,
+    ciudadFiltro,
+    zonaFiltro
+  });
+  console.log('🏛️ Sedes del hook (todas):', sedesHook);
+  console.log('📊 Total sedes encontradas:', sedesHook.length);
+
   // Construir candidatas y elegir sedeFinal (igual que en CompanyDescription, pero solo con useSedes)
   const rawCandidates = Array.isArray(sedesHook) ? [...sedesHook] : []
+
+  console.log('🎯 Candidatas para selección:', rawCandidates);
 
   let sedeFinal = null
   if (sedeIdFromParams) {
     sedeFinal = rawCandidates.find(s => String(s?.id) === String(sedeIdFromParams)) || null
+    console.log('1️⃣ Búsqueda por sedeId:', sedeIdFromParams, '→', sedeFinal ? `✅ Encontrada: ${sedeFinal.ciudad}` : '❌ No encontrada');
   }
   if (!sedeFinal && ciudadFromParams) {
-    sedeFinal =
-      rawCandidates.find(s => s?.direccion && String(s.ciudad).toLowerCase() === String(ciudadFromParams).toLowerCase()) ||
-      rawCandidates.find(s => String(s.ciudad).toLowerCase() === String(ciudadFromParams).toLowerCase()) ||
-      null
+    console.log('2️⃣ Intentando buscar por ciudad:', ciudadFromParams);
+    
+    const porDireccion = rawCandidates.find(s => s?.direccion && String(s.ciudad).toLowerCase() === String(ciudadFromParams).toLowerCase());
+    const porCiudad = rawCandidates.find(s => String(s.ciudad).toLowerCase() === String(ciudadFromParams).toLowerCase());
+    
+    console.log('  - Por dirección:', porDireccion ? `✅ ${porDireccion.ciudad}` : '❌');
+    console.log('  - Por ciudad:', porCiudad ? `✅ ${porCiudad.ciudad}` : '❌');
+    
+    sedeFinal = porDireccion || porCiudad || null;
+    console.log('  - Resultado:', sedeFinal ? `✅ ${sedeFinal.ciudad}` : '❌');
   }
   if (!sedeFinal) {
-    sedeFinal = rawCandidates.find(s => s?.direccion) || rawCandidates.find(s => s?.principal) || rawCandidates[0] || null
+    console.log('3️⃣ Fallback a primera sede disponible');
+    
+    const conDireccion = rawCandidates.find(s => s?.direccion);
+    const principal = rawCandidates.find(s => s?.principal);
+    const primera = rawCandidates[0];
+    
+    console.log('  - Con dirección:', conDireccion ? `✅ ${conDireccion.ciudad}` : '❌');
+    console.log('  - Principal:', principal ? `✅ ${principal.ciudad}` : '❌');
+    console.log('  - Primera:', primera ? `✅ ${primera.ciudad}` : '❌');
+    
+    sedeFinal = conDireccion || principal || primera || null;
   }
 
-  // Ahora sí, los returns condicionales
+  console.log('🎯 SEDE FINAL SELECCIONADA:', sedeFinal);
+  console.log('📍 Datos de la sede:', {
+    id: sedeFinal?.id,
+    ciudad: sedeFinal?.ciudad,
+    zona: sedeFinal?.zona,
+    direccion: sedeFinal?.direccion,
+    principal: sedeFinal?.principal
+  });
+
+  // ✅ FILTRAR BODEGAS POR LA SEDE SELECCIONADA
+  console.log('🏗️ Filtrando mini bodegas...');
+  let bodegasFiltradas = warehouse?.miniBodegas || []
+
+  console.log('📦 Total bodegas antes de filtrar:', bodegasFiltradas.length);
+  console.log('📦 Todas las bodegas:', bodegasFiltradas.map(b => ({
+    id: b.id,
+    ciudad: b.ciudad,
+    sede_id: b.sede_id,
+    metraje: b.metraje
+  })));
+
+  // ✅ PRIMERO FILTRAR POR SEDE
+  if (sedeFinal?.id) {
+    const bodegasAntes = bodegasFiltradas.length;
+    bodegasFiltradas = bodegasFiltradas.filter(bodega => 
+      String(bodega.sede_id) === String(sedeFinal.id)
+    );
+    console.log(`🏛️ Filtrado por sede (${sedeFinal.ciudad}):`, {
+      antes: bodegasAntes,
+      despues: bodegasFiltradas.length,
+      sede_id: sedeFinal.id
+    });
+  }
+
+  // Filtrar por ciudad si viene en la URL (adicional al filtro de sede)
+  if (ciudadFiltro) {
+    const bodegasAntes = bodegasFiltradas.length;
+    bodegasFiltradas = bodegasFiltradas.filter(bodega => 
+      bodega.ciudad && bodega.ciudad.toLowerCase() === ciudadFiltro.toLowerCase()
+    );
+    console.log(`🏙️ Filtrado por ciudad (${ciudadFiltro}):`, {
+      antes: bodegasAntes,
+      despues: bodegasFiltradas.length
+    });
+  }
+
+  // Filtrar por zona si viene en la URL
+  if (zonaFiltro) {
+    const bodegasAntes = bodegasFiltradas.length;
+    bodegasFiltradas = bodegasFiltradas.filter(bodega => 
+      bodega.zona && bodega.zona.toLowerCase() === zonaFiltro.toLowerCase()
+    );
+    console.log(`📍 Filtrado por zona (${zonaFiltro}):`, {
+      antes: bodegasAntes,
+      despues: bodegasFiltradas.length
+    });
+  }
+
+  console.log('✅ BODEGAS FINALES FILTRADAS:', bodegasFiltradas.length);
+  console.log('📦 Bodegas filtradas:', bodegasFiltradas.map(b => ({
+    id: b.id,
+    ciudad: b.ciudad,
+    sede_id: b.sede_id,
+    metraje: b.metraje
+  })));
+
+  // ✅ CALCULAR DATOS PARA LOS COMPONENTES CON BODEGAS FILTRADAS
+  const precios = bodegasFiltradas.map(b => parseFloat(b.precio_mensual)).filter(p => !isNaN(p))
+  const metrajes = bodegasFiltradas.map(b => parseFloat(b.metraje)).filter(m => !isNaN(m))
+  
+  const priceRange = precios.length > 0 ? {
+    min: Math.min(...precios),
+    max: Math.max(...precios)
+  } : { min: 0, max: 0 }
+
+  const availableSizes = metrajes.length > 0 ? metrajes.map(m => `${m}m³`) : []
+
+  // ✅ WAREHOUSE CON BODEGAS FILTRADAS
+  const warehouseConFiltros = {
+    ...warehouse,
+    miniBodegas: bodegasFiltradas,
+    availableSizes,
+    priceRange,
+    totalBodegas: bodegasFiltradas.length
+  }
+
+  // IMÁGENES DE LA SEDE
+  let sedeImages = [];
+  if (sedeFinal?.imagen_url) {
+    if (typeof sedeFinal.imagen_url === "string" && sedeFinal.imagen_url.startsWith("[")) {
+      try {
+        const arr = JSON.parse(sedeFinal.imagen_url);
+        if (Array.isArray(arr)) sedeImages = arr;
+      } catch (e) {
+        sedeImages = [sedeFinal.imagen_url];
+      }
+    } else {
+      sedeImages = [sedeFinal.imagen_url];
+    }
+  }
+
+  console.log('🔍 ===========================');
+
+  // ============================================
+  // ✅ AHORA SÍ LOS RETURNS CONDICIONALES
+  // ============================================
+
   if (!id) {
     return (
       <div className="min-h-screen bg-white">
@@ -126,64 +264,9 @@ export function BodegasDisponibles() {
     )
   }
 
-  // ✅ APLICAR FILTROS DE CIUDAD Y ZONA A LAS BODEGAS
-  let bodegasFiltradas = warehouse.miniBodegas || []
-
-  // Filtrar por ciudad si viene en la URL
-  if (ciudadFiltro) {
-    bodegasFiltradas = bodegasFiltradas.filter(bodega => 
-      bodega.ciudad && bodega.ciudad.toLowerCase() === ciudadFiltro.toLowerCase()
-    )
-  }
-
-  // Filtrar por zona si viene en la URL
-  if (zonaFiltro) {
-    bodegasFiltradas = bodegasFiltradas.filter(bodega => 
-      bodega.zona && bodega.zona.toLowerCase() === zonaFiltro.toLowerCase()
-    )
-  }
-
-  console.log('🔍 FILTROS APLICADOS:', {
-    ciudadFiltro,
-    zonaFiltro,
-    totalOriginal: warehouse.miniBodegas?.length || 0,
-    totalFiltradas: bodegasFiltradas.length
-  })
-
-  // ✅ CALCULAR DATOS PARA LOS COMPONENTES CON BODEGAS FILTRADAS
-  const precios = bodegasFiltradas.map(b => parseFloat(b.precio_mensual)).filter(p => !isNaN(p))
-  const metrajes = bodegasFiltradas.map(b => parseFloat(b.metraje)).filter(m => !isNaN(m))
-  
-  const priceRange = precios.length > 0 ? {
-    min: Math.min(...precios),
-    max: Math.max(...precios)
-  } : { min: 0, max: 0 }
-
-  const availableSizes = metrajes.length > 0 ? metrajes.map(m => `${m}m³`) : []
-
-  // ✅ WAREHOUSE CON BODEGAS FILTRADAS
-  const warehouseConFiltros = {
-    ...warehouse,
-    miniBodegas: bodegasFiltradas,
-    availableSizes,
-    priceRange,
-    totalBodegas: bodegasFiltradas.length
-  }
-
-  // IMÁGENES DE LA SEDE
-  let sedeImages = [];
-  if (sedeFinal?.imagen_url) {
-    if (typeof sedeFinal.imagen_url === "string" && sedeFinal.imagen_url.startsWith("[")) {
-      try {
-        const arr = JSON.parse(sedeFinal.imagen_url);
-        if (Array.isArray(arr)) sedeImages = arr;
-      } catch (e) {
-        sedeImages = [sedeFinal.imagen_url];
-      }
-    } else {
-      sedeImages = [sedeFinal.imagen_url];
-    }
-  }
+  // ============================================
+  // ✅ RENDER PRINCIPAL
+  // ============================================
 
   return (
     <div className="min-h-screen bg-white">
@@ -220,13 +303,15 @@ export function BodegasDisponibles() {
         companyName={warehouse.name}
       />
 
+      {/* ✅ MAPA CON SEDE CORRECTA */}
       <MapaBodegas 
-        city={warehouse.city}
-        zone={warehouse.zone}
-        address={warehouse.address}
-        bodegas={warehouseConFiltros.miniBodegas}
+        city={sedeFinal?.ciudad || warehouse.city || ciudadFiltro}
+        zone={sedeFinal?.zona || warehouse.zone || zonaFiltro}
+        address={sedeFinal?.direccion || warehouse.address}
+        bodegas={bodegasFiltradas}
+        sede={sedeFinal}
         className="max-w-5xl mx-auto rounded-2xl overflow-hidden shadow-lg"
-        height="500px"
+        height="300px"
       />
 
       <TestimonialsSection />
