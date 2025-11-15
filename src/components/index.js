@@ -99,6 +99,7 @@ export { EmpresasTab } from './Admin/tabs/EmpresasTab';
 export { DocumentacionTab } from './Admin/tabs/DocumentacionTab';
 export { UsuariosTab } from './Admin/tabs/UsuariosTab';
 export { ConfiguracionTab } from './Admin/tabs/ConfiguracionTab';
+export {CaracteristicasTab} from './Admin/tabs/CaracteristicasTab';
 
 export { AdminHeader } from './Admin/AdminHeader';
 export { TabButton } from './Admin/TabButton';

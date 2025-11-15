@@ -1,17 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import { ModalDireccionConMapa } from "./ModalDireccionConMapa";
-
-const CARACTERISTICAS_DEFAULT = [
-  "Acceso 24/7",
-  "Vigilancia",
-  "Parqueadero",
-  "Montacargas",
-  "Clima controlado",
-  "Zona de carga",
-  "Seguro incluido",
-  "Cámaras de seguridad"
-];
 
 export function CrearSede({ empresaId, onCreate, className }) {
   const [nombre, setNombre] = useState("Principal");
@@ -25,8 +14,45 @@ export function CrearSede({ empresaId, onCreate, className }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [caracteristicas, setCaracteristicas] = useState([]);
+  const [opcionesCaracteristicas, setOpcionesCaracteristicas] = useState([]);
+  const [loadingCaracts, setLoadingCaracts] = useState(false);
+  const [errorCaracts, setErrorCaracts] = useState(null);
   const [coordenadas, setCoordenadas] = useState(null);
   const [modalDireccionAbierto, setModalDireccionAbierto] = useState(false);
+
+  // Cargar características desde DB (solo nombres activos)
+  useEffect(() => {
+    const loadCaracteristicas = async () => {
+      setLoadingCaracts(true);
+      setErrorCaracts(null);
+      try {
+        const { data, error } = await supabase
+          .from("caracteristicas")
+          .select("nombre")
+          .eq("activo", true)
+          .order("nombre", { ascending: true });
+
+        if (error) throw error;
+
+        const nombres = Array.from(
+          new Set(
+            (data || [])
+              .map((c) => (c?.nombre || "").trim())
+              .filter((n) => n.length > 0)
+          )
+        );
+
+        setOpcionesCaracteristicas(nombres);
+      } catch (e) {
+        setErrorCaracts(e.message || "Error cargando características");
+        setOpcionesCaracteristicas([]);
+      } finally {
+        setLoadingCaracts(false);
+      }
+    };
+
+    loadCaracteristicas();
+  }, []);
 
   // Manejar selección de múltiples imágenes
   const handleImagenesChange = (e) => {
@@ -265,22 +291,34 @@ export function CrearSede({ empresaId, onCreate, className }) {
                 Características de la instalación
               </label>
               <div className="flex flex-wrap gap-2">
-                {CARACTERISTICAS_DEFAULT.map((car, idx) => (
-                  <label key={idx} className={`px-3 py-1 rounded-full border cursor-pointer text-sm
-                    ${caracteristicas.includes(car) ? "bg-[#2C3A61] text-white border-[#2C3A61]" : "bg-white text-[#2C3A61] border-[#2C3A61]"}`}>
+                {errorCaracts && (
+                  <span className="text-sm text-red-600">{errorCaracts}</span>
+                )}
+                {loadingCaracts && !errorCaracts && (
+                  <span className="text-sm text-gray-600">Cargando...</span>
+                )}
+                {!loadingCaracts && !errorCaracts && opcionesCaracteristicas.length === 0 && (
+                  <span className="text-sm text-gray-500">No hay características activas</span>
+                )}
+                {opcionesCaracteristicas.map((opcion) => (
+                  <label
+                    key={opcion}
+                    className={`px-3 py-1 rounded-full border cursor-pointer text-sm
+                      ${caracteristicas.includes(opcion) ? "bg-[#2C3A61] text-white border-[#2C3A61]" : "bg-white text-[#2C3A61] border-[#2C3A61]"}`}
+                  >
                     <input
                       type="checkbox"
                       className="hidden"
-                      checked={caracteristicas.includes(car)}
+                      checked={caracteristicas.includes(opcion)}
                       onChange={() => {
                         setCaracteristicas((prev) =>
-                          prev.includes(car)
-                            ? prev.filter((c) => c !== car)
-                            : [...prev, car]
+                          prev.includes(opcion)
+                            ? prev.filter((c) => c !== opcion)
+                            : [...prev, opcion]
                         );
                       }}
                     />
-                    {car}
+                    {opcion}
                   </label>
                 ))}
               </div>

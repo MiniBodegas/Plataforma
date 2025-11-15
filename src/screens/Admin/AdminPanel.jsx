@@ -6,7 +6,8 @@ import {
   Users, 
   Building2, 
   FileText, 
-  Settings
+  Settings,
+  ListChecks,        // 👈 NUEVO icono para Características
 } from 'lucide-react';
 
 // Componentes
@@ -16,7 +17,8 @@ import {
   EmpresasTab, 
   DocumentacionTab, 
   UsuariosTab, 
-  ConfiguracionTab 
+  ConfiguracionTab,
+  CaracteristicasTab, 
 } from '../../components/index';
 
 // Hooks
@@ -79,6 +81,15 @@ export function AdminPanel() {
             icon={<FileText className="h-4 w-4" />}
             label="Documentación"
           />
+          
+          {/* 👉 NUEVO TAB: Características */}
+          <TabButton
+            active={activeTab === 'caracteristicas'}
+            onClick={() => setActiveTab('caracteristicas')}
+            icon={<ListChecks className="h-4 w-4" />}
+            label="Características"
+          />
+
           <TabButton
             active={activeTab === 'usuarios'}
             onClick={() => setActiveTab('usuarios')}
@@ -97,9 +108,19 @@ export function AdminPanel() {
         {activeTab === 'dashboard' && (
           <DashboardTab stats={stats} empresas={empresas} reservas={reservasRecientes} />
         )}
-        {activeTab === 'empresas' && <EmpresasTab empresas={empresas} onRefresh={loadData} />}
+
+        {activeTab === 'empresas' && (
+          <EmpresasTab empresas={empresas} onRefresh={loadData} />
+        )}
+
         {activeTab === 'documentacion' && <DocumentacionTab />}
+
+        {activeTab === 'caracteristicas' && (
+          <CaracteristicasTab />
+        )}
+
         {activeTab === 'usuarios' && <UsuariosTab usuarios={usuarios} />}
+
         {activeTab === 'configuracion' && <ConfiguracionTab />}
       </div>
     </div>

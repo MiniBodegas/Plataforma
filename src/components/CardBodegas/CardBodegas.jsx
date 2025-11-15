@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { RotateCcw, Minus, Plus } from "lucide-react";
 import "./CardBodegas.css";
+import { supabase } from "../../lib/supabase"; // <-- importar supabase
 
 export function CardBodegas({
   id = null,
@@ -21,7 +22,7 @@ export function CardBodegas({
 
   // Nuevos props
   metrosCuadrados = "",
-  caracteristicas = "",
+  caracteristicas = [],
   disponible = true,
 
   // Callbacks (no-ops para evitar TypeError si no llegan)
@@ -50,15 +51,40 @@ export function CardBodegas({
   const [caracteristicasOpen, setCaracteristicasOpen] = useState(false);
   const [ubicacionOpen, setUbicacionOpen] = useState(false);
 
-  const opcionesCaracteristicas = [
-    "Acceso 24/7",
-    "Vigilancia",
-    "Montacargas",
-    "Zona de carga",
-    "Clima controlado",
-    "Parqueadero",
-    "Cámaras de seguridad"
-  ];
+  // Cargar opciones de características desde DB (solo nombres, activas)
+  const [opcionesCaracteristicas, setOpcionesCaracteristicas] = useState([]);
+  const [loadingCaracts, setLoadingCaracts] = useState(false);
+  const [errorCaracts, setErrorCaracts] = useState(null);
+
+  useEffect(() => {
+    const loadCaracts = async () => {
+      setLoadingCaracts(true);
+      setErrorCaracts(null);
+      try {
+        const { data, error } = await supabase
+          .from("caracteristicas")
+          .select("nombre") // sin descripción ni categoría
+          .eq("activo", true)
+          .order("nombre", { ascending: true });
+        if (error) throw error;
+        // Normalizar: quitar nulos, trim y deduplicar
+        const nombres = Array.from(
+          new Set(
+            (data || [])
+              .map(c => (c?.nombre || "").trim())
+              .filter(n => n.length > 0)
+          )
+        );
+        setOpcionesCaracteristicas(nombres);
+      } catch (e) {
+        setErrorCaracts(e.message || "Error cargando características");
+        setOpcionesCaracteristicas([]);
+      } finally {
+        setLoadingCaracts(false);
+      }
+    };
+    loadCaracts();
+  }, []);
 
   // Cantidad interna (controlado + notifica)
   const [cantidadInterna, setCantidadInterna] = useState(cantidad);
@@ -308,13 +334,22 @@ export function CardBodegas({
                           {car}
                         </span>
                       ))
-                    : <span className="text-gray-400">Selecciona características</span>
+                    : (
+                      <span className="text-gray-400">
+                        {loadingCaracts ? "Cargando..." : "Selecciona características"}
+                      </span>
+                    )
                   }
                   <span className="ml-auto text-xs text-gray-400">&#9660;</span>
                 </div>
                 {caracteristicasOpen && (
                   <div className="absolute z-10 bg-white border rounded shadow w-full mt-1 max-h-40 overflow-auto">
-                    {opcionesCaracteristicas.map((opcion) => (
+                   {errorCaracts && (
+                     <div className="px-3 py-2 text-xs text-red-600">
+                       {errorCaracts}
+                     </div>
+                   )}
+                    {(opcionesCaracteristicas || []).map((opcion) => (
                       <div
                         key={opcion}
                         className={`px-3 py-2 cursor-pointer hover:bg-blue-50 flex items-center ${
@@ -339,6 +374,11 @@ export function CardBodegas({
                         {opcion}
                       </div>
                     ))}
+                    {(!loadingCaracts && opcionesCaracteristicas.length === 0 && !errorCaracts) && (
+                      <div className="px-3 py-2 text-xs text-gray-500">
+                        No hay características activas
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
