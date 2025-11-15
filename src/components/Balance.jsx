@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { NavBarProveedores } from "./index";
 import { supabase } from '../lib/supabase';
 
-const COMISION_PCT = 0.10; // % comisión de la plataforma
+const COMISION_PCT = 0; // quitar comisión: empresa recibe el 100%
 
 // TODO: Ajusta nombres según tu esquema
 const TABLES = {
@@ -118,7 +118,10 @@ export function Balance() {
         // Ingresos (solo aceptada + completada)
         const reservasIngresos = reservas.filter(r => EXTRA.estadosIngreso.includes(r.estado));
         const ingresosTotales = reservasIngresos.reduce((acc,r)=> acc + pickAmount(r), 0);
-        const comisionPlataforma = Math.round(ingresosTotales * COMISION_PCT);
+        // totales/contadores
+        const totalReservadas = reservas.length; // número de reservas activas en el periodo
+        const totalDisponibles = Math.max(0, capacidadTotal - totalReservadas);
+        const comisionPlataforma = ingresosTotales * COMISION_PCT;
         const ingresoNeto = ingresosTotales - comisionPlataforma;
 
         // Ingresos pendientes (estado pendiente)
@@ -206,14 +209,11 @@ export function Balance() {
 
         setDatosFinancieros({
           resumen: {
-            ingresosTotales,
-            ingresosPendientes,
-            ingresoNeto,
+            ingresosTotales: ingresosTotales,
+            bodegasReservadas: totalReservadas,
+            bodegasDisponibles: totalDisponibles,
             comisionPlataforma,
-            bodegasReservadas: ingresosPorBodega.size,
-            bodegasDisponibles: Math.max(0, bodegaIds.length - ingresosPorBodega.size),
-            ocupacionMediaPct,
-            tasaCancelacion
+            ingresoNeto,
           },
           ingresosPorMes,
           bodegasMasRentables
