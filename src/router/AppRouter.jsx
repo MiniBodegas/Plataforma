@@ -25,7 +25,8 @@ import {
   ReservaConfirmada,
   SedesEditorScreen,
   MiniBodegasEditorScreen,
-  AdminPanel
+  AdminPanel,
+  Chat,
 } from '../screens/index';
 
 // ====================== 
@@ -79,6 +80,7 @@ export const AppRouter = () => {
         <Route path="/perfil-form" element={<PerfilFormScreen />} />
         <Route path="/reserva-confirmada" element={<ReservaConfirmada />} />
         <Route path="/completar-perfil" element={<CompletarPerfil />} />
+        <Route path="/chat" element={<Chat />} />
         
       </Route>
       {/* Rutas de proveedores */}

@@ -105,3 +105,5 @@ export { AdminHeader } from './Admin/AdminHeader';
 export { TabButton } from './Admin/TabButton';
 export { StatCard } from './Admin/StatCard';
 export { LoadingScreen } from './Admin/LoadingScreen';
+
+export { ChatMiniBodegas } from './ChatMiniBodega';

@@ -30,3 +30,5 @@ export * from './SedesEditor/SedesEditorScreen'
 export * from './MiniBodegas/MiniBodegasEditorScreen'
 
 export * from './Admin/AdminPanel'
+
+export * from './Chat/Chat'
